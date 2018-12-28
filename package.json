@@ -1,0 +1,110 @@
+{
+  "name": "coc-snippets",
+  "version": "1.0.1",
+  "description": "Snippets extension for coc.nvim",
+  "main": "lib/index.js",
+  "publisher": "chemzqm",
+  "keywords": [
+    "coc.nvim",
+    "snippets",
+    "colors"
+  ],
+  "engines": {
+    "coc": "^0.0.32"
+  },
+  "scripts": {
+    "clean": "rimraf lib",
+    "build": "tsc -p tsconfig.json",
+    "prepare": "yarn clean && yarn build"
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "snippets.priority": {
+          "type": "number",
+          "default": 90,
+          "description": "Source priority of snippets."
+        },
+        "snippets.extends": {
+          "type": "object",
+          "default": {},
+          "description": "Configure filetypes to inherit with, ex: {\"cpp\": [\"c\"], \"javascriptreact\": [\"javascript\"]}"
+        },
+        "snippets.shortcut": {
+          "type": "string",
+          "default": "S",
+          "description": "Shortcut in completion menu."
+        },
+        "snippets.ultisnips.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable load snippets from ultisnips folders"
+        },
+        "snippets.ultisnips.pythonVersion": {
+          "type": "number",
+          "default": 3,
+          "description": "Python version of vim used for python code"
+        },
+        "snippets.ultisnips.directories": {
+          "type": "array",
+          "default": [
+            "UltiSnips"
+          ],
+          "description": "Directories that searched for snippet files, could be directory as subfolder in $runtimepath or absolute paths.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "snippets.loadFromExtensions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable load snippets from extensions."
+        }
+      }
+    }
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "json",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "tests/.*\\.ts$"
+  },
+  "author": "chemzqm@gmail.com",
+  "license": "MIT",
+  "devDependencies": {
+    "@chemzqm/tsconfig": "^0.0.3",
+    "@chemzqm/tslint-config": "^1.0.17",
+    "@types/jest": "^23.3.10",
+    "@types/node": "^10.12.18",
+    "@types/pify": "^3.0.2",
+    "@types/uuid": "^3.4.4",
+    "@types/which": "^1.3.1",
+    "coc.nvim": "^0.0.39",
+    "jest": "^23.6.0",
+    "rimraf": "^2.6.2",
+    "ts-jest": "^23.10.5",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "jsonc-parser": "^2.0.2",
+    "pify": "^4.0.1",
+    "tslib": "^1.9.3",
+    "uuid": "^3.3.2",
+    "vscode-languageserver": "^5.2.1",
+    "vscode-languageserver-protocol": "^3.14.1",
+    "vscode-uri": "^1.0.6",
+    "which": "^1.3.1"
+  }
+}

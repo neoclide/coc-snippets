@@ -1,0 +1,14 @@
+{
+  "extends": "./node_modules/@chemzqm/tsconfig/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "lib",
+    "target": "es2017",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "lib": ["es2018"],
+    "plugins": []
+  },
+  "include": ["src"],
+  "exclude": []
+}
