@@ -50,6 +50,7 @@ feature list below:
 - [ ] Automatic trigger snippet (will support).
 - [ ] Execute shell code with custom shabang (will not support).
 - [ ] Reformat snippet after change of placeholder (will not support).
+- [ ] Event hooks for snippet life cycle (will not support).
 
 ## Options
 
