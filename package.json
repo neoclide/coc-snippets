@@ -10,7 +10,7 @@
     "colors"
   ],
   "engines": {
-    "coc": "^0.0.32"
+    "coc": "^0.0.42"
   },
   "scripts": {
     "clean": "rimraf lib",

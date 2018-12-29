@@ -63,7 +63,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   let disposable = workspace.registerKeymap(['i'], 'snippets-expand', async () => {
     let edits = await manager.getTriggerSnippets()
-    if (edits.length == 0) return workspace.showMessage('No match snippet found', 'warning')
+    if (edits.length == 0) return workspace.showMessage('No matching snippet found', 'warning')
     if (edits.length == 1) {
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
     } else {

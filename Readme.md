@@ -47,6 +47,7 @@ feature list below:
 
 - [x] Position check of trigger option, including `b`, `w` and `i`.
 - [x] Execute vim, python and shell code in snippet.
+- [ ] Placeholder transform (will support).
 - [ ] Visual text in placeholder (will support).
 - [ ] Expression snippet (will support).
 - [ ] Automatic trigger snippet (will support).
