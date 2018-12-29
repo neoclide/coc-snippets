@@ -50,11 +50,17 @@ export class ProviderManager implements CompletionItemProvider {
     let { document, position } = await workspace.getCurrentState()
     let doc = workspace.getDocument(document.uri)
     let names = Array.from(this.providers.keys())
-    let list = await Promise.all(names.map(name => {
+    let list: SnippetEdit[] = []
+    for (let name of names) {
       let provider = this.providers.get(name)
-      return provider.getTriggerSnippets(doc, position)
-    }))
-    return flatten(list)
+      let items = await provider.getTriggerSnippets(doc, position)
+      for (let item of items) {
+        if (list.findIndex(o => o.prefix == item.prefix) == -1) {
+          list.push(item)
+        }
+      }
+    }
+    return list
   }
 
   public async provideCompletionItems(

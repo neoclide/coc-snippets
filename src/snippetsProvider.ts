@@ -73,6 +73,7 @@ export class SnippetsProvider implements Provider {
       // only allow in line begin
       if (pre.trim().length) continue
       edits.push({
+        prefix,
         range: Range.create(position.line, position.character - prefix.length, position.line, position.character),
         newText: snip.body,
         location: snip.filepath,

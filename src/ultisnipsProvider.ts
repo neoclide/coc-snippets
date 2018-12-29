@@ -122,6 +122,7 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${start.line + 
     let edits: SnippetEdit[] = snippets.map(s => {
       let character = position.character - s.prefix.length
       return {
+        prefix: s.prefix,
         description: s.description,
         location: s.filepath,
         range: Range.create(position.line, character, position.line, position.character),

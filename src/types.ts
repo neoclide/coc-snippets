@@ -51,6 +51,7 @@ export interface GlobalContext {
 
 export interface SnippetEdit {
   range: Range
+  prefix: string
   newText: string
   location: string
   description: string
