@@ -24,6 +24,7 @@ export interface UltiSnipsFile {
   filetype: string
   filepath: string
   snippets: Snippet[]
+  extendFiletypes: string[]
   pythonCode?: string
 }
 

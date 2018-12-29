@@ -21,14 +21,14 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   if (configuration.get<boolean>('ultisnips.enable', true)) {
     let config = configuration.get<any>('ultisnips', {})
-    let c = Object.assign({}, config, { extends: filetypeExtends } as UltiSnipsConfig)
+    let c = Object.assign({}, config, { extends: Object.assign({}, filetypeExtends) } as UltiSnipsConfig)
     let provider = new UltiSnippetsProvider(c, channel)
     await provider.init()
     manager.regist(provider, 'ultisnips')
   }
 
   if (configuration.get<boolean>('loadFromExtensions', true)) {
-    let config = { extends: filetypeExtends || {} }
+    let config = { extends: Object.assign({}, filetypeExtends) }
     let provider = new SnippetsProvider(channel, config)
     await provider.init()
     manager.regist(provider, 'snippets')

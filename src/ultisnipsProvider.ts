@@ -64,15 +64,26 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   public async loadSnippetsFromFile(filetype: string, directory: string, filepath: string): Promise<void> {
-    let { snippets, pythonCode } = await this.parser.parseUltisnipsFile(filepath)
+    let { snippets, pythonCode, extendFiletypes } = await this.parser.parseUltisnipsFile(filepath)
     let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.snippetFiles.splice(idx, 1)
     this.snippetFiles.push({
+      extendFiletypes,
       directory,
       filepath,
       filetype,
       snippets
     })
+    if (extendFiletypes && extendFiletypes.length) {
+      let filetypes = this.config.extends[filepath] || []
+      filetypes = filetypes.slice()
+      for (let ft of extendFiletypes) {
+        if (filetypes.indexOf(ft) == -1) {
+          filetypes.push(ft)
+        }
+      }
+      this.config.extends[filepath] = filetypes
+    }
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
     this.pythonCode = this.pythonCode + '\n' + pythonCode
   }

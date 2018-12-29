@@ -27,11 +27,19 @@ export default class UltiSnipsParser {
     let first: string
     let priority = 0
     let lnum = 0
+    let extendFiletypes: string[] = []
     rl.on('line', line => {
       line = line.replace(/\s+$/, '')
       const [head, tail] = headTail(line)
       if (head == 'priority' && !block) {
         priority = parseInt(tail.trim())
+      } else if (head == 'extends') {
+        let fts = tail.trim().split(/,\s+/)
+        for (let ft of fts) {
+          if (extendFiletypes.indexOf(ft) == -1) {
+            extendFiletypes.push(ft)
+          }
+        }
       } else if (head == 'snippet' || head == 'global') {
         block = head
         first = tail
@@ -83,7 +91,7 @@ export default class UltiSnipsParser {
     })
     return new Promise(resolve => {
       rl.on('close', async () => {
-        resolve({ snippets, pythonCode: pycodes.join('\n') })
+        resolve({ snippets, pythonCode: pycodes.join('\n'), extendFiletypes })
       })
     })
   }
