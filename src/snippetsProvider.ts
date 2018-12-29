@@ -3,8 +3,9 @@ import { parse, ParseError } from 'jsonc-parser'
 import os from 'os'
 import path from 'path'
 import { extensions, Extension, OutputChannel, Document } from 'coc.nvim'
-import { Snippet, Provider, TriggerKind, SnippetsConfig, SnippetEdit, GlobalContext } from './types'
+import { Snippet, TriggerKind, SnippetEdit, GlobalContext } from './types'
 import { Position, CompletionItem, Range } from 'vscode-languageserver-types'
+import BaseProvider, { Config } from './baseProvider'
 
 export interface ISnippetPluginContribution {
   prefix: string
@@ -30,10 +31,11 @@ interface KeyToSnippet {
   [key: string]: ISnippetPluginContribution
 }
 
-export class SnippetsProvider implements Provider {
+export class SnippetsProvider extends BaseProvider {
   private _snippetCache: ExtensionCache = {}
 
-  constructor(private channel: OutputChannel, private config: SnippetsConfig) {
+  constructor(private channel: OutputChannel, config: Config) {
+    super(config)
     extensions.onDidLoadExtension(extension => {
       this.loadSnippetsFromExtension(extension).catch(e => {
         channel.appendLine(`[Error] ${e.message}`)
@@ -85,10 +87,7 @@ export class SnippetsProvider implements Provider {
 
   public getSnippets(filetype: string): Snippet[] {
     let res: Snippet[] = []
-    let filetypes: string[] = [filetype]
-    if (this.config.extends[filetype] != null) {
-      filetypes.push(...this.config.extends[filetype])
-    }
+    let filetypes: string[] = this.getFiletypes(filetype)
     let added: Set<string> = new Set()
     for (let key of Object.keys(this._snippetCache)) {
       let cache = this._snippetCache[key]

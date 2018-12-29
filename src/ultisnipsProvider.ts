@@ -8,11 +8,12 @@ import path from 'path'
 import { Disposable } from 'vscode-jsonrpc'
 import { CompletionItem, Position, Range } from 'vscode-languageserver-types'
 import Uri from 'vscode-uri'
-import { FileItem, GlobalContext, Provider, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
+import { FileItem, GlobalContext, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
 import { readdirAsync, readFileAsync, statAsync, writeFileAsync } from './util'
+import BaseProvider from './baseProvider'
 
-export class UltiSnippetsProvider implements Provider {
+export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
   private pythonVersion: number
   private pythonCode: string
@@ -20,7 +21,8 @@ export class UltiSnippetsProvider implements Provider {
   private disposables: Disposable[] = []
   private directories: string[]
   private parser: UltiSnipsParser
-  constructor(private config: UltiSnipsConfig, private channel: OutputChannel) {
+  constructor(config: UltiSnipsConfig, private channel: OutputChannel) {
+    super(config)
     this.pythonVersion = config.pythonVersion || 3
     this.directories = this.config.directories.map(s => {
       return s.startsWith('~') ? os.homedir() + s.slice(1) : s
@@ -134,18 +136,10 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${start.line + 
   }
 
   public getSnippetFiles(filetype: string): string[] {
-    let filetypes: Set<string> = new Set()
-    for (let ft of filetype.split('.')) {
-      filetypes.add(ft)
-    }
-    for (const s of filetypes) {
-      for (let ft of this.config.extends[s] || []) {
-        filetypes.add(ft)
-      }
-    }
+    let filetypes = this.getFiletypes(filetype)
     let res: string[] = []
     for (let s of this.snippetFiles) {
-      if (filetypes.has(s.filetype)) {
+      if (filetypes.indexOf(s.filetype) !== -1) {
         res.push(s.filepath)
       }
     }
@@ -154,16 +148,8 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${start.line + 
 
   public getSnippets(filetype: string): Snippet[] {
     let snippetsMap: Map<string, Snippet> = new Map()
-    let filetypes: Set<string> = new Set()
-    for (let ft of filetype.split('.')) {
-      filetypes.add(ft)
-    }
-    for (const s of filetypes) {
-      for (let ft of this.config.extends[s] || []) {
-        filetypes.add(ft)
-      }
-    }
-    filetypes.add('all')
+    let filetypes = this.getFiletypes(filetype)
+    filetypes.push('all')
     let snippetFiles = this.snippetFiles
     for (let filetype of filetypes) {
       let files = snippetFiles.filter(o => o.filetype == filetype)

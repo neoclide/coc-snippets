@@ -27,10 +27,6 @@ export interface UltiSnipsFile {
   pythonCode?: string
 }
 
-export interface SnippetsConfig {
-  extends: { [key: string]: string[] }
-}
-
 export interface Snippet {
   readonly filepath: string
   readonly lnum: number
@@ -61,11 +57,4 @@ export interface FileItem {
   directory: string
   filetype: string
   filepath: string
-}
-
-export abstract class Provider {
-  abstract getSnippets(filetype: string): Snippet[]
-  abstract getSnippetFiles(filetype: string): string[]
-  abstract getTriggerSnippets(document: Document, position: Position): Promise<SnippetEdit[]>
-  abstract resolveSnippetBody(item: CompletionItem, context: GlobalContext): Promise<string>
 }

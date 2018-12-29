@@ -33,7 +33,6 @@ export async function readdirAsync(filepath: string): Promise<string[]> {
   }
 }
 
-// 're', 'os', 'vim', 'string', 'random'
 export function headTail(line: string): [string, string] | null {
   let str = line.trim()
   if (!str) return ['', '']
@@ -62,4 +61,23 @@ export function memorize<R extends (...args: any[]) => Promise<R>>(_target: any,
 export function trimQuote(str: string): string {
   if (str.startsWith('"') || str.startsWith("'")) return str.slice(1, -1)
   return str
+}
+
+export function distinct<T>(array: T[], keyFn?: (t: T) => string): T[] {
+  if (!keyFn) {
+    return array.filter((element, position) => {
+      return array.indexOf(element) === position
+    })
+  }
+  const seen: { [key: string]: boolean } = Object.create(null)
+  return array.filter(elem => {
+    const key = keyFn(elem)
+    if (seen[key]) {
+      return false
+    }
+
+    seen[key] = true
+
+    return true
+  })
 }

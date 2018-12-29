@@ -5,11 +5,12 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 import { CompleteOption, CompletionItemProvider, Document, workspace } from 'coc.nvim'
 import { CancellationToken, CompletionContext, CompletionItem, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
 import Uri from 'vscode-uri'
-import { GlobalContext, Provider, Snippet, SnippetEdit, TriggerKind } from './types'
+import { GlobalContext, Snippet, SnippetEdit, TriggerKind } from './types'
 import { flatten } from './util'
+import BaseProvider from './baseProvider'
 
 export class ProviderManager implements CompletionItemProvider {
-  private providers: Map<string, Provider> = new Map()
+  private providers: Map<string, BaseProvider> = new Map()
   private context: GlobalContext
   private visualText: string
 

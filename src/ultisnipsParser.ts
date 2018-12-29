@@ -28,6 +28,7 @@ export default class UltiSnipsParser {
     let priority = 0
     let lnum = 0
     rl.on('line', line => {
+      line = line.replace(/\s+$/, '')
       const [head, tail] = headTail(line)
       if (head == 'priority' && !block) {
         priority = parseInt(tail.trim())
