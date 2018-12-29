@@ -4,15 +4,12 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { CompleteOption, CompletionItemProvider, Document, workspace } from 'coc.nvim'
 import { CancellationToken, CompletionContext, CompletionItem, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
-import Uri from 'vscode-uri'
-import { GlobalContext, Snippet, SnippetEdit, TriggerKind } from './types'
+import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { flatten } from './util'
 import BaseProvider from './baseProvider'
 
 export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
-  private context: GlobalContext
-  private visualText: string
 
   public regist(provider, name): Disposable {
     this.providers.set(name, provider)
@@ -121,17 +118,14 @@ export class ProviderManager implements CompletionItemProvider {
       item.data.character = item.textEdit!.range.start.character
       res.push(item)
     }
-    this.context = {
-      filepath: Uri.parse(document.uri).fsPath,
-      visualText: this.visualText || ''
-    }
     return res
   }
 
   public async resolveCompletionItem(item: CompletionItem): Promise<CompletionItem> {
     let provider = this.providers.get(item.data.provider)
     if (provider) {
-      let insertSnippet = await provider.resolveSnippetBody(item, this.context)
+      let { start } = item.textEdit!.range
+      let insertSnippet = await provider.resolveSnippetBody(item.data.body, start)
       item.textEdit.newText = insertSnippet
     }
     return item

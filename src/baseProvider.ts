@@ -1,6 +1,6 @@
-import { Snippet, SnippetEdit, GlobalContext } from './types'
-import { CompletionItem, Position } from 'vscode-languageserver-types'
 import { Document } from 'coc.nvim'
+import { Position } from 'vscode-languageserver-types'
+import { Snippet, SnippetEdit } from './types'
 import { distinct } from './util'
 
 export interface Config {
@@ -15,7 +15,7 @@ export default abstract class BaseProvider {
   abstract getSnippets(filetype: string): Snippet[]
   abstract getSnippetFiles(filetype: string): string[]
   abstract getTriggerSnippets(document: Document, position: Position): Promise<SnippetEdit[]>
-  abstract resolveSnippetBody(item: CompletionItem, context: GlobalContext): Promise<string>
+  abstract resolveSnippetBody(body: string, position: Position): Promise<string>
 
   public getFiletypes(filetype: string): string[] {
     let extend = this.config.extends ? this.config.extends[filetype] : null

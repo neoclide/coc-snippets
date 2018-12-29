@@ -6,12 +6,12 @@ import { Document, OutputChannel, workspace } from 'coc.nvim'
 import os from 'os'
 import path from 'path'
 import { Disposable } from 'vscode-jsonrpc'
-import { CompletionItem, Position, Range } from 'vscode-languageserver-types'
+import { Position, Range } from 'vscode-languageserver-types'
 import Uri from 'vscode-uri'
-import { FileItem, GlobalContext, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
+import BaseProvider from './baseProvider'
+import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
 import { readdirAsync, readFileAsync, statAsync, writeFileAsync } from './util'
-import BaseProvider from './baseProvider'
 
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
@@ -88,11 +88,10 @@ export class UltiSnippetsProvider extends BaseProvider {
     this.pythonCode = this.pythonCode + '\n' + pythonCode
   }
 
-  public async resolveSnippetBody(item: CompletionItem, context: GlobalContext): Promise<string> {
-    let { body } = item.data
-    let textEdit = item.textEdit!
-    let { start } = textEdit.range
-    let { filepath, visualText } = context
+  public async resolveSnippetBody(body, position: Position): Promise<string> {
+    let { nvim } = workspace
+    let filepath = await nvim.buffer.name
+    let visualText = ''
     visualText = visualText || ''
     if (body.indexOf('`!p') !== -1) {
       let values: Map<number, string> = new Map()
@@ -108,7 +107,7 @@ export class UltiSnippetsProvider extends BaseProvider {
 t = ('', ${vals.join(',')})
 fn = '${path.basename(filepath)}'
 path = '${filepath}'
-snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${start.line + 1}, ${start.character + 1}), (${start.line + 1}, ${start.character + 1})) `
+snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line + 1}, ${position.character + 1}), (${position.line + 1}, ${position.character + 1})) `
       workspace.nvim.command(`${this.pyMethod} ${pyCode}`, true)
     }
     return this.parser.resolveUltisnipsBody(body)
@@ -133,16 +132,18 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${start.line + 
         return pre.length == 0 || !document.isWord(pre[pre.length - 1])
       }
     })
-    let edits: SnippetEdit[] = snippets.map(s => {
+    let edits: SnippetEdit[] = []
+    for (let s of snippets) {
       let character = position.character - s.prefix.length
-      return {
+      let newText = await this.resolveSnippetBody(s.body, position)
+      edits.push({
         prefix: s.prefix,
         description: s.description,
         location: s.filepath,
         range: Range.create(position.line, character, position.line, position.character),
-        newText: s.body,
-      }
-    })
+        newText,
+      })
+    }
     return edits
   }
 

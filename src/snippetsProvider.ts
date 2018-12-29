@@ -106,8 +106,8 @@ export class SnippetsProvider extends BaseProvider {
     return res
   }
 
-  public async resolveSnippetBody(item: CompletionItem, _context: GlobalContext): Promise<string> {
-    return item.data.body
+  public async resolveSnippetBody(body: string, _position: Position): Promise<string> {
+    return body
   }
 
   private async loadSnippetsFromExtension(extension: Extension<any>): Promise<void> {
