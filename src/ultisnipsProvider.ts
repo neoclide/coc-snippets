@@ -80,6 +80,7 @@ export class UltiSnippetsProvider implements Provider {
     let textEdit = item.textEdit!
     let { start } = textEdit.range
     let { filepath, visualText } = context
+    visualText = visualText || ''
     if (body.indexOf('`!p') !== -1) {
       let values: Map<number, string> = new Map()
       body.replace(/\$\{(\d+):([^}]+)\}/, (_, p1, p2) => {
