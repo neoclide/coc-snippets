@@ -52,26 +52,20 @@ export default class UltiSnipsParser {
         let body = preLines.join('\n')
         let parser = new Parser(first)
         parser.skipSpaces()
+        // parse prefix
         let quote = parser.curr == '"'
-        let len = parser.nextIndex(quote ? '"' : ' ', quote)
-        let prefix = trimQuote(parser.eat(len + (quote ? 1 : 0)))
+        let idx = parser.nextIndex(quote ? '"' : ' ', quote)
+        let prefix = trimQuote(parser.eatTo(idx + (quote ? 1 : 0)))
         parser.skipSpaces()
         quote = parser.curr == '"'
+        // parse description
         let description = ''
         if (quote) {
-          let len = parser.nextIndex('"')
-          if (len) description = trimQuote(parser.eat(len + 1))
+          let idx = parser.nextIndex('"', true, false)
+          if (idx !== -1) description = trimQuote(parser.eatTo(idx + 1))
         }
         parser.skipSpaces()
-        len = parser.nextIndex(' ', false)
-        let option = ''
-        parser.iterate(ch => {
-          if (/\w/.test(ch)) {
-            option += ch
-            return true
-          }
-          return false
-        })
+        let option = parser.next(3)
         preLines = []
         let snippet: Snippet = {
           filepath,
@@ -102,20 +96,37 @@ export default class UltiSnipsParser {
     let resolved = ''
     while (!parser.eof()) {
       if (parser.curr == '`') {
-        let length = parser.nextIndex('`')
-        if (length == 0) break
-        let code = parser.eat(length + 1)
+        let idx = parser.nextIndex('`', true, false)
+        if (idx == -1) {
+          resolved = resolved + parser.eatTo(parser.len)
+          break
+        }
+        let code = parser.eatTo(idx + 1)
         code = code.slice(1, -1)
         resolved = resolved + await this.execute(code, pyMethod)
         continue
+      } else if (parser.curr == '$') {
+        let next = parser.next()
+        let text = next == '{' ? parser.next(7).slice(1) : parser.next(6)
+        if (text == 'VISUAL') {
+          parser.eat(next == '{' ? 8 : 7)
+          resolved = resolved + `$${next}TM_SELECTED_TEXT`
+        } else {
+          // skip current
+          let ch = parser.eat(1)
+          resolved = resolved + ch
+        }
       }
-      let len = parser.nextIndex('`')
-      if (len == 0) {
-        resolved = resolved + parser.eat(parser.len - parser.index)
-        break
-      } else {
-        resolved = resolved + parser.eat(len)
-      }
+      let prev = parser.prev()
+      parser.iterate(ch => {
+        if (prev !== '\\' && (ch == '`' || ch == '$')) {
+          return false
+        } else {
+          resolved = resolved + ch
+        }
+        prev == ch
+        return true
+      })
     }
     resolved = decode(resolved)
     this.channel.appendLine(`[Debug ${(new Date()).toLocaleTimeString()}] resolved: ${resolved}`)
