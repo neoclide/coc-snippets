@@ -108,7 +108,7 @@ t = ('', ${vals.join(',')})
 fn = '${path.basename(filepath)}'
 path = '${filepath}'
 snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line + 1}, ${position.character + 1}), (${position.line + 1}, ${position.character + 1})) `
-      workspace.nvim.command(`${this.pyMethod} ${pyCode}`, true)
+      await workspace.nvim.command(`${this.pyMethod} ${pyCode}`)
     }
     return this.parser.resolveUltisnipsBody(body)
   }
