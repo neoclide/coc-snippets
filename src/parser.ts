@@ -45,7 +45,7 @@ export default class Parser {
 
   nextIndex(character: string, checkbackspace = true, allowEnd = true): number {
     if (this._curr >= this.len - 1) return allowEnd ? this.len - 1 : -1
-    let i = this._curr
+    let i = this._curr + 1
     let pre = this.curr || ''
     while (i != this.len - 1) {
       let ch = this._content[i]

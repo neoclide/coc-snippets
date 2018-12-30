@@ -68,8 +68,8 @@ export class ProviderManager implements CompletionItemProvider {
     context: CompletionContext): Promise<CompletionItem[]> {
     let doc = workspace.getDocument(document.uri)
     if (!doc) return []
-    let currline = doc.getline(position.line)
     let snippets = await this.getSnippets()
+    let currline = doc.getline(position.line, true)
     let { input, col } = (context as any).option! as CompleteOption
     let ahead = currline.slice(0, col)
     let res: CompletionItem[] = []
