@@ -75,14 +75,14 @@ export class UltiSnippetsProvider extends BaseProvider {
       snippets
     })
     if (extendFiletypes && extendFiletypes.length) {
-      let filetypes = this.config.extends[filepath] || []
+      let filetypes = this.config.extends[filetype] || []
       filetypes = filetypes.slice()
       for (let ft of extendFiletypes) {
         if (filetypes.indexOf(ft) == -1) {
           filetypes.push(ft)
         }
       }
-      this.config.extends[filepath] = filetypes
+      this.config.extends[filetype] = filetypes
     }
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
     this.pythonCode = this.pythonCode + '\n' + pythonCode
