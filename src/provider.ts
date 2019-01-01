@@ -115,6 +115,7 @@ export class ProviderManager implements CompletionItemProvider {
           newText: item.label
         }
       }
+      item.data.location = `${snip.filepath}:${snip.lnum}`
       item.data.character = item.textEdit!.range.start.character
       res.push(item)
     }
@@ -127,6 +128,7 @@ export class ProviderManager implements CompletionItemProvider {
       let { start } = item.textEdit!.range
       let insertSnippet = await provider.resolveSnippetBody(item.data.body, start)
       item.textEdit.newText = insertSnippet
+      item.detail = item.data.location
     }
     return item
   }

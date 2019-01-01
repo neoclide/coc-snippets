@@ -2,11 +2,12 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { ExtensionContext, commands, languages, workspace } from 'coc.nvim'
+import { ExtensionContext, events, commands, languages, workspace } from 'coc.nvim'
 import { ProviderManager } from './provider'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { UltiSnipsConfig } from './types'
 import { SnippetsProvider } from './snippetsProvider'
+import { Range, Position } from 'vscode-languageserver-types'
 
 export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
@@ -61,7 +62,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     }
   }))
 
-  let disposable = workspace.registerKeymap(['i'], 'snippets-expand', async () => {
+  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
     let edits = await manager.getTriggerSnippets()
     if (edits.length == 0) return workspace.showMessage('No matching snippet found', 'warning')
     if (edits.length == 1) {
@@ -71,9 +72,38 @@ export async function activate(context: ExtensionContext): Promise<void> {
       if (idx == -1) return
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
     }
-  })
+  }))
+  subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
+    let doc = await workspace.document
+    if (!doc) return
+    let { nvim } = workspace
+    let mode = await nvim.call('visualmode')
+    if (['v', 'V'].indexOf(mode) == -1) return
+    await nvim.call('feedkeys', [String.fromCharCode(27), 'in'])
+    await nvim.command('normal! `<')
+    let start = await workspace.getCursorPosition()
+    await nvim.command('normal! `>')
+    let end = await workspace.getCursorPosition()
+    end = Position.create(end.line, end.character + 1)
+    let range = Range.create(start, end)
+    let text = doc.textDocument.getText(range)
+    await nvim.call('feedkeys', ['i', 'in'])
+    if (mode == 'v') {
+      await doc.applyEdits(workspace.nvim, [{ range, newText: '' }])
+    } else {
+      // keep indent
+      let currline = doc.getline(start.line)
+      let indent = currline.match(/^\s*/)[0]
+      let lines = text.split(/\r?\n/)
+      lines = lines.map(s => s.startsWith(indent) ? s.slice(indent.length) : s)
+      text = lines.join('\n')
+      range = Range.create(Position.create(start.line, indent.length), end)
+      await doc.applyEdits(workspace.nvim, [{ range, newText: '' }])
+    }
+    await nvim.setVar('coc_selected_text', text)
+    await workspace.moveTo(range.start)
+  }, false))
 
-  subscriptions.push(disposable)
   subscriptions.push(statusItem)
   subscriptions.push(channel)
 }

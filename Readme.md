@@ -28,10 +28,12 @@ In your vim/neovim, run command:
 
 ## Usage
 
-Remap key to trigger snippet expand:
 
 ```vim
+" Use <C-l> to trigger snippet expand.
 imap <C-l> <Plug>(coc-snippets-expand)
+" Use <C-j> to select text for visual text of snippet.
+vmap <C-j> <Plug>(coc-snippets-select)
 ```
 
 To open snippet files, use command:
@@ -53,7 +55,7 @@ feature list below:
 - [ ] Automatic trigger snippet (will support).
 - [ ] Execute shell code with custom shabang (will not support).
 - [ ] Reformat snippet after change of placeholder (will not support).
-- [ ] Event hooks for snippet life cycle (will not support).
+- [ ] Snippet actions (will not support).
 
 ## Options
 
