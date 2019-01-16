@@ -72,7 +72,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       if (idx == -1) return
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
     }
-  }))
+  }, false))
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
     let doc = await workspace.document
     if (!doc) return

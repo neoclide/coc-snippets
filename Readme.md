@@ -34,6 +34,10 @@ In your vim/neovim, run command:
 imap <C-l> <Plug>(coc-snippets-expand)
 " Use <C-j> to select text for visual text of snippet.
 vmap <C-j> <Plug>(coc-snippets-select)
+" Use <C-j> to jump to forward placeholder, which is default
+let g:coc_snippet_next = '<c-j>'
+" Use <C-k> to jump to backward placeholder, which is default
+let g:coc_snippet_prev = '<c-k>'
 ```
 
 To open snippet files, use command:
@@ -42,15 +46,16 @@ To open snippet files, use command:
 :CocCommand snippets.editSnippets
 ```
 
-## About ultisnips features
+## Ultisnips features
 
 Your UltiSnips snippets should work most of time, but sometimes not, check out
 feature list below:
 
 - [x] Position check of trigger option, including `b`, `w` and `i`.
 - [x] Execute vim, python and shell code in snippet.
+- [x] Visual text in placeholder (will support).
+- [ ] Context snippets.
 - [ ] Placeholder transform (will support).
-- [ ] Visual text in placeholder (will support).
 - [ ] Expression snippet (will support).
 - [ ] Automatic trigger snippet (will support).
 - [ ] Execute shell code with custom shabang (will not support).
@@ -79,6 +84,17 @@ feature list below:
   `["UltiSnips"]`
 - `snippets.loadFromExtensions`: specify whether to load snippets from
   extensions, default: `true`
+
+## Regular expression convert
+
+Python regular expression of UltiSnips would be converted to javascript regex, however some
+patterns are not supported, including `(?s)`, `\Z`, `(?(id/name)yes-pattern|no-pattern)`,
+`(?x)` and free space syntax of multiple line regular expression.
+
+The failed snippets would not be loaded, you can checkout the errors by open
+output channel:
+
+    :CocCommand workspace.showOutput snippets
 
 ## F.A.Q
 
