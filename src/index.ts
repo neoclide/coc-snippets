@@ -2,7 +2,8 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { ExtensionContext, events, commands, languages, workspace } from 'coc.nvim'
+import { ExtensionContext, events, listManager, commands, languages, workspace, VimCompleteItem } from 'coc.nvim'
+import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { UltiSnipsConfig } from './types'
@@ -14,11 +15,18 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const configuration = workspace.getConfiguration('snippets')
   const filetypeExtends = configuration.get('extends', {})
   const manager = new ProviderManager()
+  let mru = workspace.createMru('snippets-mru')
 
   const channel = workspace.createOutputChannel('snippets')
   const statusItem = workspace.createStatusBarItem(90, { progress: true })
   statusItem.text = 'loading snippets'
   statusItem.show()
+
+  events.on('CompleteDone', async (item: VimCompleteItem) => {
+    if (item.user_data && item.user_data.indexOf('coc-snippets') !== -1) {
+      await mru.add(item.word)
+    }
+  })
 
   if (configuration.get<boolean>('ultisnips.enable', true)) {
     let config = configuration.get<any>('ultisnips', {})
@@ -67,10 +75,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
     if (edits.length == 0) return workspace.showMessage('No matching snippet found', 'warning')
     if (edits.length == 1) {
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
+      await mru.add(edits[0].prefix)
     } else {
       let idx = await workspace.showQuickpick(edits.map(e => e.description), 'choose snippet:')
       if (idx == -1) return
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
+      await mru.add(edits[idx].prefix)
     }
   }, false))
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
@@ -106,4 +116,5 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   subscriptions.push(statusItem)
   subscriptions.push(channel)
+  subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim, manager, mru)))
 }

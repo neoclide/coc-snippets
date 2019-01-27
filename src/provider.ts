@@ -92,8 +92,6 @@ export class ProviderManager implements CompletionItemProvider {
           lineBeggining = ahead.slice(0, - head.length).trim().length == 0
           let prefix = snip.prefix.slice(head.length)
           Object.assign(item, {
-            label: prefix,
-            filterText: prefix,
             textEdit: {
               range: Range.create({ line: position.line, character: col - head.length }, position),
               newText: prefix
@@ -116,7 +114,6 @@ export class ProviderManager implements CompletionItemProvider {
         }
       }
       item.data.location = `${snip.filepath}:${snip.lnum}`
-      item.data.character = item.textEdit!.range.start.character
       res.push(item)
     }
     return res
@@ -129,6 +126,7 @@ export class ProviderManager implements CompletionItemProvider {
       let insertSnippet = await provider.resolveSnippetBody(item.data.body, start)
       item.textEdit.newText = insertSnippet
       item.detail = item.data.location
+      // this.mru.add(item.label)
     }
     return item
   }

@@ -66,10 +66,9 @@ export default class UltiSnipsParser {
         }
         parser.skipSpaces()
         let option = parser.next(3)
-        preLines = []
         let snippet: Snippet = {
           filepath,
-          lnum,
+          lnum: lnum - preLines.length - 1,
           description,
           prefix,
           triggerKind: getTriggerKind(option),
@@ -78,6 +77,7 @@ export default class UltiSnipsParser {
           priority
         }
         snippets.push(snippet)
+        preLines = []
       } else if (block == 'snippet' || block == 'global') {
         preLines.push(line)
       }

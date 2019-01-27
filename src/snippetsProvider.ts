@@ -1,11 +1,11 @@
+import { Document, Extension, extensions, OutputChannel } from 'coc.nvim'
 import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import os from 'os'
 import path from 'path'
-import { extensions, Extension, OutputChannel, Document } from 'coc.nvim'
-import { Snippet, TriggerKind, SnippetEdit, GlobalContext } from './types'
-import { Position, CompletionItem, Range } from 'vscode-languageserver-types'
+import { Position, Range } from 'vscode-languageserver-types'
 import BaseProvider, { Config } from './baseProvider'
+import { Snippet, SnippetEdit, TriggerKind } from './types'
 
 export interface ISnippetPluginContribution {
   prefix: string
