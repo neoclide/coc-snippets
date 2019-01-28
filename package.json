@@ -1,6 +1,6 @@
 {
   "name": "coc-snippets",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Snippets extension for coc.nvim",
   "main": "lib/index.js",
   "publisher": "chemzqm",
@@ -10,7 +10,7 @@
     "colors"
   ],
   "engines": {
-    "coc": "^0.0.49"
+    "coc": "^0.0.50"
   },
   "scripts": {
     "clean": "rimraf lib",

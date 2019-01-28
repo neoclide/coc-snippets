@@ -126,7 +126,6 @@ export class ProviderManager implements CompletionItemProvider {
       let insertSnippet = await provider.resolveSnippetBody(item.data.body, start)
       item.textEdit.newText = insertSnippet
       item.detail = item.data.location
-      // this.mru.add(item.label)
     }
     return item
   }
