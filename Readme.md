@@ -10,7 +10,7 @@ It's capable of:
 - Load textmate format snippets from coc extensions.
 - Provide snippets as completion items.
 - Provide trigger key for trigger snippet.
-- Provide command to edit snippet files.
+- Provide snippets list for edit snippet.
 
 ## Why?
 
@@ -28,7 +28,6 @@ In your vim/neovim, run command:
 
 ## Usage
 
-
 ```vim
 " Use <C-l> to trigger snippet expand.
 imap <C-l> <Plug>(coc-snippets-expand)
@@ -40,10 +39,13 @@ let g:coc_snippet_next = '<c-j>'
 let g:coc_snippet_prev = '<c-k>'
 ```
 
+**Note**: you can use same key for both expand snippet and jump forward, jump
+forward would always have higher priority.
+
 To open snippet files, use command:
 
 ```vim
-:CocCommand snippets.editSnippets
+:CocList snippets
 ```
 
 ## Ultisnips features
@@ -53,9 +55,9 @@ feature list below:
 
 - [x] Position check of trigger option, including `b`, `w` and `i`.
 - [x] Execute vim, python and shell code in snippet.
-- [x] Visual text in placeholder (will support).
+- [x] Visual text in placeholder.
+- [x] Placeholder transform.
 - [ ] Context snippets.
-- [ ] Placeholder transform (will support).
 - [ ] Expression snippet (will support).
 - [ ] Automatic trigger snippet (will support).
 - [ ] Execute shell code with custom shabang (will not support).

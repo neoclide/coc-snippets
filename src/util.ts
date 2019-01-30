@@ -83,13 +83,13 @@ export function distinct<T>(array: T[], keyFn?: (t: T) => string): T[] {
 }
 
 const conditionRe = /\(\?\(?:\w+\).+\|/
-const beelRe = /\\a/
+const bellRe = /\\a/
 const commentRe = /\(\?#.*?\)/
 const stringStartRe = /\\A/
 const lookBehindRe = /\(\?<[!=].*?\)/
 const namedCaptureRe = /\(\?P<\w+>.*?\)/
 const namedReferenceRe = /\(\?P=(\w+)\)/
-const regex = new RegExp(`${beelRe.source}|${commentRe.source}|${stringStartRe.source}|${lookBehindRe.source}|${namedCaptureRe.source}|${namedReferenceRe.source}`, 'g')
+const regex = new RegExp(`${bellRe.source}|${commentRe.source}|${stringStartRe.source}|${lookBehindRe.source}|${namedCaptureRe.source}|${namedReferenceRe.source}`, 'g')
 
 /**
  * Convert python regex to javascript regex,

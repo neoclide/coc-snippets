@@ -53,23 +53,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
     subscriptions.push(disposable)
   }
 
-  subscriptions.push(commands.registerCommand('snippets.editSnippets', async () => {
-    let files = await manager.getSnippetFiles()
-    let { nvim } = workspace
-    if (!files.length) {
-      workspace.showMessage('No snippet file found', 'warning')
-    } else {
-      let file = files[0]
-      if (files.length > 1) {
-        let idx = await workspace.showQuickpick(files, 'choose file')
-        if (idx == -1) return
-        file = files[idx]
-      }
-      let escaped = await nvim.call('fnameescape', file)
-      await nvim.command(`vsplit ${escaped}`)
-    }
-  }))
-
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
     let edits = await manager.getTriggerSnippets()
     if (edits.length == 0) return workspace.showMessage('No matching snippet found', 'warning')
