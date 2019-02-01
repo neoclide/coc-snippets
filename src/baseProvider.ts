@@ -12,6 +12,7 @@ export default abstract class BaseProvider {
   constructor(protected config: Config) {
   }
 
+  abstract init(): Promise<void>
   abstract getSnippets(filetype: string): Snippet[]
   abstract getSnippetFiles(filetype: string): string[]
   abstract getTriggerSnippets(document: Document, position: Position): Promise<SnippetEdit[]>

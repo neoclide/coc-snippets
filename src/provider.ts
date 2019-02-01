@@ -22,6 +22,13 @@ export class ProviderManager implements CompletionItemProvider {
     return this.providers.size > 0
   }
 
+  public async init(): Promise<void> {
+    let providers = Array.from(this.providers.values())
+    await Promise.all(providers.map(provider => {
+      return provider.init()
+    }))
+  }
+
   public async getSnippets(): Promise<Snippet[]> {
     let names = Array.from(this.providers.keys())
     let doc = await workspace.document

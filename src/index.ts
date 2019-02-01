@@ -18,9 +18,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
   let mru = workspace.createMru('snippets-mru')
 
   const channel = workspace.createOutputChannel('snippets')
-  const statusItem = workspace.createStatusBarItem(90, { progress: true })
-  statusItem.text = 'loading snippets'
-  statusItem.show()
 
   events.on('CompleteDone', async (item: VimCompleteItem) => {
     if (item.user_data && item.user_data.indexOf('coc-snippets') !== -1) {
@@ -32,18 +29,23 @@ export async function activate(context: ExtensionContext): Promise<void> {
     let config = configuration.get<any>('ultisnips', {})
     let c = Object.assign({}, config, { extends: Object.assign({}, filetypeExtends) } as UltiSnipsConfig)
     let provider = new UltiSnippetsProvider(c, channel)
-    await provider.init()
     manager.regist(provider, 'ultisnips')
   }
 
   if (configuration.get<boolean>('loadFromExtensions', true)) {
     let config = { extends: Object.assign({}, filetypeExtends) }
     let provider = new SnippetsProvider(channel, config)
-    await provider.init()
     manager.regist(provider, 'snippets')
   }
-
-  statusItem.hide()
+  const statusItem = workspace.createStatusBarItem(90, { progress: true })
+  statusItem.text = 'loading snippets'
+  statusItem.show()
+  manager.init().then(() => {
+    statusItem.hide()
+  }, e => {
+    statusItem.hide()
+    workspace.showMessage(`Error on load snippets: ${e.message}`, 'error')
+  })
 
   if (manager.hasProvider) {
     let disposable = languages.registerCompletionItemProvider(

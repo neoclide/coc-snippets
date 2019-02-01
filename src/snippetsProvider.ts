@@ -53,12 +53,6 @@ export class SnippetsProvider extends BaseProvider {
   }
 
   public getSnippetFiles(_filetype: string): string[] {
-    // let files: Set<string> = new Set()
-    // let snippets = this.getSnippets(filetype)
-    // for (let snip of snippets) {
-    //   files.add(snip.filepath)
-    // }
-    // return Array.from(files)
     return []
   }
 
