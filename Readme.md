@@ -107,13 +107,13 @@ it doesn't use code or read configuration from UltiSnips.
 
 Q: How to use same key for select next completion item and expand snippet?
 
-A: Use confition keymap like:
+A: Use condition keymap like:
 
 ```vim
 inoremap <silent><expr> <TAB>
       \ pumvisible() ? "\<C-n>" :
       \ <SID>check_back_space() ? "\<TAB>" :
-      \ coc#rpc#request('doKeymap', 'snippets-expand')
+      \ coc#rpc#request('doKeymap', ['snippets-expand', "\<TAB>"])
 
 function! s:check_back_space() abort
   let col = col('.') - 1
