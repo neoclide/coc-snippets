@@ -83,6 +83,7 @@
   "author": "chemzqm@gmail.com",
   "license": "MIT",
   "devDependencies": {
+    "@chemzqm/neovim": "^4.3.44",
     "@chemzqm/tsconfig": "^0.0.3",
     "@chemzqm/tslint-config": "^1.0.18",
     "@types/jest": "^23.3.13",
