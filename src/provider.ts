@@ -3,7 +3,7 @@ MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { CompleteOption, CompletionItemProvider, Document, workspace } from 'coc.nvim'
-import { CancellationToken, CompletionContext, CompletionItem, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
+import { CancellationToken, CompletionContext, CompletionItem, Disposable, InsertTextFormat, Position, Range, TextDocument, CompletionItemKind } from 'vscode-languageserver-protocol'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { flatten } from './util'
 import BaseProvider from './baseProvider'
@@ -86,6 +86,7 @@ export class ProviderManager implements CompletionItemProvider {
       if (!head && input.length == 0) continue
       let item: CompletionItem = {
         label: snip.prefix,
+        kind: CompletionItemKind.Snippet,
         filterText: snip.prefix,
         detail: snip.description,
         insertTextFormat: InsertTextFormat.Snippet,
