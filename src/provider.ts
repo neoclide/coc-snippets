@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { CompleteOption, CompletionItemProvider, Document, workspace } from 'coc.nvim'
+import { CompleteOption, CompletionItemProvider, Document, workspace, resolveSnippet } from 'coc.nvim'
 import { CancellationToken, CompletionContext, CompletionItem, Disposable, InsertTextFormat, Position, Range, TextDocument, CompletionItemKind } from 'vscode-languageserver-protocol'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { flatten } from './util'
@@ -91,6 +91,12 @@ export class ProviderManager implements CompletionItemProvider {
         detail: snip.description,
         insertTextFormat: InsertTextFormat.Snippet,
       }
+      if (snip.description.length <= 20) {
+        Object.assign(item, {
+          label: `${item.label} - ${snip.description}`,
+          detail: null
+        })
+      }
       item.data = {
         provider: snip.provider,
         body: snip.body
@@ -111,7 +117,7 @@ export class ProviderManager implements CompletionItemProvider {
       if (snip.triggerKind == TriggerKind.InWord) {
         if (!input.endsWith(snip.prefix)) continue
         item.textEdit = {
-          newText: item.label, // set it on resolve
+          newText: item.label, // fix it on resolve
           range: Range.create(position.line, position.character - snip.prefix.length, position.line, position.character)
         }
       }
@@ -133,7 +139,11 @@ export class ProviderManager implements CompletionItemProvider {
       let { start } = item.textEdit!.range
       let insertSnippet = await provider.resolveSnippetBody(item.data.body, start)
       item.textEdit.newText = insertSnippet
-      item.detail = item.data.location
+      if (resolveSnippet) {
+        let snip = resolveSnippet(insertSnippet)
+        item.documentation = snip.toString()
+      }
+      // item.detail = item.data.location
     }
     return item
   }

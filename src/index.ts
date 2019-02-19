@@ -101,5 +101,5 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   subscriptions.push(statusItem)
   subscriptions.push(channel)
-  subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim, manager, mru)))
+  subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager, mru)))
 }

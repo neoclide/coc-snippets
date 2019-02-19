@@ -4,7 +4,6 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { BasicList, ListContext, workspace, ListItem } from 'coc.nvim'
 import { ProviderManager } from '../provider'
-import { Neovim } from '@chemzqm/neovim'
 import { Position, Range, Location } from 'vscode-languageserver-protocol'
 import Mru from 'coc.nvim/lib/model/mru'
 import Uri from 'vscode-uri'
@@ -13,9 +12,8 @@ import os from 'os'
 export default class SnippetsList extends BasicList {
   public readonly name = 'snippets'
   public readonly description = 'snippets list'
-  constructor(nvim: Neovim, private manager: ProviderManager, private mru: Mru) {
+  constructor(nvim: any, private manager: ProviderManager, private mru: Mru) {
     super(nvim)
-
     this.addLocationActions()
   }
 
