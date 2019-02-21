@@ -91,12 +91,6 @@ export class ProviderManager implements CompletionItemProvider {
         detail: snip.description,
         insertTextFormat: InsertTextFormat.Snippet,
       }
-      if (snip.description.length <= 20) {
-        Object.assign(item, {
-          label: `${item.label} - ${snip.description}`,
-          detail: null
-        })
-      }
       item.data = {
         provider: snip.provider,
         body: snip.body
@@ -143,7 +137,6 @@ export class ProviderManager implements CompletionItemProvider {
         let snip = resolveSnippet(insertSnippet)
         item.documentation = snip.toString()
       }
-      // item.detail = item.data.location
     }
     return item
   }
