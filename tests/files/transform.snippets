@@ -1,0 +1,9 @@
+priority -60
+
+snippet one "visual transform" b
+${VISUAL/(?P<name>\w+)/, /g}
+endsnippet
+
+snippet two "placeholder transform" b
+${1/^(?P<word>[a-z]+)!(?P=word)$/$1/g}
+endsnippet

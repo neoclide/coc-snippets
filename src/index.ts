@@ -9,6 +9,7 @@ import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { UltiSnipsConfig } from './types'
 import { SnippetsProvider } from './snippetsProvider'
 import { Range, Position } from 'vscode-languageserver-types'
+import { wait } from 'coc.nvim/lib/util'
 
 export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
@@ -27,7 +28,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   if (configuration.get<boolean>('ultisnips.enable', true)) {
     let config = configuration.get<any>('ultisnips', {})
-    let c = Object.assign({}, config, { extends: Object.assign({}, filetypeExtends) } as UltiSnipsConfig)
+    let c = Object.assign({}, config, {
+      extends: Object.assign({}, filetypeExtends)
+    } as UltiSnipsConfig)
     let provider = new UltiSnippetsProvider(c, channel)
     manager.regist(provider, 'ultisnips')
   }
@@ -37,6 +40,28 @@ export async function activate(context: ExtensionContext): Promise<void> {
     let provider = new SnippetsProvider(channel, config)
     manager.regist(provider, 'snippets')
   }
+
+  if (configuration.get<boolean>('autoTrigger', true)) {
+    let insertTs
+    events.on('InsertCharPre', () => {
+      insertTs = Date.now()
+    })
+    events.on(['TextChangedI', 'TextChangedP'], async () => {
+      if (!insertTs || Date.now() - insertTs > 50) return
+      let curr = insertTs
+      await wait(50)
+      let edits = await manager.getTriggerSnippets(true)
+      if (insertTs != curr) return
+      if (edits.length == 0) return
+      await workspace.nvim.call('coc#_hide')
+      if (edits.length > 1) {
+        channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
+      }
+      await commands.executeCommand('editor.action.insertSnippet', edits[0])
+      await mru.add(edits[0].prefix)
+    })
+  }
+
   const statusItem = workspace.createStatusBarItem(90, { progress: true })
   statusItem.text = 'loading snippets'
   statusItem.show()
@@ -68,6 +93,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       await mru.add(edits[idx].prefix)
     }
   }, false))
+
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
     let doc = await workspace.document
     if (!doc) return

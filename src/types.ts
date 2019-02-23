@@ -2,18 +2,17 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { CompletionItem, TextEdit, Position, Range } from 'vscode-languageserver-types'
-import { Document } from 'coc.nvim'
+import { Range } from 'vscode-languageserver-types'
 
 export enum TriggerKind {
   LineBegin,
   WordBoundary,
   InWord,
-  Auto
 }
 
 export interface UltiSnipsConfig {
   enable: boolean
+  usePythonx: boolean
   pythonVersion: number
   directories: string[]
   extends: { [key: string]: string[] }
@@ -37,7 +36,8 @@ export interface Snippet {
   readonly triggerKind: TriggerKind
   readonly priority?: number
   // prefix is expression
-  readonly expression?: boolean
+  readonly regex?: RegExp
+  readonly autoTrigger?: boolean
   provider?: string
 }
 
@@ -58,4 +58,10 @@ export interface FileItem {
   directory: string
   filetype: string
   filepath: string
+}
+
+export interface ReplaceItem {
+  index: number
+  length: number
+  newText: string
 }

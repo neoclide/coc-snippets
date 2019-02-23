@@ -2,17 +2,17 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { workspace, OutputChannel } from 'coc.nvim'
-import fs from 'fs'
-import readline from 'readline'
-import { Snippet, TriggerKind, UltiSnipsFile } from './types'
-import { headTail, trimQuote } from './util'
-import pify from 'pify'
 import { exec } from 'child_process'
+import { OutputChannel } from 'coc.nvim'
+import fs from 'fs'
+import pify from 'pify'
+import readline from 'readline'
 import Parser from './parser'
+import { Snippet, TriggerKind, UltiSnipsFile } from './types'
+import { convertRegex, headTail, getRegexText } from './util'
 
 export default class UltiSnipsParser {
-  constructor(private channel: OutputChannel, private pyMethod: string) {
+  constructor(private pyMethod: string, private channel?: OutputChannel) {
   }
 
   public parseUltisnipsFile(filepath: string): Promise<Partial<UltiSnipsFile>> {
@@ -30,6 +30,9 @@ export default class UltiSnipsParser {
     let extendFiletypes: string[] = []
     rl.on('line', line => {
       line = line.replace(/\s+$/, '')
+      if (line.startsWith('#') && preLines.length == 0) {
+        return
+      }
       const [head, tail] = headTail(line)
       if (head == 'priority' && !block) {
         priority = parseInt(tail.trim())
@@ -50,29 +53,36 @@ export default class UltiSnipsParser {
       } else if (head == 'endsnippet' && block == 'snippet') {
         block = ''
         let body = preLines.join('\n')
-        let parser = new Parser(first)
-        parser.skipSpaces()
-        // parse prefix
-        let quote = parser.curr == '"'
-        let idx = parser.nextIndex(quote ? '"' : ' ', quote)
-        let prefix = trimQuote(parser.eatTo(idx + (quote ? 1 : 0)))
-        parser.skipSpaces()
-        quote = parser.curr == '"'
-        // parse description
-        let description = ''
-        if (quote) {
-          let idx = parser.nextIndex('"', true, false)
-          if (idx !== -1) description = trimQuote(parser.eatTo(idx + 1))
+        // convert placeholder regex
+        body = body.replace(/((?:[^\\]?\$\{[^/]+)\/)(.*?[^\\])(?=\/)/g, (_match, p1, p2) => {
+          return p1 + convertRegex(p2)
+        })
+        let ms = first.match(/^(.+?)(?:\s+(?:"(.*)")?(?:\s+(\w+))?)?$/)
+        let prefix = ms[1]
+        let description = ms[2] || ''
+        let option = ms[3] || ''
+        if (prefix.length > 2 && prefix[0] == prefix[prefix.length - 1] && !/\w/.test(prefix[0])) {
+          prefix = prefix.slice(1, prefix.length - 1)
         }
-        parser.skipSpaces()
-        let option = parser.next(3)
+        let isExpression = option.indexOf('r') !== -1
+        let regex = null
+        if (isExpression) {
+          prefix = convertRegex(prefix)
+          try {
+            regex = new RegExp(prefix)
+            prefix = getRegexText(prefix)
+          } catch (e) {
+            this.error(`Convert regex error for: ${prefix}`)
+          }
+        }
         let snippet: Snippet = {
           filepath,
+          autoTrigger: option.indexOf('A') !== -1,
           lnum: lnum - preLines.length - 1,
-          description,
-          prefix,
           triggerKind: getTriggerKind(option),
-          expression: option.indexOf('r') !== -1,
+          prefix,
+          description,
+          regex,
           body,
           priority
         }
@@ -95,7 +105,8 @@ export default class UltiSnipsParser {
     let parser = new Parser(body)
     let resolved = ''
     while (!parser.eof()) {
-      if (parser.curr == '`') {
+      let p = parser.prev()
+      if (parser.curr == '`' && (!p || p != '\\')) {
         let idx = parser.nextIndex('`', true, false)
         if (idx == -1) {
           resolved = resolved + parser.eatTo(parser.len)
@@ -106,18 +117,16 @@ export default class UltiSnipsParser {
         resolved = resolved + await this.execute(code, pyMethod)
         continue
       } else if (parser.curr == '$') {
-        let next = parser.next()
-        let text = next == '{' ? parser.next(7).slice(1) : parser.next(6)
-        if (text == 'VISUAL') {
-          parser.eat(next == '{' ? 8 : 7)
-          resolved = resolved + `$${next}TM_SELECTED_TEXT`
+        let text = parser.next(7)
+        if (text.startsWith('VISUAL') || text.startsWith('{VISUAL')) {
+          parser.eat(8)
+          resolved = resolved + '$' + text.replace('VISUAL', 'TM_SELECTED_TEXT')
         } else {
           // skip current
-          let ch = parser.eat(1)
-          resolved = resolved + ch
+          resolved += parser.eat(1)
         }
       }
-      let prev = parser.prev()
+      let prev = parser.prev() || ''
       parser.iterate(ch => {
         if (prev !== '\\' && (ch == '`' || ch == '$')) {
           return false
@@ -129,12 +138,13 @@ export default class UltiSnipsParser {
       })
     }
     resolved = decode(resolved)
-    this.channel.appendLine(`[Debug ${(new Date()).toLocaleTimeString()}] resolved: ${resolved}`)
+    this.debug(`resolved: ${resolved}`)
     return resolved
   }
 
   private async execute(code: string, pyMethod: string): Promise<string> {
-    let { nvim } = workspace
+    let { nvim } = require('coc.nvim').workspace
+    if (!nvim) return code
     let res: string = ''
     if (code.startsWith('!')) {
       code = code.trim().slice(1)
@@ -164,7 +174,6 @@ export default class UltiSnipsParser {
         res = await pify(exec)(code)
       } catch (e) {
         res = `Error: ${e.message}`
-        workspace.showMessage(`Failed to execute code: ${code}: ${e.message}`, 'error')
         this.error(`Error on eval ${code}: ` + e.stack)
       }
     }
@@ -172,7 +181,13 @@ export default class UltiSnipsParser {
   }
 
   private error(str: string): void {
+    if (!this.channel) return
     this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] ${str}`)
+  }
+
+  private debug(str: string): void {
+    if (!this.channel) return
+    this.channel.appendLine(`[Debug ${(new Date()).toLocaleTimeString()}] ${str}`)
   }
 }
 

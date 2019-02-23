@@ -4,6 +4,23 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import pify from 'pify'
 import fs from 'fs'
+import { ReplaceItem } from './types'
+
+export function replaceText(content: string, items: ReplaceItem[]) {
+  let res = ''
+  items.sort((a, b) => a.index - b.index)
+  let item = items.shift()
+  for (let i = 0; i < content.length; i++) {
+    let idx = item ? item.index : null
+    if (idx == null || i != idx) {
+      res = res + content[i]
+      continue
+    }
+    res = res + item.newText
+    i = i + item.length
+  }
+  return res
+}
 
 export function flatten<T>(arr: T[][]): T[] {
   return arr.reduce((p, curr) => p.concat(curr), [])
@@ -34,10 +51,10 @@ export async function readdirAsync(filepath: string): Promise<string[]> {
 }
 
 export function headTail(line: string): [string, string] | null {
-  let str = line.trim()
-  if (!str) return ['', '']
-  let ms = str.match(/^(\S+)\s+/)
-  return ms ? [ms[1], str.slice(ms[0].length)] : [str, '']
+  line = line.trim()
+  let ms = line.match(/^(\S+)\s+(.*)/)
+  if (!ms) return [line, '']
+  return [ms[1], ms[2]]
 }
 
 export function memorize<R extends (...args: any[]) => Promise<R>>(_target: any, key: string, descriptor: any): void {
@@ -82,15 +99,14 @@ export function distinct<T>(array: T[], keyFn?: (t: T) => string): T[] {
   })
 }
 
-const conditionRe = /\(\?\(?:\w+\).+\|/
+const conditionRe = /\(\?\(\?:\w+\).+\|/
 const bellRe = /\\a/
 const commentRe = /\(\?#.*?\)/
 const stringStartRe = /\\A/
-const lookBehindRe = /\(\?<[!=].*?\)/
 const namedCaptureRe = /\(\?P<\w+>.*?\)/
 const namedReferenceRe = /\(\?P=(\w+)\)/
 const braceRe = /\^\]/
-const regex = new RegExp(`${bellRe.source}|${commentRe.source}|${stringStartRe.source}|${lookBehindRe.source}|${namedCaptureRe.source}|${namedReferenceRe.source}|${braceRe}`, 'g')
+const regex = new RegExp(`${bellRe.source}|${commentRe.source}|${stringStartRe.source}|${namedCaptureRe.source}|${namedReferenceRe.source}|${braceRe}`, 'g')
 
 /**
  * Convert python regex to javascript regex,
@@ -121,9 +137,43 @@ export function convertRegex(str: string): string {
     if (match == '\\a') return ''
     if (match.startsWith('(?#')) return ''
     if (match == '\\A') return '^'
-    if (match.startsWith('(?<')) return '(?' + match.slice(3)
     if (match.startsWith('(?P<')) return '(?' + match.slice(3)
     if (match.startsWith('(?P=')) return `\\k<${p1}>`
     return ''
   })
+}
+
+export function wait(ms: number): Promise<any> {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve()
+    }, ms)
+  })
+}
+
+export function getRegexText(prefix: string): string {
+  if (prefix.startsWith('^')) prefix = prefix.slice(1)
+  let content = ''
+  if (prefix.startsWith('(')) {
+    let count = 1
+    let pre = ''
+    for (let i = 0; i < prefix.length; i++) {
+      let ch = prefix[i]
+      if (ch == '(' && pre != '\\') {
+        count = count + 1
+      } else if (ch == ')' && pre != '\\') {
+        count = count - 1
+        if (count == 0) {
+          content = prefix.slice(i + 1)
+          break
+        }
+      }
+      pre = ch
+    }
+  } else {
+    content = prefix
+  }
+  if (/\\w/.test(content)) return ''
+  if (/(^|[^\\])[+?.{(\[]/.test(content)) return ''
+  return content
 }

@@ -51,14 +51,16 @@ export class ProviderManager implements CompletionItemProvider {
     return files
   }
 
-  public async getTriggerSnippets(): Promise<SnippetEdit[]> {
-    let { document, position } = await workspace.getCurrentState()
-    let doc = workspace.getDocument(document.uri)
+  public async getTriggerSnippets(autoTrigger = false): Promise<SnippetEdit[]> {
+    let bufnr = await workspace.nvim.call('bufnr', '%')
+    let doc = workspace.getDocument(bufnr)
+    if (!doc) return []
+    let position = await workspace.getCursorPosition()
     let names = Array.from(this.providers.keys())
     let list: SnippetEdit[] = []
     for (let name of names) {
       let provider = this.providers.get(name)
-      let items = await provider.getTriggerSnippets(doc, position)
+      let items = await provider.getTriggerSnippets(doc, position, autoTrigger)
       for (let item of items) {
         if (list.findIndex(o => o.prefix == item.prefix) == -1) {
           list.push(item)
@@ -82,6 +84,7 @@ export class ProviderManager implements CompletionItemProvider {
     let res: CompletionItem[] = []
     for (let snip of snippets) {
       let lineBeggining = ahead.trim().length == 0
+      if (snip.regex != null && snip.prefix == '') continue
       let head = this.getPrefixHead(doc, snip.prefix)
       if (!head && input.length == 0) continue
       let item: CompletionItem = {
@@ -95,17 +98,20 @@ export class ProviderManager implements CompletionItemProvider {
         provider: snip.provider,
         body: snip.body
       }
-      if (head) {
-        if (ahead.endsWith(head)) {
-          lineBeggining = ahead.slice(0, - head.length).trim().length == 0
-          let prefix = snip.prefix.slice(head.length)
-          Object.assign(item, {
-            textEdit: {
-              range: Range.create({ line: position.line, character: col - head.length }, position),
-              newText: prefix
-            }
-          })
-        }
+      if (snip.regex) {
+        let content = ahead + snip.prefix
+        let ms = content.match(snip.regex)
+        if (!ms) continue
+        lineBeggining = content.slice(0, content.length - ms[0].length).trim() == ''
+      } else if (head && ahead.endsWith(head)) {
+        lineBeggining = ahead.slice(0, - head.length).trim().length == 0
+        let prefix = snip.prefix.slice(head.length)
+        Object.assign(item, {
+          textEdit: {
+            range: Range.create({ line: position.line, character: col - head.length }, position),
+            newText: prefix
+          }
+        })
       }
       if (snip.triggerKind == TriggerKind.LineBegin && !lineBeggining) continue
       if (snip.triggerKind == TriggerKind.InWord) {

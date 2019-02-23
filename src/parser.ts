@@ -43,13 +43,13 @@ export default class Parser {
     return this._content.slice(this._curr + 1, this._curr + 1 + count)
   }
 
-  nextIndex(character: string, checkbackspace = true, allowEnd = true): number {
+  nextIndex(character: string, checkEscape = true, allowEnd = true): number {
     if (this._curr >= this.len - 1) return allowEnd ? this.len - 1 : -1
     let i = this._curr + 1
     let pre = this.curr || ''
     while (i != this.len - 1) {
       let ch = this._content[i]
-      if (ch == character && (!checkbackspace || pre !== '\\')) {
+      if (ch == character && (!checkEscape || pre !== '\\')) {
         break
       }
       pre = ch
@@ -77,6 +77,7 @@ export default class Parser {
 
   eat(count: number): string {
     let end = this._curr + count
+    end = Math.min(end, this.len)
     let str = this._content.slice(this._curr, end)
     this._curr = end
     return str

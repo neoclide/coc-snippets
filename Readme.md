@@ -16,7 +16,9 @@ It's capable of:
 
 - Use same keys for jump placeholder.
 - Nested snippet support.
-- Most importantly, it never slows you down.
+- Always async, never slows you down.
+- Improved match for complete items with TextEdit support.
+- Edit snippet by `:CocList snippets`, sorted by mru.
 
 ## Install
 
@@ -50,19 +52,19 @@ To open snippet files, use command:
 
 ## Ultisnips features
 
-Your UltiSnips snippets should work most of time, but sometimes not, check out
-feature list below:
+Some ultisnips features are **not** supported:
 
 - [x] Position check of trigger option, including `b`, `w` and `i`.
 - [x] Execute vim, python and shell code in snippet.
 - [x] Visual text in placeholder.
-- [x] Placeholder transform.
+- [x] Placeholder and variable transform.
+- [x] Expression snippet.
+- [x] Automatic trigger snippet.
 - [ ] Context snippets.
-- [ ] Expression snippet (will support).
-- [ ] Automatic trigger snippet (will support).
-- [ ] Execute shell code with custom shabang (will not support).
-- [ ] Reformat snippet after change of placeholder (will not support).
-- [ ] Snippet actions (will not support).
+- [ ] Execute shell code with custom shabang.
+- [ ] Automatic reformat snippet after change of placeholder.
+- [ ] Format related snippet options, including `t`, `s` and `m`.
+- [ ] Snippet actions.
 
 ## Options
 
@@ -90,8 +92,7 @@ feature list below:
 ## Regular expression convert
 
 Python regular expression of UltiSnips would be converted to javascript regex, however some
-patterns are not supported, including `(?s)`, `\Z`, `(?(id/name)yes-pattern|no-pattern)`,
-`(?x)` and free space syntax of multiple line regular expression.
+patterns are not supported, including `(?s)`, `\Z`, `(?(id/name)yes-pattern|no-pattern)`.
 
 The failed snippets would not be loaded, you can checkout the errors by open
 output channel:

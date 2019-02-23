@@ -15,7 +15,6 @@ import { readdirAsync, readFileAsync, statAsync, writeFileAsync } from './util'
 
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
-  private pythonVersion: number
   private pythonCode: string
   private pyMethod: string
   private disposables: Disposable[] = []
@@ -23,38 +22,32 @@ export class UltiSnippetsProvider extends BaseProvider {
   private parser: UltiSnipsParser
   constructor(config: UltiSnipsConfig, private channel: OutputChannel) {
     super(config)
-    this.pythonVersion = config.pythonVersion || 3
     this.directories = this.config.directories.map(s => {
       return s.startsWith('~') ? os.homedir() + s.slice(1) : s
     })
 
     workspace.onDidSaveTextDocument(async doc => {
       let filepath = Uri.parse(doc.uri).fsPath
-      if (this.filenames.indexOf(filepath) != -1) {
-        let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
-        await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
-      }
+      let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
+      if (snippetFile) await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
     }, null, this.disposables)
   }
 
-  private get filenames(): string[] {
-    return this.snippetFiles.map(o => o.filepath)
-  }
-
   public async init(): Promise<void> {
-    let { pythonVersion } = this
+    let { config } = this
+    let hasPythonx = await workspace.nvim.call('has', ['pythonx'])
     this.pythonCode = await readFileAsync(path.join(__dirname, '../python/ultisnips.py'), 'utf8')
-    if (workspace.isVim) {
+    if (hasPythonx && config.usePythonx) {
       this.pyMethod = 'pyx'
     } else {
-      this.pyMethod = pythonVersion == 3 ? 'py3' : 'py'
+      this.pyMethod = config.pythonVersion == 3 ? 'py3' : 'py'
     }
-    this.parser = new UltiSnipsParser(this.channel, this.pyMethod)
+    this.parser = new UltiSnipsParser(this.pyMethod, this.channel)
     let arr = await this.getAllSnippetFiles()
     await Promise.all(arr.map(({ filepath, directory, filetype }) => {
       return this.loadSnippetsFromFile(filetype, directory, filepath)
     }))
-    if (this.pythonCode && this.pyMethod) {
+    if (this.pythonCode) {
       let { nvim } = workspace
       let tmpfile = path.join(os.tmpdir(), 'coc-ultisnips.py')
       await writeFileAsync(tmpfile, this.pythonCode)
@@ -113,28 +106,36 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
     return this.parser.resolveUltisnipsBody(body)
   }
 
-  public async getTriggerSnippets(document: Document, position: Position): Promise<SnippetEdit[]> {
+  public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
     let { filetype } = document
     let snippets = this.getSnippets(filetype)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
     if (!line || line[line.length - 1] == ' ') return []
     snippets = snippets.filter(s => {
-      if (s.triggerKind == TriggerKind.Auto) return false
-      let { prefix } = s
+      let { prefix, regex } = s
+      if (autoTrigger && !s.autoTrigger) return false
+      if (regex) {
+        let ms = line.match(regex)
+        if (!ms) return false
+        prefix = ms[0]
+      }
       if (!line.endsWith(prefix)) return false
       if (s.triggerKind == TriggerKind.InWord) return true
       let pre = line.slice(0, line.length - prefix.length)
-      if (s.triggerKind == TriggerKind.LineBegin) {
-        return pre.trim() == ''
-      }
-      if (s.triggerKind == TriggerKind.WordBoundary) {
-        return pre.length == 0 || !document.isWord(pre[pre.length - 1])
-      }
+      if (s.triggerKind == TriggerKind.LineBegin) return pre.trim() == ''
+      if (s.triggerKind == TriggerKind.WordBoundary) return pre.length == 0 || !document.isWord(pre[pre.length - 1])
+      return false
     })
     let edits: SnippetEdit[] = []
     for (let s of snippets) {
-      let character = position.character - s.prefix.length
+      let character: number
+      if (s.regex == null) {
+        character = position.character - s.prefix.length
+      } else {
+        let len = line.match(s.regex)[0].length
+        character = position.character - len
+      }
       let newText = await this.resolveSnippetBody(s.body, position)
       edits.push({
         prefix: s.prefix,

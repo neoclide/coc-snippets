@@ -56,7 +56,8 @@ export class SnippetsProvider extends BaseProvider {
     return []
   }
 
-  public async getTriggerSnippets(document: Document, position: Position): Promise<SnippetEdit[]> {
+  public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
+    if (autoTrigger) return []
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
     let snippets = this.getSnippets(document.filetype)
