@@ -9,7 +9,7 @@ import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { UltiSnipsConfig } from './types'
 import { SnippetsProvider } from './snippetsProvider'
 import { Range, Position } from 'vscode-languageserver-types'
-import { wait } from 'coc.nvim/lib/util'
+import { wait } from './util'
 
 export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
