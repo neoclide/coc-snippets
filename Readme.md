@@ -2,7 +2,7 @@
 
 Snippets solution for [coc.nvim](https://github.com/neoclide/coc.nvim)
 
-![2018-12-28 23_38_04](https://user-images.githubusercontent.com/251450/50520168-c2a15c00-0af9-11e9-8842-8205902a324b.gif)
+![2019-02-24 12_04_54](https://user-images.githubusercontent.com/251450/53295003-8570f600-382c-11e9-9e3b-5d4ce2689661.gif)
 
 It's capable of:
 
