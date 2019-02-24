@@ -39,6 +39,17 @@
           "default": "S",
           "description": "Shortcut in completion menu."
         },
+        "snippets.expandFallbackWithPum": {
+          "type": "string",
+          "default": "refresh",
+          "description": "Fallback action when expand failed and pumvisible.",
+          "enum": [
+            "refresh",
+            "confirm",
+            "next",
+            "none"
+          ]
+        },
         "snippets.triggerCharacters": {
           "type": "array",
           "default": [],

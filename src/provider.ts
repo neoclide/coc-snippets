@@ -146,7 +146,7 @@ export class ProviderManager implements CompletionItemProvider {
       item.textEdit.newText = insertSnippet
       if (snippetManager) {
         let snip = snippetManager.resolveSnippet(insertSnippet)
-        item.documentation = snip.toString() + '\n\n' + (item.data.filepath || '')
+        item.documentation = snip.toString()
       }
     }
     return item

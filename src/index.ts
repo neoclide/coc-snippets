@@ -74,10 +74,29 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   if (manager.hasProvider) {
     let disposable = languages.registerCompletionItemProvider(
-      'coc-snippets', 'S', null,
+      'snippets', 'S', null,
       manager, configuration.get<string[]>('triggerCharacters', []),
       configuration.get<number>('priority', 90))
     subscriptions.push(disposable)
+  }
+
+  async function fallback(): Promise<void> {
+    let { nvim } = workspace
+    let visible = await nvim.call('pumvisible')
+    if (visible) {
+      let action = configuration.get<string>('expandFallbackWithPum', 'refresh')
+      if (action == 'refresh') {
+        await nvim.call('coc#start', [{ source: 'snippets' }])
+      } else if (action == 'next') {
+        await nvim.eval(`feedkeys("\\<C-n>", 'in')`)
+      } else if (action == 'confirm') {
+        await nvim.call('coc#_select', [])
+      } else {
+        workspace.showMessage('No match snippet found', 'warning')
+      }
+      return
+    }
+    await nvim.call('coc#start', [{ source: 'snippets' }])
   }
 
   async function doExpand(): Promise<boolean> {
@@ -97,11 +116,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
     let expanded = await doExpand()
-    if (!expanded) workspace.showMessage('No matching snippet found', 'warning')
-  }, true))
+    if (!expanded) await fallback()
+  }, { silent: true, sync: true, cancel: false }))
 
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', async () => {
-    let { nvim } = workspace
     let expanded = await doExpand()
     if (!expanded) {
       let bufnr = await workspace.nvim.call('bufnr', '%')
@@ -110,14 +128,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
         await snippetManager.nextPlaceholder()
         return
       }
-      let visible = await nvim.call('pumvisible')
-      if (visible) {
-        await nvim.call('coc#_select', [])
-      } else {
-        await nvim.call('coc#start', [])
-      }
+      await fallback()
     }
-  }, true))
+  }, { silent: true, sync: true, cancel: false }))
 
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
     let doc = await workspace.document
@@ -148,7 +161,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     }
     await nvim.setVar('coc_selected_text', text)
     await workspace.moveTo(range.start)
-  }, false))
+  }, { silent: true, sync: false, cancel: true }))
 
   subscriptions.push(statusItem)
   subscriptions.push(channel)
