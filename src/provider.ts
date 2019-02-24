@@ -6,6 +6,7 @@ import { CompleteOption, CompletionItemProvider, Document, workspace, snippetMan
 import { CancellationToken, CompletionContext, CompletionItem, Disposable, InsertTextFormat, Position, Range, TextDocument, CompletionItemKind } from 'vscode-languageserver-protocol'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { flatten } from './util'
+import path from 'path'
 import BaseProvider from './baseProvider'
 
 export class ProviderManager implements CompletionItemProvider {
@@ -80,31 +81,32 @@ export class ProviderManager implements CompletionItemProvider {
     let snippets = await this.getSnippets()
     let currline = doc.getline(position.line, true)
     let { input, col } = (context as any).option! as CompleteOption
-    let ahead = currline.slice(0, col)
+    let before_content = currline.slice(0, col)
     let res: CompletionItem[] = []
     for (let snip of snippets) {
-      let lineBeggining = ahead.trim().length == 0
+      let lineBeggining = before_content.trim().length == 0
       if (snip.regex != null && snip.prefix == '') continue
       let head = this.getPrefixHead(doc, snip.prefix)
-      if (!head && input.length == 0) continue
+      if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
       let item: CompletionItem = {
         label: snip.prefix,
         kind: CompletionItemKind.Snippet,
         filterText: snip.prefix,
         detail: snip.description,
-        insertTextFormat: InsertTextFormat.Snippet,
+        insertTextFormat: InsertTextFormat.Snippet
       }
       item.data = {
         provider: snip.provider,
-        body: snip.body
+        body: snip.body,
+        filepath: `${path.basename(snip.filepath)}:${snip.lnum}`
       }
       if (snip.regex) {
-        let content = ahead + snip.prefix
+        let content = before_content + snip.prefix
         let ms = content.match(snip.regex)
         if (!ms) continue
         lineBeggining = content.slice(0, content.length - ms[0].length).trim() == ''
-      } else if (head && ahead.endsWith(head)) {
-        lineBeggining = ahead.slice(0, - head.length).trim().length == 0
+      } else if (head && before_content.endsWith(head)) {
+        lineBeggining = before_content.slice(0, - head.length).trim().length == 0
         let prefix = snip.prefix.slice(head.length)
         Object.assign(item, {
           textEdit: {
@@ -112,15 +114,18 @@ export class ProviderManager implements CompletionItemProvider {
             newText: prefix
           }
         })
+      } else if (input.length == 0) {
+        let { prefix } = snip
+        lineBeggining = /^\s*$/.test(before_content.slice(0, - prefix.length))
+        Object.assign(item, {
+          preselect: true,
+          textEdit: {
+            range: Range.create({ line: position.line, character: col - prefix.length }, position),
+            newText: prefix
+          }
+        })
       }
       if (snip.triggerKind == TriggerKind.LineBegin && !lineBeggining) continue
-      if (snip.triggerKind == TriggerKind.InWord) {
-        if (!input.endsWith(snip.prefix)) continue
-        item.textEdit = {
-          newText: item.label, // fix it on resolve
-          range: Range.create(position.line, position.character - snip.prefix.length, position.line, position.character)
-        }
-      }
       if (!item.textEdit) {
         item.textEdit = {
           range: Range.create({ line: position.line, character: col }, position),
@@ -141,7 +146,7 @@ export class ProviderManager implements CompletionItemProvider {
       item.textEdit.newText = insertSnippet
       if (snippetManager) {
         let snip = snippetManager.resolveSnippet(insertSnippet)
-        item.documentation = snip.toString()
+        item.documentation = snip.toString() + '\n\n' + (item.data.filepath || '')
       }
     }
     return item

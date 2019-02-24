@@ -41,6 +41,12 @@ let g:coc_snippet_next = '<c-j>'
 let g:coc_snippet_prev = '<c-k>'
 ```
 
+```vim
+" Expand snippet or jump placeholder, when failed trigger completion when pum
+not visible
+imap <C-j> <Plug>(coc-snippets-expand-jump)
+```
+
 **Note**: you can use same key for both expand snippet and jump forward, jump
 forward would always have higher priority.
 

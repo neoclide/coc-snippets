@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { ExtensionContext, events, listManager, commands, languages, workspace, VimCompleteItem } from 'coc.nvim'
+import { ExtensionContext, events, listManager, commands, languages, workspace, VimCompleteItem, snippetManager } from 'coc.nvim'
 import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
@@ -80,9 +80,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
     subscriptions.push(disposable)
   }
 
-  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
+  async function doExpand(): Promise<boolean> {
     let edits = await manager.getTriggerSnippets()
-    if (edits.length == 0) return workspace.showMessage('No matching snippet found', 'warning')
+    if (edits.length == 0) return false
     if (edits.length == 1) {
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
@@ -92,7 +92,32 @@ export async function activate(context: ExtensionContext): Promise<void> {
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
     }
-  }, false))
+    return true
+  }
+
+  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
+    let expanded = await doExpand()
+    if (!expanded) workspace.showMessage('No matching snippet found', 'warning')
+  }, true))
+
+  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', async () => {
+    let { nvim } = workspace
+    let expanded = await doExpand()
+    if (!expanded) {
+      let bufnr = await workspace.nvim.call('bufnr', '%')
+      let session = snippetManager.getSession(bufnr)
+      if (session && session.isActive) {
+        await snippetManager.nextPlaceholder()
+        return
+      }
+      let visible = await nvim.call('pumvisible')
+      if (visible) {
+        await nvim.call('coc#_select', [])
+      } else {
+        await nvim.call('coc#start', [])
+      }
+    }
+  }, true))
 
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
     let doc = await workspace.document
