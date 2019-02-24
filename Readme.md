@@ -56,11 +56,13 @@ Some ultisnips features are **not** supported:
 
 - [x] Position check of trigger option, including `b`, `w` and `i`.
 - [x] Execute vim, python and shell code in snippet.
+- [x] Extends & priority command in snippet file.
 - [x] Visual text in placeholder.
 - [x] Placeholder and variable transform.
 - [x] Expression snippet.
 - [x] Automatic trigger snippet.
 - [ ] Context snippets.
+- [ ] Support loading snipmate snippets.
 - [ ] Execute shell code with custom shabang.
 - [ ] Automatic reformat snippet after change of placeholder.
 - [ ] Format related snippet options, including `t`, `s` and `m`.
