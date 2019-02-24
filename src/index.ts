@@ -75,7 +75,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   if (manager.hasProvider) {
     let disposable = languages.registerCompletionItemProvider(
       'coc-snippets', 'S', null,
-      manager, [],
+      manager, configuration.get<string[]>('triggerCharacters', []),
       configuration.get<number>('priority', 90))
     subscriptions.push(disposable)
   }

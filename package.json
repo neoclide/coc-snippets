@@ -39,6 +39,14 @@
           "default": "S",
           "description": "Shortcut in completion menu."
         },
+        "snippets.triggerCharacters": {
+          "type": "array",
+          "default": [],
+          "description": "Trigger characters for trigger snippets completion.",
+          "items": {
+            "type": "string"
+          }
+        },
         "snippets.autoTrigger": {
           "type": "boolean",
           "default": true,
