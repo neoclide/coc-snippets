@@ -168,9 +168,10 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
       let files = snippetFiles.filter(o => o.filetype == filetype)
       for (let { snippets } of files) {
         for (let snip of snippets) {
-          let exists = snippetsMap.get(snip.prefix)
+          let key = `${snip.prefix}-${snip.triggerKind}`
+          let exists = snippetsMap.get(key)
           if (!exists || snip.priority > exists.priority) {
-            snippetsMap.set(snip.prefix, snip)
+            snippetsMap.set(key, snip)
           }
         }
       }
