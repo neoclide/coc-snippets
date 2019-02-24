@@ -183,8 +183,6 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
     let { nvim } = workspace
     let { directories } = this
     let res: FileItem[] = []
-    let opt = await nvim.eval('&rtp') as string
-    let rtps = opt.split(',')
     let folders: string[] = []
     for (let directory of directories) {
       if (path.isAbsolute(directory)) {
@@ -195,6 +193,8 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
       }
     }
     if (folders.length) {
+      let opt = await nvim.eval('&rtp') as string
+      let rtps = opt.split(',')
       for (let rtp of rtps) {
         for (let directory of folders) {
           let items = await this.getSnippetFileItems(path.join(rtp, directory))
@@ -215,7 +215,7 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
           let file = path.join(directory, f)
           if (file.endsWith('.snippets')) {
             let basename = path.basename(f, '.snippets')
-            let [filetype] = basename.split('_', 2)
+            let filetype = basename.split(/[-_]/, 2)[0]
             res.push({ filepath: file, directory, filetype })
           } else {
             let stat = await statAsync(file)
