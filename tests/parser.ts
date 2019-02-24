@@ -1,5 +1,6 @@
 import UltiSnipsParser from '../src/ultisnipsParser'
 import path from 'path'
+import fs from 'fs'
 import { TriggerKind } from '../src/types'
 
 describe('ultisnips parser', () => {
@@ -58,5 +59,15 @@ describe('ultisnips parser', () => {
     let parser = new UltiSnipsParser('pyx')
     let res = await parser.resolveUltisnipsBody('\\`\\{}\\`')
     expect(res).toBe('`{}`')
+  })
+
+  it('should load snippets of vim-snippets', async () => {
+    let parser = new UltiSnipsParser('pyx')
+    let dir = path.join(__dirname, '../snippets')
+    let files = fs.readdirSync(dir, 'utf8')
+    for (let file of files) {
+      let filepath = path.join(dir, file)
+      await parser.parseUltisnipsFile(filepath)
+    }
   })
 })

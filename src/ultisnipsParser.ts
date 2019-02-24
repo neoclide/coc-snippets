@@ -29,13 +29,11 @@ export default class UltiSnipsParser {
     let lnum = 0
     let extendFiletypes: string[] = []
     rl.on('line', line => {
-      line = line.replace(/\s+$/, '')
-      if (line.startsWith('#') && preLines.length == 0) {
-        return
-      }
+      if (!block && (line.startsWith('#') || line.length == 0)) return
       const [head, tail] = headTail(line)
       if (head == 'priority' && !block) {
-        priority = parseInt(tail.trim())
+        let n = parseInt(tail.trim(), 10)
+        if (!isNaN(n)) priority = n
       } else if (head == 'extends') {
         let fts = tail.trim().split(/,\s+/)
         for (let ft of fts) {
@@ -52,42 +50,47 @@ export default class UltiSnipsParser {
         preLines = []
       } else if (head == 'endsnippet' && block == 'snippet') {
         block = ''
-        let body = preLines.join('\n')
-        // convert placeholder regex
-        body = body.replace(/((?:[^\\]?\$\{[^/]+)\/)(.*?[^\\])(?=\/)/g, (_match, p1, p2) => {
-          return p1 + convertRegex(p2)
-        })
-        let ms = first.match(/^(.+?)(?:\s+(?:"(.*)")?(?:\s+(\w+))?)?$/)
-        let prefix = ms[1]
-        let description = ms[2] || ''
-        let option = ms[3] || ''
-        if (prefix.length > 2 && prefix[0] == prefix[prefix.length - 1] && !/\w/.test(prefix[0])) {
-          prefix = prefix.slice(1, prefix.length - 1)
-        }
-        let isExpression = option.indexOf('r') !== -1
-        let regex = null
-        if (isExpression) {
-          prefix = convertRegex(prefix)
-          try {
-            regex = new RegExp(prefix)
-            prefix = getRegexText(prefix)
-          } catch (e) {
-            this.error(`Convert regex error for: ${prefix}`)
+        try {
+          let body = preLines.join('\n')
+          // convert placeholder regex to javascript regex
+          body = body.replace(/((?:[^\\]?\$\{[^/]+)\/)(.*?[^\\])(?=\/)/g, (_match, p1, p2) => {
+            return p1 + convertRegex(p2)
+          })
+          let ms = first.match(/^(.+?)(?:\s+(?:"(.*)")?(?:\s+(\w+))?)?$/)
+          let prefix = ms[1]
+          let description = ms[2] || ''
+          let option = ms[3] || ''
+          if (prefix.length > 2 && prefix[0] == prefix[prefix.length - 1] && !/\w/.test(prefix[0])) {
+            prefix = prefix.slice(1, prefix.length - 1)
           }
+          let isExpression = option.indexOf('r') !== -1
+          let regex = null
+          if (isExpression) {
+            prefix = convertRegex(prefix)
+            try {
+              regex = new RegExp(prefix)
+              prefix = getRegexText(prefix)
+            } catch (e) {
+              this.error(`Convert regex error for: ${prefix}`)
+            }
+          }
+          let snippet: Snippet = {
+            filepath,
+            autoTrigger: option.indexOf('A') !== -1,
+            lnum: lnum - preLines.length - 1,
+            triggerKind: getTriggerKind(option),
+            prefix,
+            description,
+            regex,
+            body,
+            priority
+          }
+          snippets.push(snippet)
+        } catch (e) {
+          this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1}`)
+        } finally {
+          preLines = []
         }
-        let snippet: Snippet = {
-          filepath,
-          autoTrigger: option.indexOf('A') !== -1,
-          lnum: lnum - preLines.length - 1,
-          triggerKind: getTriggerKind(option),
-          prefix,
-          description,
-          regex,
-          body,
-          priority
-        }
-        snippets.push(snippet)
-        preLines = []
       } else if (block == 'snippet' || block == 'global') {
         preLines.push(line)
       }
