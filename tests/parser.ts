@@ -26,7 +26,7 @@ describe('ultisnips parser', () => {
     expect(res.snippets[3].prefix).toBe('inword')
     expect(res.snippets[3].triggerKind).toBe(TriggerKind.InWord)
 
-    expect(res.snippets[4].prefix).toBe('')
+    expect(res.snippets[4].prefix).toBe('.')
     expect(res.snippets[4].regex != null).toBe(true)
 
 

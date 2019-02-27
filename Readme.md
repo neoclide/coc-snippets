@@ -68,10 +68,16 @@ Some ultisnips features are **not** supported:
 - [x] Automatic trigger snippet.
 - [ ] Context snippets.
 - [ ] Support loading snipmate snippets.
-- [ ] Execute shell code with custom shabang.
+- [ ] Execute shell code with custom shabang (will not support because it's
+      dangerous).
 - [ ] Automatic reformat snippet after change of placeholder.
 - [ ] Format related snippet options, including `t`, `s` and `m`.
 - [ ] Snippet actions.
+
+**Note** coc-snippets convert UltiSnips snippets to textmate snippets and send
+it to coc's snippets manager, format snippets after snippet insert will not be
+supported except for placeholder transform which also supported by textmate
+snippet.
 
 ## Options
 

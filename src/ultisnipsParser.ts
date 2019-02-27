@@ -64,11 +64,12 @@ export default class UltiSnipsParser {
             prefix = prefix.slice(1, prefix.length - 1)
           }
           let isExpression = option.indexOf('r') !== -1
-          let regex = null
+          let regex: RegExp = null
           if (isExpression) {
             prefix = convertRegex(prefix)
             try {
               regex = new RegExp(prefix)
+              // get the real text
               prefix = getRegexText(prefix)
             } catch (e) {
               this.error(`Convert regex error for: ${prefix}`)
