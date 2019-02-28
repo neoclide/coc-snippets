@@ -30,6 +30,7 @@ export default class UltiSnipsParser {
     let clearsnippets = null
     let extendFiletypes: string[] = []
     rl.on('line', line => {
+      lnum += 1
       if (!block && (line.startsWith('#') || line.length == 0)) return
       const [head, tail] = headTail(line)
       if (!block) {
@@ -97,7 +98,7 @@ export default class UltiSnipsParser {
             filepath,
             originRegex,
             autoTrigger: option.indexOf('A') !== -1,
-            lnum: lnum - preLines.length - 1,
+            lnum: lnum - preLines.length - 2,
             triggerKind: getTriggerKind(option),
             prefix,
             description,
@@ -116,7 +117,6 @@ export default class UltiSnipsParser {
         preLines.push(line)
         return
       }
-      lnum += 1
     })
     return new Promise(resolve => {
       rl.on('close', async () => {

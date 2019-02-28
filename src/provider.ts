@@ -101,10 +101,10 @@ export class ProviderManager implements CompletionItemProvider {
         filepath: `${path.basename(snip.filepath)}:${snip.lnum}`
       }
       if (snip.regex) {
+        if (!input.length || snip.prefix && input[0] != snip.prefix[0]) continue
         let content = before_content + snip.prefix
         let ms = content.match(snip.regex)
         if (!ms) continue
-        contentBehind = content.slice(0, content.length - ms[0].length)
       } else if (head && before_content.endsWith(head)) {
         contentBehind = before_content.slice(0, - head.length)
         let prefix = snip.prefix.slice(head.length)

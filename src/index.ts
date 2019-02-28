@@ -111,6 +111,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
     }
+    await workspace.nvim.setVar('coc_selected_text', '')
     return true
   }
 
@@ -136,7 +137,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     let doc = await workspace.document
     if (!doc) return
     let { nvim } = workspace
-    let mode = await nvim.call('visualmode')
+    let mode = await nvim.call('mode')
     if (['v', 'V'].indexOf(mode) == -1) return
     await nvim.call('feedkeys', [String.fromCharCode(27), 'in'])
     await nvim.command('normal! `<')

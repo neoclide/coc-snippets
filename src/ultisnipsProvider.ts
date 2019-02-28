@@ -81,8 +81,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     let { nvim } = workspace
     let { body } = snippet
     let filepath = await nvim.buffer.name
-    let visualText = ''
-    visualText = visualText || ''
+    let visualText = (await nvim.getVar('')) as string || ''
     if (body.indexOf('`!p') !== -1) {
       let values: Map<number, string> = new Map()
       body.replace(/\$\{(\d+):([^}]+)\}/, (_, p1, p2) => {
@@ -100,7 +99,7 @@ path = '${filepath}'
 snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line + 1}, ${position.character + 1}), (${position.line + 1}, ${position.character + 1})) `
       if (snippet.originRegex) {
         pyCode = pyCode + '\n' + `pattern = re.compile(r"${snippet.originRegex.replace(/"/g, '\\"')}")
-snip.match = pattern.search("${line.replace(/"/g, '\\"')}")`
+match = pattern.search("${line.replace(/"/g, '\\"')}")`
       }
       await nvim.command(`${this.pyMethod} ${pyCode}`)
     }
