@@ -61,7 +61,7 @@ Some ultisnips features are **not** supported:
 
 - [x] Position check of trigger option, including `b`, `w` and `i`.
 - [x] Execute vim, python and shell code in snippet.
-- [x] Extends & priority command in snippet file.
+- [x] `extends`, `priority` and `clearsnippets` command in snippet file.
 - [x] Visual text in placeholder.
 - [x] Placeholder and variable transform.
 - [x] Expression snippet.

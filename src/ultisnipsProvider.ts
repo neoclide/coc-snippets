@@ -11,7 +11,7 @@ import Uri from 'vscode-uri'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
-import { readdirAsync, readFileAsync, statAsync, writeFileAsync } from './util'
+import { readdirAsync, readFileAsync, statAsync, writeFileAsync, distinct } from './util'
 
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
@@ -57,26 +57,20 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   public async loadSnippetsFromFile(filetype: string, directory: string, filepath: string): Promise<void> {
-    let { snippets, pythonCode, extendFiletypes } = await this.parser.parseUltisnipsFile(filepath)
+    let { snippets, pythonCode, extendFiletypes, clearsnippets } = await this.parser.parseUltisnipsFile(filepath)
     let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.snippetFiles.splice(idx, 1)
     this.snippetFiles.push({
       extendFiletypes,
+      clearsnippets,
       directory,
       filepath,
       filetype,
       snippets
     })
-    if (extendFiletypes && extendFiletypes.length) {
-      let filetypes = this.config.extends[filetype] || []
-      filetypes = filetypes.slice()
-      for (let ft of extendFiletypes) {
-        if (filetypes.indexOf(ft) == -1) {
-          filetypes.push(ft)
-        }
-      }
-      this.config.extends[filetype] = filetypes
-    }
+    let filetypes = this.config.extends[filetype] || []
+    filetypes = filetypes.concat(extendFiletypes)
+    this.config.extends[filetype] = distinct(filetypes)
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
     this.pythonCode = this.pythonCode + '\n' + pythonCode
   }
@@ -161,23 +155,39 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
   }
 
   public getSnippets(filetype: string): Snippet[] {
-    let snippetsMap: Map<string, Snippet> = new Map()
     let filetypes = this.getFiletypes(filetype)
     filetypes.push('all')
-    let snippetFiles = this.snippetFiles
-    for (let filetype of filetypes) {
-      let files = snippetFiles.filter(o => o.filetype == filetype)
-      for (let { snippets } of files) {
-        for (let snip of snippets) {
-          let key = `${snip.prefix}-${snip.triggerKind}`
-          let exists = snippetsMap.get(key)
-          if (!exists || snip.priority > exists.priority) {
-            snippetsMap.set(key, snip)
+    let snippetFiles = this.snippetFiles.filter(o => filetypes.indexOf(o.filetype) !== -1)
+    let min: number = null
+    let result: Snippet[] = []
+    snippetFiles.sort((a, b) => {
+      if (a.filetype == b.filetype) return 1
+      if (a.filetype == filetype) return -1
+      return 1
+    })
+    for (let file of snippetFiles) {
+      let { snippets, clearsnippets } = file
+      if (typeof clearsnippets == 'number') {
+        min = min ? Math.max(min, clearsnippets) : clearsnippets
+      }
+      for (let snip of snippets) {
+        if (snip.regex || snip.context) {
+          result.push(snip)
+        } else {
+          let idx = result.findIndex(o => o.prefix == snip.prefix && o.triggerKind == snip.triggerKind)
+          if (idx == -1) {
+            result.push(snip)
+          } else {
+            let item = result[idx]
+            if (snip.priority > item.priority) {
+              result[idx] = item
+            }
           }
         }
       }
     }
-    return Array.from(snippetsMap.values())
+    if (min != null) result = result.filter(o => o.priority >= min)
+    return result
   }
 
   public async getAllSnippetFiles(): Promise<FileItem[]> {
@@ -216,7 +226,7 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
           let file = path.join(directory, f)
           if (file.endsWith('.snippets')) {
             let basename = path.basename(f, '.snippets')
-            let filetype = basename.split(/[-_]/, 2)[0]
+            let filetype = basename.split('_', 2)[0]
             res.push({ filepath: file, directory, filetype })
           } else {
             let stat = await statAsync(file)

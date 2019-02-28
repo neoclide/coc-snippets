@@ -27,29 +27,50 @@ export default class UltiSnipsParser {
     let first: string
     let priority = 0
     let lnum = 0
+    let clearsnippets = null
     let extendFiletypes: string[] = []
     rl.on('line', line => {
       if (!block && (line.startsWith('#') || line.length == 0)) return
       const [head, tail] = headTail(line)
-      if (head == 'priority' && !block) {
-        let n = parseInt(tail.trim(), 10)
-        if (!isNaN(n)) priority = n
-      } else if (head == 'extends') {
-        let fts = tail.trim().split(/,\s+/)
-        for (let ft of fts) {
-          if (extendFiletypes.indexOf(ft) == -1) {
-            extendFiletypes.push(ft)
-          }
+      if (!block) {
+        if (line.startsWith('#') || line.length == 0) return
+        switch (head) {
+          case 'priority':
+            let n = parseInt(tail.trim(), 10)
+            if (!isNaN(n)) priority = n
+            break
+          case 'extends':
+            let fts = tail.trim().split(/,\s+/)
+            for (let ft of fts) {
+              if (extendFiletypes.indexOf(ft) == -1) {
+                extendFiletypes.push(ft)
+              }
+            }
+            break
+          case 'clearsnippets':
+            clearsnippets = priority
+            break
+          case 'snippet':
+          case 'global':
+            block = head
+            first = tail
+            break
         }
-      } else if (head == 'snippet' || head == 'global') {
-        block = head
-        first = tail
-      } else if (head == 'endglobal' && block == 'global') {
-        block = ''
+        return
+      }
+
+      if (block == 'snippet' || block == 'global') {
+        preLines.push(line)
+        return
+      }
+      if (head == 'endglobal' && block == 'global') {
+        block = null
         pycodes.push(...preLines)
         preLines = []
-      } else if (head == 'endsnippet' && block == 'snippet') {
-        block = ''
+        return
+      }
+      if (head == 'endsnippet' && block == 'snippet') {
+        block = null
         try {
           let body = preLines.join('\n')
           // convert placeholder regex to javascript regex
@@ -93,14 +114,12 @@ export default class UltiSnipsParser {
         } finally {
           preLines = []
         }
-      } else if (block == 'snippet' || block == 'global') {
-        preLines.push(line)
       }
       lnum += 1
     })
     return new Promise(resolve => {
       rl.on('close', async () => {
-        resolve({ snippets, pythonCode: pycodes.join('\n'), extendFiletypes })
+        resolve({ snippets, clearsnippets, pythonCode: pycodes.join('\n'), extendFiletypes })
       })
     })
   }

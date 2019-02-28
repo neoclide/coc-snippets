@@ -26,9 +26,11 @@ export interface UltiSnipsFile {
   snippets: Snippet[]
   extendFiletypes: string[]
   pythonCode?: string
+  clearsnippets?: number
 }
 
 export interface Snippet {
+  // prefix + no regex + no context + same triggerKind
   readonly filepath: string
   readonly lnum: number
   readonly body: string
