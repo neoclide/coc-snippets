@@ -16,7 +16,7 @@ export default abstract class BaseProvider {
   abstract getSnippets(filetype: string): Snippet[]
   abstract getSnippetFiles(filetype: string): string[]
   abstract getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]>
-  abstract resolveSnippetBody(body: string, position: Position): Promise<string>
+  abstract resolveSnippetBody(snippet: Snippet, position: Position, line: string): Promise<string>
 
   public getFiletypes(filetype: string): string[] {
     let extend = this.config.extends ? this.config.extends[filetype] : null

@@ -43,6 +43,7 @@ export interface Snippet {
   // check expand by eval expression
   readonly context?: string
   readonly autoTrigger?: boolean
+  readonly originRegex?: string
   provider?: string
 }
 

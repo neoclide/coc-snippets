@@ -96,8 +96,8 @@ export class ProviderManager implements CompletionItemProvider {
         insertTextFormat: InsertTextFormat.Snippet
       }
       item.data = {
+        snip,
         provider: snip.provider,
-        body: snip.body,
         filepath: `${path.basename(snip.filepath)}:${snip.lnum}`
       }
       if (snip.regex) {
@@ -138,6 +138,7 @@ export class ProviderManager implements CompletionItemProvider {
         }
       }
       item.data.location = `${snip.filepath}:${snip.lnum}`
+      item.data.line = contentBehind + snip.prefix
       res.push(item)
     }
     return res
@@ -147,7 +148,7 @@ export class ProviderManager implements CompletionItemProvider {
     let provider = this.providers.get(item.data.provider)
     if (provider) {
       let { start } = item.textEdit!.range
-      let insertSnippet = await provider.resolveSnippetBody(item.data.body, start)
+      let insertSnippet = await provider.resolveSnippetBody(item.data.snip, start, item.data.line)
       item.textEdit.newText = insertSnippet
       if (snippetManager) {
         let snip = snippetManager.resolveSnippet(insertSnippet)

@@ -68,15 +68,18 @@ export class UltiSnippetsProvider extends BaseProvider {
       filetype,
       snippets
     })
-    let filetypes = this.config.extends[filetype] || []
-    filetypes = filetypes.concat(extendFiletypes)
-    this.config.extends[filetype] = distinct(filetypes)
+    if (extendFiletypes) {
+      let filetypes = this.config.extends[filetype] || []
+      filetypes = filetypes.concat(extendFiletypes)
+      this.config.extends[filetype] = distinct(filetypes)
+    }
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
     this.pythonCode = this.pythonCode + '\n' + pythonCode
   }
 
-  public async resolveSnippetBody(body, position: Position): Promise<string> {
+  public async resolveSnippetBody(snippet: Snippet, position: Position, line: string): Promise<string> {
     let { nvim } = workspace
+    let { body } = snippet
     let filepath = await nvim.buffer.name
     let visualText = ''
     visualText = visualText || ''
@@ -95,7 +98,11 @@ t = ('', ${vals.join(',')})
 fn = '${path.basename(filepath)}'
 path = '${filepath}'
 snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line + 1}, ${position.character + 1}), (${position.line + 1}, ${position.character + 1})) `
-      await workspace.nvim.command(`${this.pyMethod} ${pyCode}`)
+      if (snippet.originRegex) {
+        pyCode = pyCode + '\n' + `pattern = re.compile(r"${snippet.originRegex.replace(/"/g, '\\"')}")
+snip.match = pattern.search("${line.replace(/"/g, '\\"')}")`
+      }
+      await nvim.command(`${this.pyMethod} ${pyCode}`)
     }
     return this.parser.resolveUltisnipsBody(body)
   }
@@ -131,7 +138,7 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
         let len = line.match(s.regex)[0].length
         character = position.character - len
       }
-      let newText = await this.resolveSnippetBody(s.body, position)
+      let newText = await this.resolveSnippetBody(s, position, line)
       edits.push({
         prefix: s.prefix,
         description: s.description,

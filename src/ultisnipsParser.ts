@@ -33,7 +33,6 @@ export default class UltiSnipsParser {
       if (!block && (line.startsWith('#') || line.length == 0)) return
       const [head, tail] = headTail(line)
       if (!block) {
-        if (line.startsWith('#') || line.length == 0) return
         switch (head) {
           case 'priority':
             let n = parseInt(tail.trim(), 10)
@@ -58,11 +57,6 @@ export default class UltiSnipsParser {
         }
         return
       }
-
-      if (block == 'snippet' || block == 'global') {
-        preLines.push(line)
-        return
-      }
       if (head == 'endglobal' && block == 'global') {
         block = null
         pycodes.push(...preLines)
@@ -72,6 +66,7 @@ export default class UltiSnipsParser {
       if (head == 'endsnippet' && block == 'snippet') {
         block = null
         try {
+          let originRegex: string
           let body = preLines.join('\n')
           // convert placeholder regex to javascript regex
           body = body.replace(/((?:[^\\]?\$\{[^/]+)\/)(.*?[^\\])(?=\/)/g, (_match, p1, p2) => {
@@ -87,6 +82,7 @@ export default class UltiSnipsParser {
           let isExpression = option.indexOf('r') !== -1
           let regex: RegExp = null
           if (isExpression) {
+            originRegex = prefix
             prefix = convertRegex(prefix)
             prefix = prefix.endsWith('$') ? prefix : prefix + '$'
             try {
@@ -99,6 +95,7 @@ export default class UltiSnipsParser {
           }
           let snippet: Snippet = {
             filepath,
+            originRegex,
             autoTrigger: option.indexOf('A') !== -1,
             lnum: lnum - preLines.length - 1,
             triggerKind: getTriggerKind(option),
@@ -114,6 +111,10 @@ export default class UltiSnipsParser {
         } finally {
           preLines = []
         }
+      }
+      if (block == 'snippet' || block == 'global') {
+        preLines.push(line)
+        return
       }
       lnum += 1
     })
