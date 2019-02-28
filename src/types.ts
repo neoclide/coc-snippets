@@ -5,6 +5,7 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 import { Range } from 'vscode-languageserver-types'
 
 export enum TriggerKind {
+  SpaceBefore,
   LineBegin,
   WordBoundary,
   InWord,
@@ -37,6 +38,8 @@ export interface Snippet {
   readonly priority?: number
   // prefix is expression
   readonly regex?: RegExp
+  // check expand by eval expression
+  readonly context?: string
   readonly autoTrigger?: boolean
   provider?: string
 }

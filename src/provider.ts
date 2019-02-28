@@ -84,7 +84,7 @@ export class ProviderManager implements CompletionItemProvider {
     let before_content = currline.slice(0, col)
     let res: CompletionItem[] = []
     for (let snip of snippets) {
-      let lineBeggining = before_content.trim().length == 0
+      let contentBehind = before_content
       if (snip.regex != null && snip.prefix == '') continue
       let head = this.getPrefixHead(doc, snip.prefix)
       if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
@@ -104,9 +104,9 @@ export class ProviderManager implements CompletionItemProvider {
         let content = before_content + snip.prefix
         let ms = content.match(snip.regex)
         if (!ms) continue
-        lineBeggining = content.slice(0, content.length - ms[0].length).trim() == ''
+        contentBehind = content.slice(0, content.length - ms[0].length)
       } else if (head && before_content.endsWith(head)) {
-        lineBeggining = before_content.slice(0, - head.length).trim().length == 0
+        contentBehind = before_content.slice(0, - head.length)
         let prefix = snip.prefix.slice(head.length)
         Object.assign(item, {
           textEdit: {
@@ -116,7 +116,7 @@ export class ProviderManager implements CompletionItemProvider {
         })
       } else if (input.length == 0) {
         let { prefix } = snip
-        lineBeggining = /^\s*$/.test(before_content.slice(0, - prefix.length))
+        contentBehind = before_content.slice(0, - prefix.length)
         Object.assign(item, {
           preselect: true,
           textEdit: {
@@ -125,7 +125,12 @@ export class ProviderManager implements CompletionItemProvider {
           }
         })
       }
-      if (snip.triggerKind == TriggerKind.LineBegin && !lineBeggining) continue
+      if (snip.triggerKind == TriggerKind.LineBegin && contentBehind.trim().length) continue
+      if (snip.triggerKind == TriggerKind.SpaceBefore) {
+        if (contentBehind.length && !/\s/.test(contentBehind[contentBehind.length - 1])) {
+          continue
+        }
+      }
       if (!item.textEdit) {
         item.textEdit = {
           range: Range.create({ line: position.line, character: col }, position),

@@ -124,6 +124,7 @@ snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line
       if (s.triggerKind == TriggerKind.InWord) return true
       let pre = line.slice(0, line.length - prefix.length)
       if (s.triggerKind == TriggerKind.LineBegin) return pre.trim() == ''
+      if (s.triggerKind == TriggerKind.SpaceBefore) return pre.length == 0 || /\s/.test(pre[pre.length - 1])
       if (s.triggerKind == TriggerKind.WordBoundary) return pre.length == 0 || !document.isWord(pre[pre.length - 1])
       return false
     })

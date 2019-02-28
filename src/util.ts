@@ -62,7 +62,7 @@ export function memorize<R extends (...args: any[]) => Promise<R>>(_target: any,
   if (typeof fn !== 'function') return
   let memoKey = '$' + key
 
-  descriptor.get = function (...args): Promise<R> {
+  descriptor.get = function(...args): Promise<R> {
     if (this.hasOwnProperty(memoKey)) return Promise.resolve(this[memoKey])
     return new Promise((resolve, reject): void => { // tslint:disable-line
       Promise.resolve(fn.apply(this, args)).then(res => {
@@ -153,6 +153,7 @@ export function wait(ms: number): Promise<any> {
 
 export function getRegexText(prefix: string): string {
   if (prefix.startsWith('^')) prefix = prefix.slice(1)
+  if (prefix.endsWith('$')) prefix = prefix.slice(0, -1)
   let content = prefix.replace(/\(.*\)\??/g, '')
   content = content.replace(/\\/g, '')
   return content

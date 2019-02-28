@@ -67,6 +67,7 @@ export default class UltiSnipsParser {
           let regex: RegExp = null
           if (isExpression) {
             prefix = convertRegex(prefix)
+            prefix = prefix.endsWith('$') ? prefix : prefix + '$'
             try {
               regex = new RegExp(prefix)
               // get the real text
@@ -209,5 +210,5 @@ function getTriggerKind(option: string): TriggerKind {
   if (option.indexOf('i') !== -1) {
     return TriggerKind.InWord
   }
-  return TriggerKind.WordBoundary
+  return TriggerKind.SpaceBefore
 }
