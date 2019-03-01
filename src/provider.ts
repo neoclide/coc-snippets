@@ -151,7 +151,7 @@ export class ProviderManager implements CompletionItemProvider {
       let insertSnippet = await provider.resolveSnippetBody(item.data.snip, start, item.data.line)
       item.textEdit.newText = insertSnippet
       if (snippetManager) {
-        let snip = snippetManager.resolveSnippet(insertSnippet)
+        let snip = await Promise.resolve(snippetManager.resolveSnippet(insertSnippet))
         item.documentation = snip.toString()
       }
     }
