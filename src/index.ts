@@ -131,7 +131,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
     }
-    await workspace.nvim.setVar('coc_selected_text', '')
+    workspace.nvim.command('unlet g:coc_last_placeholder', true)
+    workspace.nvim.command('unlet g:coc_selected_text', true)
     return true
   }
 

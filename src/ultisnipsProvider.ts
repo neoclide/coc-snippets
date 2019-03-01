@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Document, OutputChannel, workspace } from 'coc.nvim'
+import { Document, snippetManager, OutputChannel, workspace } from 'coc.nvim'
 import os from 'os'
 import path from 'path'
 import { Disposable } from 'vscode-jsonrpc'
@@ -77,11 +77,13 @@ export class UltiSnippetsProvider extends BaseProvider {
     this.pythonCode = this.pythonCode + '\n' + pythonCode
   }
 
-  public async resolveSnippetBody(snippet: Snippet, position: Position, line: string): Promise<string> {
+  public async resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string> {
     let { nvim } = workspace
-    let { body } = snippet
-    let filepath = await nvim.buffer.name
-    let visualText = (await nvim.getVar('')) as string || ''
+    let { body, context, originRegex } = snippet
+    let buf = await nvim.buffer
+    let filepath = await buf.name
+    let indentCount = await nvim.call('indent', '.') as number
+    let ind = ' '.repeat(indentCount)
     if (body.indexOf('`!p') !== -1) {
       let values: Map<number, string> = new Map()
       body.replace(/\$\{(\d+):([^}]+)\}/, (_, p1, p2) => {
@@ -92,18 +94,38 @@ export class UltiSnippetsProvider extends BaseProvider {
       indexes.sort((a, b) => a - b)
       let vals = indexes.map(idx => values.get(idx))
       vals = vals.map(s => `'${s.replace(/'/g, "\\'")}'`)
-      let pyCode = `context = {}
-t = ('', ${vals.join(',')})
-fn = '${path.basename(filepath)}'
-path = '${filepath}'
-snip = SnippetUtil('', '','${visualText.replace(/'/g, "\\'")}', (${position.line + 1}, ${position.character + 1}), (${position.line + 1}, ${position.character + 1})) `
-      if (snippet.originRegex) {
-        pyCode = pyCode + '\n' + `pattern = re.compile(r"${snippet.originRegex.replace(/"/g, '\\"')}")
-match = pattern.search("${line.replace(/"/g, '\\"')}")`
+      let pyCodes: string[] = []
+      pyCodes.push('import re, os, vim, string, random')
+      pyCodes.push(`t = ('', ${vals.join(',')})`)
+      pyCodes.push(`fn = '${path.basename(filepath)}'`)
+      pyCodes.push(`path = '${filepath}'`)
+      if (context) {
+        pyCodes.push(`snip = ContextSnippet()`)
+        pyCodes.push(`context = ${context}`)
+      } else {
+        pyCodes.push(`context = {}`)
       }
-      await nvim.command(`${this.pyMethod} ${pyCode}`)
+      let start = `(${range.start.line},${Buffer.byteLength(line.slice(0, range.start.character))})`
+      let end = `(${range.end.line},${Buffer.byteLength(line.slice(0, range.end.character))})`
+      pyCodes.push(`snip = SnippetUtil('${ind}', ${start}, ${end}, context)`)
+      if (originRegex) {
+        pyCodes.push(`pattern = re.compile(r"${originRegex.replace(/"/g, '\\"')}")`)
+        pyCodes.push(`match = pattern.search("${line.replace(/"/g, '\\"')}")`)
+      }
+      await nvim.command(`${this.pyMethod} ${pyCodes.join('\n')}`)
     }
     return this.parser.resolveUltisnipsBody(body)
+  }
+
+  public async checkContext(context: string): Promise<any> {
+    let { nvim } = workspace
+    let pyCodes: string[] = []
+    pyCodes.push('import re, os, vim, string, random')
+    pyCodes.push(`snip = ContextSnippet()`)
+    pyCodes.push(`context = ${context}`)
+    await nvim.command(`${this.pyMethod} ${pyCodes.join('\n')}`)
+    let res = await nvim.call(`${this.pyMethod}eval`, 'True if context else False')
+    return res
   }
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
@@ -129,20 +151,29 @@ match = pattern.search("${line.replace(/"/g, '\\"')}")`
       return false
     })
     let edits: SnippetEdit[] = []
+    let contextPrefixes: string[] = []
     for (let s of snippets) {
       let character: number
+      if (s.context) {
+        let valid = await this.checkContext(s.context)
+        if (!valid) continue
+        contextPrefixes.push(s.context)
+      } else if (contextPrefixes.indexOf(s.prefix) !== -1) {
+        continue
+      }
       if (s.regex == null) {
         character = position.character - s.prefix.length
       } else {
         let len = line.match(s.regex)[0].length
         character = position.character - len
       }
-      let newText = await this.resolveSnippetBody(s, position, line)
+      let range = Range.create(position.line, character, position.line, position.character)
+      let newText = await this.resolveSnippetBody(s, range, line)
       edits.push({
         prefix: s.prefix,
         description: s.description,
         location: s.filepath,
-        range: Range.create(position.line, character, position.line, position.character),
+        range,
         newText,
       })
     }
@@ -193,6 +224,11 @@ match = pattern.search("${line.replace(/"/g, '\\"')}")`
       }
     }
     if (min != null) result = result.filter(o => o.priority >= min)
+    result.sort((a, b) => {
+      if (a.context && !b.context) return -1
+      if (b.context && !a.context) return 1
+      return 0
+    })
     return result
   }
 

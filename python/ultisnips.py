@@ -3,6 +3,43 @@ from collections import deque, namedtuple
 
 _Placeholder = namedtuple('_FrozenPlaceholder', ['current_text', 'start', 'end'])
 _VisualContent = namedtuple('_VisualContent', ['mode', 'text'])
+_Position = namedtuple('_Position', ['line', 'col'])
+
+class _SnippetUtilCursor(object):
+    def __init__(self, cursor):
+        self._cursor = [cursor[0] - 1, cursor[1]]
+        self._set = False
+
+    def preserve(self):
+        self._set = True
+        self._cursor = [
+            vim.buf.cursor[0],
+            vim.buf.cursor[1],
+        ]
+
+    def is_set(self):
+        return self._set
+
+    def set(self, line, column):
+        self.__setitem__(0, line)
+        self.__setitem__(1, column)
+
+    def to_vim_cursor(self):
+        return (self._cursor[0] + 1, self._cursor[1])
+
+    def __getitem__(self, index):
+        return self._cursor[index]
+
+    def __setitem__(self, index, value):
+        self._set = True
+        self._cursor[index] = value
+
+    def __len__(self):
+        return 2
+
+    def __str__(self):
+        return str((self._cursor[0], self._cursor[1]))
+
 
 class IndentUtil(object):
 
@@ -46,13 +83,14 @@ class SnippetUtil(object):
 
     """
 
-    def __init__(self, _initial_indent, _vmode, vtext, start, end):
+    def __init__(self, _initial_indent, start, end, context):
         self._ind = IndentUtil()
-        self._visual = _VisualContent('v', vtext)
-        self._initial_indent = ''
+        self._visual = _VisualContent(vim.eval('visualmode()'), vim.eval('get(g:,"coc_selected_text","")'))
+        self._initial_indent = _initial_indent
         self._reset('')
         self._start = start
         self._end = end
+        self._context = context
 
     def _reset(self, cur):
         """Gets the snippet ready for another update.
@@ -151,11 +189,16 @@ class SnippetUtil(object):
 
     @property
     def p(self):
-        return _Placeholder('', 0, 0)
+        if 'coc_last_placeholder' in vim.vars:
+            p = vim.vars['coc_last_placeholder']
+            start = _Position(p['start']['line'], p['start']['col'])
+            end = _Position(p['end']['line'], p['end']['col'])
+            return _Placeholder(p['current_text'], start, end)
+        return None
 
     @property
     def context(self):
-        return True
+        return self._context
 
     def opt(self, option, default=None):  # pylint:disable=no-self-use
         """Gets a Vim variable."""
@@ -197,3 +240,25 @@ class SnippetUtil(object):
     @property
     def buffer(self):
         return vim.buf
+
+class ContextSnippet(object):
+
+    def __init__(self):
+        self.buffer = vim.current.buffer
+        self.window = vim.current.window
+        self.cursor = _SnippetUtilCursor(vim.current.window.cursor)
+        self.line = vim.call('line', '.') - 1
+        self.column = vim.call('col', '.') - 1
+        if 'coc_selected_text' in vim.vars:
+            self.visual_mode = vim.eval('visualmode()')
+            self.visual_text = vim.vars['coc_selected_text']
+        else:
+            self.visual_mode = None
+            self.visual_text = ''
+        if 'coc_last_placeholder' in vim.vars:
+            p = vim.vars['coc_last_placeholder']
+            start = _Position(p['start']['line'], p['start']['col'])
+            end = _Position(p['end']['line'], p['end']['col'])
+            self.last_placeholder = _Placeholder(p['current_text'], start, end)
+        else:
+            self.last_placeholder = None

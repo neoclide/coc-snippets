@@ -101,7 +101,7 @@ export class SnippetsProvider extends BaseProvider {
     return res
   }
 
-  public async resolveSnippetBody(snip: Snippet, _position: Position): Promise<string> {
+  public async resolveSnippetBody(snip: Snippet, _range: Range): Promise<string> {
     return snip.body
   }
 

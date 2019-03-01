@@ -83,9 +83,17 @@ export class ProviderManager implements CompletionItemProvider {
     let { input, col } = (context as any).option! as CompleteOption
     let before_content = currline.slice(0, col)
     let res: CompletionItem[] = []
+    let contextPrefixes: string[] = []
     for (let snip of snippets) {
       let contentBehind = before_content
+      if (contextPrefixes.indexOf(snip.prefix) !== -1) continue
       if (snip.regex != null && snip.prefix == '') continue
+      if (snip.context) {
+        let provider = this.providers.get(snip.provider)
+        let valid = await provider.checkContext(snip.context)
+        if (!valid) continue
+        contextPrefixes.push(snip.prefix)
+      }
       let head = this.getPrefixHead(doc, snip.prefix)
       if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
       let item: CompletionItem = {
@@ -147,8 +155,7 @@ export class ProviderManager implements CompletionItemProvider {
   public async resolveCompletionItem(item: CompletionItem): Promise<CompletionItem> {
     let provider = this.providers.get(item.data.provider)
     if (provider) {
-      let { start } = item.textEdit!.range
-      let insertSnippet = await provider.resolveSnippetBody(item.data.snip, start, item.data.line)
+      let insertSnippet = await provider.resolveSnippetBody(item.data.snip, item.textEdit.range, item.data.line)
       item.textEdit.newText = insertSnippet
       if (snippetManager) {
         let snip = await Promise.resolve(snippetManager.resolveSnippet(insertSnippet))

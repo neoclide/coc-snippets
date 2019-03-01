@@ -28,6 +28,7 @@ export default class UltiSnipsParser {
     let priority = 0
     let lnum = 0
     let clearsnippets = null
+    let parsedContext = null
     let extendFiletypes: string[] = []
     rl.on('line', line => {
       lnum += 1
@@ -49,6 +50,9 @@ export default class UltiSnipsParser {
             break
           case 'clearsnippets':
             clearsnippets = priority
+            break
+          case 'context':
+            parsedContext = tail.replace(/^"(.+)"$/, '$1')
             break
           case 'snippet':
           case 'global':
@@ -73,10 +77,11 @@ export default class UltiSnipsParser {
           body = body.replace(/((?:[^\\]?\$\{[^/]+)\/)(.*?[^\\])(?=\/)/g, (_match, p1, p2) => {
             return p1 + convertRegex(p2)
           })
-          let ms = first.match(/^(.+?)(?:\s+(?:"(.*)")?(?:\s+(\w+))?)?$/)
+          let ms = first.match(/^(.+?)(?:\s+(?:"(.*?)")?(?:\s+"(.*?)")?(?:\s+(\w+))?)?$/)
           let prefix = ms[1]
           let description = ms[2] || ''
-          let option = ms[3] || ''
+          let context = ms[3]
+          let option = ms[4] || ''
           if (prefix.length > 2 && prefix[0] == prefix[prefix.length - 1] && !/\w/.test(prefix[0])) {
             prefix = prefix.slice(1, prefix.length - 1)
           }
@@ -94,8 +99,14 @@ export default class UltiSnipsParser {
               this.error(`Convert regex error for: ${prefix}`)
             }
           }
+          if (option.indexOf('e') !== -1) {
+            context = context || parsedContext
+          } else {
+            context = null
+          }
           let snippet: Snippet = {
             filepath,
+            context,
             originRegex,
             autoTrigger: option.indexOf('A') !== -1,
             lnum: lnum - preLines.length - 2,
@@ -110,6 +121,7 @@ export default class UltiSnipsParser {
         } catch (e) {
           this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1}`)
         } finally {
+          parsedContext = null
           preLines = []
         }
       }

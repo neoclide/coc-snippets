@@ -1,5 +1,5 @@
 import { Document } from 'coc.nvim'
-import { Position } from 'vscode-languageserver-types'
+import { Position, Range } from 'vscode-languageserver-types'
 import { Snippet, SnippetEdit } from './types'
 import { distinct } from './util'
 
@@ -16,7 +16,11 @@ export default abstract class BaseProvider {
   abstract getSnippets(filetype: string): Snippet[]
   abstract getSnippetFiles(filetype: string): string[]
   abstract getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]>
-  abstract resolveSnippetBody(snippet: Snippet, position: Position, line: string): Promise<string>
+  abstract resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string>
+
+  public async checkContext(_context: string): Promise<any> {
+    return true
+  }
 
   public getFiletypes(filetype: string): string[] {
     let extend = this.config.extends ? this.config.extends[filetype] : null

@@ -70,4 +70,12 @@ describe('ultisnips parser', () => {
       await parser.parseUltisnipsFile(filepath)
     }
   })
+
+  it('context parser works', async () => {
+    let parser = new UltiSnipsParser('pyx')
+    let file = path.join(__dirname, './files/context.snippets')
+    let res = await parser.parseUltisnipsFile(file)
+    expect(typeof res.snippets[0].context).toBe('string')
+    expect(typeof res.snippets[1].context).toBe('string')
+  })
 })
