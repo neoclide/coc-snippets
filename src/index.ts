@@ -10,6 +10,7 @@ import { UltiSnipsConfig } from './types'
 import { SnippetsProvider } from './snippetsProvider'
 import { Range, Position } from 'vscode-languageserver-types'
 import { wait } from './util'
+import path from 'path'
 
 export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
@@ -23,6 +24,25 @@ export async function activate(context: ExtensionContext): Promise<void> {
   events.on('CompleteDone', async (item: VimCompleteItem) => {
     if (item.user_data && item.user_data.indexOf('coc-snippets') !== -1) {
       await mru.add(item.word)
+    }
+  }, null, subscriptions)
+
+  workspace.onDidOpenTextDocument(async document => {
+    if (document.uri.endsWith('.snippets')) {
+      let doc = workspace.getDocument(document.uri)
+      if (!doc) return
+      let { buffer } = doc
+      await buffer.setOption('filetype', 'snippets')
+      let syntax = await buffer.getVar('current_syntax')
+      if (syntax) return
+      if (workspace.bufnr == doc.bufnr) {
+        let file = path.join(__dirname, '../syntax/snippets.vim')
+        let escaped = await workspace.nvim.call('fnameescape', file)
+        workspace.nvim.command(`source ${escaped}`, true)
+        file = path.join(__dirname, '../ftplugin/snippets.vim')
+        escaped = await workspace.nvim.call('fnameescape', file)
+        workspace.nvim.command(`source ${escaped}`, true)
+      }
     }
   }, null, subscriptions)
 
