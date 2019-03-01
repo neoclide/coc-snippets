@@ -93,7 +93,12 @@ snippet.
   ```
 
 - `snippets.shortcut`, shortcut in completion menu, default `S`.
+- `snippets.autoTrigger`: enable auto trigger for auto trigger snippets, default
+  `true`.
+- `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
 - `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
+- `snippets.ultisnips.usePythonx`: use `pythonx` for eval python code, default
+  `true`.
 - `snippets.ultisnips.pythonVersion`: python version to use for run python code,
   default to `3`, will always use `pyx` commands on vim.
 - `snippets.ultisnips.directories`: directories that searched for snippet files,
@@ -101,6 +106,11 @@ snippet.
   `["UltiSnips"]`
 - `snippets.loadFromExtensions`: specify whether to load snippets from
   extensions, default: `true`
+- `snippets.expandFallbackWithPum`: fallback action when expand failed and pumvisible, default: `refresh`. Possible values:
+  - `refresh`: trigger completion for new complete items.
+  - `confirm`: confirm completion with current selected complete item.
+  - `next`: select next complete item.
+  - `none`: do nothing.
 
 ## Regular expression convert
 

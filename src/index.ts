@@ -24,7 +24,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     if (item.user_data && item.user_data.indexOf('coc-snippets') !== -1) {
       await mru.add(item.word)
     }
-  })
+  }, null, subscriptions)
 
   if (configuration.get<boolean>('ultisnips.enable', true)) {
     let config = configuration.get<any>('ultisnips', {})
