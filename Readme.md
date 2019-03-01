@@ -96,6 +96,13 @@ snippet.
 - `snippets.autoTrigger`: enable auto trigger for auto trigger snippets, default
   `true`.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
+- `snippets.loadFromExtensions`: specify whether to load snippets from
+  extensions, default: `true`
+- `snippets.expandFallbackWithPum`: fallback action when expand failed and pumvisible, default: `refresh`. Possible values:
+  - `refresh`: trigger completion for new complete items.
+  - `confirm`: confirm completion with current selected complete item.
+  - `next`: select next complete item.
+  - `none`: do nothing.
 - `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
 - `snippets.ultisnips.usePythonx`: use `pythonx` for eval python code, default
   `true`.
@@ -104,13 +111,6 @@ snippet.
 - `snippets.ultisnips.directories`: directories that searched for snippet files,
   could be subfolder in every \$runtimepath or absolute paths, default:
   `["UltiSnips"]`
-- `snippets.loadFromExtensions`: specify whether to load snippets from
-  extensions, default: `true`
-- `snippets.expandFallbackWithPum`: fallback action when expand failed and pumvisible, default: `refresh`. Possible values:
-  - `refresh`: trigger completion for new complete items.
-  - `confirm`: confirm completion with current selected complete item.
-  - `next`: select next complete item.
-  - `none`: do nothing.
 
 ## Regular expression convert
 
