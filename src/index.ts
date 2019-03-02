@@ -7,7 +7,8 @@ import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { UltiSnipsConfig } from './types'
-import { SnippetsProvider } from './snippetsProvider'
+import { SnipmateProvider } from './snipmateProvider'
+import { TextmateProvider } from './textmateProvider'
 import { Range, Position } from 'vscode-languageserver-types'
 import { wait } from './util'
 import path from 'path'
@@ -42,7 +43,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     let c = Object.assign({}, config, {
       extends: Object.assign({}, filetypeExtends)
     } as UltiSnipsConfig)
-    let provider = new UltiSnippetsProvider(c, channel)
+    let provider = new UltiSnippetsProvider(channel, c)
     manager.regist(provider, 'ultisnips')
     // add rtp if ultisnips not found
     nvim.getOption('runtimepath').then(async rtp => {
@@ -62,8 +63,17 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   if (configuration.get<boolean>('loadFromExtensions', true)) {
     let config = { extends: Object.assign({}, filetypeExtends) }
-    let provider = new SnippetsProvider(channel, config)
+    let provider = new TextmateProvider(channel, config)
     manager.regist(provider, 'snippets')
+  }
+
+  if (configuration.get<boolean>('snipmate.enable', true)) {
+    let config = {
+      author: configuration.get<string>('snipmate.author', ''),
+      extends: Object.assign({}, filetypeExtends)
+    }
+    let provider = new SnipmateProvider(channel, config)
+    manager.regist(provider, 'snipmate')
   }
 
   if (configuration.get<boolean>('autoTrigger', true)) {

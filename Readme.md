@@ -8,6 +8,7 @@ It's capable of:
 
 - Load UltiSnips snippets.
 - Load textmate format snippets from coc extensions.
+- Load snipmate snippets.
 - Provide snippets as completion items.
 - Provide trigger key for trigger snippet.
 - Provide snippets list for edit snippet.
@@ -111,6 +112,8 @@ snippet.
 - `snippets.ultisnips.directories`: directories that searched for snippet files,
   could be subfolder in every \$runtimepath or absolute paths, default:
   `["UltiSnips"]`
+- `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
+- `snippets.snippets.author`: author name used for `g:snips_author`
 
 ## Regular expression convert
 

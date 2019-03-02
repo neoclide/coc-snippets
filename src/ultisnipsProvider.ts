@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Document, snippetManager, OutputChannel, workspace } from 'coc.nvim'
+import { Document, OutputChannel, workspace } from 'coc.nvim'
 import os from 'os'
 import path from 'path'
 import { Disposable } from 'vscode-jsonrpc'
@@ -20,7 +20,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   private disposables: Disposable[] = []
   private directories: string[]
   private parser: UltiSnipsParser
-  constructor(config: UltiSnipsConfig, private channel: OutputChannel) {
+  constructor(private channel: OutputChannel, config: UltiSnipsConfig) {
     super(config)
     this.directories = this.config.directories.map(s => {
       return s.startsWith('~') ? os.homedir() + s.slice(1) : s

@@ -19,6 +19,11 @@ export interface UltiSnipsConfig {
   extends: { [key: string]: string[] }
 }
 
+export interface SnipmateConfig {
+  author: string
+  extends: { [key: string]: string[] }
+}
+
 export interface UltiSnipsFile {
   directory: string
   filetype: string
@@ -27,6 +32,13 @@ export interface UltiSnipsFile {
   extendFiletypes: string[]
   pythonCode?: string
   clearsnippets?: number
+}
+
+export interface SnipmateFile {
+  directory: string
+  filepath: string
+  filetype: string
+  snippets: Snippet[]
 }
 
 export interface Snippet {
@@ -58,6 +70,7 @@ export interface SnippetEdit {
   newText: string
   location: string
   description: string
+  priority?: number
 }
 
 export interface FileItem {

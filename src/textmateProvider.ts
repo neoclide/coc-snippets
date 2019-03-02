@@ -31,7 +31,7 @@ interface KeyToSnippet {
   [key: string]: ISnippetPluginContribution
 }
 
-export class SnippetsProvider extends BaseProvider {
+export class TextmateProvider extends BaseProvider {
   private _snippetCache: ExtensionCache = {}
 
   constructor(private channel: OutputChannel, config: Config) {

@@ -27,7 +27,12 @@
         "snippets.priority": {
           "type": "number",
           "default": 90,
-          "description": "Source priority of snippets."
+          "description": "Completion source priority of snippets."
+        },
+        "snippets.loadFromExtensions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable load snippets from extensions."
         },
         "snippets.extends": {
           "type": "object",
@@ -88,10 +93,15 @@
             "type": "string"
           }
         },
-        "snippets.loadFromExtensions": {
+        "snippets.snipmate.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Enable load snippets from extensions."
+          "description": "Load snipmate snippets from snippets directory in runtimepath."
+        },
+        "snippets.snipmate.author": {
+          "type": "string",
+          "default": "",
+          "description": "Author name used for g:snips_author"
         }
       }
     }
