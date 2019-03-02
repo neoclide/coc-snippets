@@ -14,6 +14,7 @@ import path from 'path'
 
 export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
+  const { nvim } = workspace
   const configuration = workspace.getConfiguration('snippets')
   const filetypeExtends = configuration.get('extends', {})
   const manager = new ProviderManager()
@@ -33,16 +34,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
       if (!doc) return
       let { buffer } = doc
       await buffer.setOption('filetype', 'snippets')
-      let syntax = await buffer.getVar('current_syntax')
-      if (syntax) return
-      if (workspace.bufnr == doc.bufnr) {
-        let file = path.join(__dirname, '../syntax/snippets.vim')
-        let escaped = await workspace.nvim.call('fnameescape', file)
-        workspace.nvim.command(`source ${escaped}`, true)
-        file = path.join(__dirname, '../ftplugin/snippets.vim')
-        escaped = await workspace.nvim.call('fnameescape', file)
-        workspace.nvim.command(`source ${escaped}`, true)
-      }
     }
   }, null, subscriptions)
 
@@ -53,6 +44,20 @@ export async function activate(context: ExtensionContext): Promise<void> {
     } as UltiSnipsConfig)
     let provider = new UltiSnippetsProvider(c, channel)
     manager.regist(provider, 'ultisnips')
+    // add rtp if ultisnips not found
+    nvim.getOption('runtimepath').then(async rtp => {
+      let paths = (rtp as string).split(',')
+      let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
+      if (idx !== -1) return
+      let directory = path.resolve(__dirname, '..')
+      nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets')
+      nvim.command(`execute 'noa set rtp^='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
+      workspace.documents.forEach(doc => {
+        if (doc.uri.endsWith('.snippets')) {
+          doc.buffer.setOption('filetype', 'snippets', true)
+        }
+      })
+    })
   }
 
   if (configuration.get<boolean>('loadFromExtensions', true)) {
@@ -63,19 +68,20 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   if (configuration.get<boolean>('autoTrigger', true)) {
     let insertTs
+    let lastChange
     events.on('InsertCharPre', () => {
       insertTs = Date.now()
     })
     events.on(['TextChangedI', 'TextChangedP'], async () => {
       if (!insertTs || Date.now() - insertTs > 50) return
+      let now = lastChange = Date.now()
       let curr = insertTs
       await wait(50)
       let edits = await manager.getTriggerSnippets(true)
-      if (insertTs != curr) return
-      if (edits.length == 0) return
-      await workspace.nvim.call('coc#_hide')
+      if (insertTs != curr || now != lastChange || edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
+        workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
@@ -94,14 +100,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   if (manager.hasProvider) {
     let disposable = languages.registerCompletionItemProvider(
-      'snippets', 'S', null,
+      'snippets',
+      'S',
+      null,
       manager, configuration.get<string[]>('triggerCharacters', []),
       configuration.get<number>('priority', 90))
     subscriptions.push(disposable)
   }
 
   async function fallback(): Promise<void> {
-    let { nvim } = workspace
     let visible = await nvim.call('pumvisible')
     if (visible) {
       let action = configuration.get<string>('expandFallbackWithPum', 'refresh')
@@ -131,8 +138,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
     }
-    workspace.nvim.command('unlet g:coc_last_placeholder', true)
-    workspace.nvim.command('unlet g:coc_selected_text', true)
+    nvim.command('silent! unlet g:coc_last_placeholder', true)
+    nvim.command('silent! unlet g:coc_selected_text', true)
     return true
   }
 
@@ -144,7 +151,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', async () => {
     let expanded = await doExpand()
     if (!expanded) {
-      let bufnr = await workspace.nvim.call('bufnr', '%')
+      let bufnr = await nvim.call('bufnr', '%')
       let session = snippetManager.getSession(bufnr)
       if (session && session.isActive) {
         await snippetManager.nextPlaceholder()
@@ -157,9 +164,11 @@ export async function activate(context: ExtensionContext): Promise<void> {
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
     let doc = await workspace.document
     if (!doc) return
-    let { nvim } = workspace
     let mode = await nvim.call('mode')
-    if (['v', 'V'].indexOf(mode) == -1) return
+    if (['v', 'V'].indexOf(mode) == -1) {
+      workspace.showMessage('select of visual block not supported', 'warning')
+      return
+    }
     await nvim.call('feedkeys', [String.fromCharCode(27), 'in'])
     await nvim.command('normal! `<')
     let start = await workspace.getCursorPosition()

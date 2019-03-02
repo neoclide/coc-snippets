@@ -5,6 +5,15 @@ if exists("b:current_syntax")
   finish
 endif
 
+if expand("%:p:h") =~ "snippets" && search("^endsnippet", "nw") == 0
+            \ && !exists("b:ultisnips_override_snipmate")
+    " this appears to be a snipmate file
+    " It's in a directory called snippets/ and there's no endsnippet keyword
+    " anywhere in the file.
+    source <sfile>:h/snippets_snipmate.vim
+    finish
+endif
+
 " Embedded Syntaxes {{{1
 
 try

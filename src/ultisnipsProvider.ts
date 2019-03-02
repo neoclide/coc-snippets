@@ -86,7 +86,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     let ind = ' '.repeat(indentCount)
     if (body.indexOf('`!p') !== -1) {
       let values: Map<number, string> = new Map()
-      body.replace(/\$\{(\d+):([^}]+)\}/, (_, p1, p2) => {
+      body.replace(/\$\{(\d+):([^}]+)\}/g, (_, p1, p2) => {
         if (p1 == 0) return ''
         values.set(Number(p1), p2)
       })
