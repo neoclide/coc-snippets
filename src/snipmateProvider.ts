@@ -74,6 +74,7 @@ export class SnipmateProvider extends BaseProvider {
         if (code.startsWith('Filename')) {
           resolved = resolved + await nvim.call('expand', '%:p:t')
         } else {
+          console.log('snippet:', JSON.stringify(snippet))
           resolved = resolved + await nvim.eval(code)
         }
         continue

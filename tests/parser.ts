@@ -63,7 +63,7 @@ describe('ultisnips parser', () => {
 
   it('should load snippets of vim-snippets', async () => {
     let parser = new UltiSnipsParser('pyx')
-    let dir = path.join(__dirname, '../snippets')
+    let dir = path.join(__dirname, 'snippets')
     let files = fs.readdirSync(dir, 'utf8')
     for (let file of files) {
       let filepath = path.join(dir, file)
