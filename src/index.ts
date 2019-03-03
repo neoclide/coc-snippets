@@ -23,9 +23,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const channel = workspace.createOutputChannel('snippets')
 
+  function reset() {
+    nvim.command('silent! unlet g:coc_last_placeholder', true)
+    nvim.command('silent! unlet g:coc_selected_text', true)
+  }
+
   events.on('CompleteDone', async (item: VimCompleteItem) => {
-    if (item.user_data && item.user_data.indexOf('coc-snippets') !== -1) {
+    if (item.user_data && item.user_data.indexOf('snippets') !== -1) {
       await mru.add(item.word)
+      reset()
     }
   }, null, subscriptions)
 
@@ -143,13 +149,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
     } else {
-      let idx = await workspace.showQuickpick(edits.map(e => e.description), 'choose snippet:')
+      let idx = await workspace.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
       if (idx == -1) return
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
     }
-    nvim.command('silent! unlet g:coc_last_placeholder', true)
-    nvim.command('silent! unlet g:coc_selected_text', true)
+    reset()
     return true
   }
 

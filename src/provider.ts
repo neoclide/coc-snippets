@@ -68,6 +68,10 @@ export class ProviderManager implements CompletionItemProvider {
         }
       }
     }
+    list.sort((a, b) => b.priority - a.priority)
+    if (list.length > 1 && list[0].priority > 0) {
+      list = list.filter(o => o.priority > 0)
+    }
     return list
   }
 

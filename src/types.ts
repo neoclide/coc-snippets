@@ -70,7 +70,7 @@ export interface SnippetEdit {
   newText: string
   location: string
   description: string
-  priority?: number
+  priority: number
 }
 
 export interface FileItem {

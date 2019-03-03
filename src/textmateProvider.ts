@@ -74,7 +74,8 @@ export class TextmateProvider extends BaseProvider {
         range: Range.create(position.line, position.character - prefix.length, position.line, position.character),
         newText: snip.body,
         location: snip.filepath,
-        description: snip.description
+        description: snip.description,
+        priority: -1
       })
     }
     return edits
