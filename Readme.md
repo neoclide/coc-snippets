@@ -67,13 +67,12 @@ Some ultisnips features are **not** supported:
 - [x] Placeholder and variable transform.
 - [x] Expression snippet.
 - [x] Automatic trigger snippet.
-- [ ] Context snippets.
-- [ ] Support loading snipmate snippets.
-- [ ] Execute shell code with custom shabang (will not support because it's
-      dangerous).
-- [ ] Automatic reformat snippet after change of placeholder.
-- [ ] Format related snippet options, including `t`, `s` and `m`.
-- [ ] Snippet actions.
+- [x] Context snippets.
+- [x] Support loading snipmate snippets.
+- [ ] Execute shell code with custom shabang (will not support).
+- [ ] Automatic reformat snippet after change of placeholder (can't support).
+- [ ] Format related snippet options, including `t`, `s` and `m` (can't support).
+- [ ] Snippet actions (can't support).
 
 **Note** coc-snippets convert UltiSnips snippets to textmate snippets and send
 it to coc's snippets manager, format snippets after snippet insert will not be
