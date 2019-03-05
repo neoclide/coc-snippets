@@ -169,6 +169,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       let bufnr = await nvim.call('bufnr', '%')
       let session = snippetManager.getSession(bufnr)
       if (session && session.isActive) {
+        await nvim.call('coc#_cancel', [])
         await snippetManager.nextPlaceholder()
         return
       }
