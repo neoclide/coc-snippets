@@ -17,21 +17,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
   const { nvim } = workspace
   const configuration = workspace.getConfiguration('snippets')
-  const filetypeExtends = configuration.get('extends', {})
+  const filetypeExtends = configuration.get<any>('extends', {})
   const manager = new ProviderManager()
   let mru = workspace.createMru('snippets-mru')
 
   const channel = workspace.createOutputChannel('snippets')
 
-  function reset() {
-    nvim.command('silent! unlet g:coc_last_placeholder', true)
-    nvim.command('silent! unlet g:coc_selected_text', true)
-  }
-
   events.on('CompleteDone', async (item: VimCompleteItem) => {
     if (item.user_data && item.user_data.indexOf('snippets') !== -1) {
       await mru.add(item.word)
-      reset()
     }
   }, null, subscriptions)
 
@@ -57,13 +51,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
       let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
       if (idx !== -1) return
       let directory = path.resolve(__dirname, '..')
-      nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets')
+      nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets', true)
       nvim.command(`execute 'noa set rtp^='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
       workspace.documents.forEach(doc => {
         if (doc.uri.endsWith('.snippets')) {
           doc.buffer.setOption('filetype', 'snippets', true)
         }
       })
+    }, _e => {
+      // noop
     })
   }
 
@@ -99,7 +95,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
-      await commands.executeCommand('editor.action.insertSnippet', edits[0])
+      commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
     })
   }
@@ -146,15 +142,14 @@ export async function activate(context: ExtensionContext): Promise<void> {
     let edits = await manager.getTriggerSnippets()
     if (edits.length == 0) return false
     if (edits.length == 1) {
-      await commands.executeCommand('editor.action.insertSnippet', edits[0])
+      commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
     } else {
       let idx = await workspace.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
       if (idx == -1) return
-      await commands.executeCommand('editor.action.insertSnippet', edits[idx])
+      commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
     }
-    reset()
     return true
   }
 
