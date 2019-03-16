@@ -150,7 +150,7 @@ export class SnipmateProvider extends BaseProvider {
           res.push({
             filepath,
             lnum: lnum - lines.length - 1,
-            body: lines.join('\n').replace(/\s+$/, ''),
+            body: lines.join('\n'),
             prefix,
             description,
             triggerKind: TriggerKind.SpaceBefore
