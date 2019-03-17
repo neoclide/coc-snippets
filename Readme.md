@@ -12,6 +12,7 @@ It's capable of:
 - Provide snippets as completion items.
 - Provide trigger key for trigger snippet.
 - Provide snippets list for edit snippet.
+- Provide `snippet.editSnippets` command for edit snippets of current filetype.
 
 ## Why?
 
@@ -97,6 +98,7 @@ snippet.
   `true`.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
 - `snippets.loadFromExtensions`: specify whether to load snippets from
+- `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load.
   extensions, default: `true`
 - `snippets.expandFallbackWithPum`: fallback action when expand failed and pumvisible, default: `refresh`. Possible values:
   - `refresh`: trigger completion for new complete items.

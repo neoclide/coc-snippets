@@ -11,7 +11,38 @@ import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
 import { Range, Position } from 'vscode-languageserver-types'
 import { wait } from './util'
+import util from 'util'
+import Uri from 'vscode-uri'
 import path from 'path'
+import fs from 'fs'
+
+const docs = `
+# A valid snippet should starts with:
+#
+#		snippet trigger_word [ "description" [ options ] ]
+#
+# and end with:
+#
+#		endsnippet
+#
+# Snippet options:
+#
+#		b - Beginning of line.
+#		i - In-word expansion.
+#		w - Word boundary.
+#		r - Regular expression
+#		e - Custom context snippet
+#		A - Snippet will be triggered automatically, when condition matches.
+#
+# Basic example:
+#
+#		snippet emitter "emitter properties" b
+#		private readonly $\{1} = new Emitter<$2>()
+#		public readonly $\{1/^_(.*)/$1/}: Event<$2> = this.$1.event
+#		endsnippet
+#
+# Online reference: https://github.com/SirVer/ultisnips/blob/master/doc/UltiSnips.txt
+`
 
 export async function activate(context: ExtensionContext): Promise<void> {
   let { subscriptions } = context
@@ -22,6 +53,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
   let mru = workspace.createMru('snippets-mru')
 
   const channel = workspace.createOutputChannel('snippets')
+  const snippetsDir = path.join(path.dirname(workspace.env.extensionRoot), 'ultisnips')
+  if (!fs.existsSync(snippetsDir)) {
+    await util.promisify(fs.mkdir)(snippetsDir)
+  }
 
   events.on('CompleteDone', async (item: VimCompleteItem) => {
     if (item.user_data && item.user_data.indexOf('snippets') !== -1) {
@@ -43,6 +78,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
     let c = Object.assign({}, config, {
       extends: Object.assign({}, filetypeExtends)
     } as UltiSnipsConfig)
+    c.directories = c.directories ? c.directories.slice() : []
+    if (c.directories.indexOf(snippetsDir) == -1) {
+      c.directories.push(snippetsDir)
+    }
     let provider = new UltiSnippetsProvider(channel, c)
     manager.regist(provider, 'ultisnips')
     // add rtp if ultisnips not found
@@ -154,6 +193,18 @@ export async function activate(context: ExtensionContext): Promise<void> {
     }
     return true
   }
+
+  subscriptions.push(commands.registerCommand('snippets.editSnippets', async () => {
+    let buf = await nvim.buffer
+    let doc = workspace.getDocument(buf.id)
+    if (!doc || !doc.filetype) return
+    let file = path.join(snippetsDir, `${doc.filetype}.snippets`)
+    if (!fs.existsSync(file)) {
+      await util.promisify(fs.writeFile)(file, docs, 'utf8')
+    }
+    let uri = Uri.file(file).toString()
+    await workspace.jumpTo(uri)
+  }))
 
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
     let expanded = await doExpand()
