@@ -63,11 +63,13 @@ export async function activate(context: ExtensionContext): Promise<void> {
     })
   }
 
-  if (configuration.get<boolean>('loadFromExtensions', true)) {
-    let config = { extends: Object.assign({}, filetypeExtends) }
-    let provider = new TextmateProvider(channel, config)
-    manager.regist(provider, 'snippets')
+  let config = {
+    loadFromExtensions: configuration.get<boolean>('loadFromExtensions', true),
+    snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
+    extends: Object.assign({}, filetypeExtends)
   }
+  let provider = new TextmateProvider(channel, config)
+  manager.regist(provider, 'snippets')
 
   if (configuration.get<boolean>('snipmate.enable', true)) {
     let config = {

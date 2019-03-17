@@ -34,6 +34,14 @@
           "default": true,
           "description": "Enable load snippets from extensions."
         },
+        "snippets.textmateSnippetsRoots": {
+          "type": "array",
+          "default": [],
+          "description": "List of directories that contains textmate/VSCode snippets to load.",
+          "items": {
+            "type": "string"
+          }
+        },
         "snippets.extends": {
           "type": "object",
           "default": {},

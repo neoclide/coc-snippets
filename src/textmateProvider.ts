@@ -3,6 +3,7 @@ import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import os from 'os'
 import path from 'path'
+import util from 'util'
 import { Position, Range } from 'vscode-languageserver-types'
 import BaseProvider, { Config } from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
@@ -33,22 +34,33 @@ interface KeyToSnippet {
 
 export class TextmateProvider extends BaseProvider {
   private _snippetCache: ExtensionCache = {}
+  private _userSnippets: SnippetCache = {}
 
   constructor(private channel: OutputChannel, config: Config) {
     super(config)
-    extensions.onDidLoadExtension(extension => {
-      this.loadSnippetsFromExtension(extension).catch(e => {
-        channel.appendLine(`[Error] ${e.message}`)
+    if (config.loadFromExtensions) {
+      extensions.onDidLoadExtension(extension => {
+        this.loadSnippetsFromExtension(extension).catch(e => {
+          channel.appendLine(`[Error] ${e.message}`)
+        })
       })
-    })
-    extensions.onDidUnloadExtension(id => {
-      delete this._snippetCache[id]
-    })
+      extensions.onDidUnloadExtension(id => {
+        delete this._snippetCache[id]
+      })
+    }
   }
 
   public async init(): Promise<void> {
-    for (let extension of extensions.all) {
-      await this.loadSnippetsFromExtension(extension)
+    if (this.config.loadFromExtensions) {
+      for (let extension of extensions.all) {
+        await this.loadSnippetsFromExtension(extension)
+      }
+    }
+    let paths = this.config.snippetsRoots as string[]
+    if (paths && paths.length) {
+      for (let dir of paths) {
+        await this.loadSnippetsFromRoot(dir)
+      }
     }
   }
 
@@ -99,6 +111,17 @@ export class TextmateProvider extends BaseProvider {
         }
       }
     }
+    for (let filetype of filetypes) {
+      let snippets = this._userSnippets[filetype]
+      if (snippets && snippets.length) {
+        for (let snip of snippets) {
+          if (!added.has(snip.prefix)) {
+            added.add(snip.prefix)
+            res.push(snip)
+          }
+        }
+      }
+    }
     return res
   }
 
@@ -126,6 +149,21 @@ export class TextmateProvider extends BaseProvider {
         await this.loadSnippetsFromDefinition(def)
       }
     }
+  }
+
+  private async loadSnippetsFromRoot(root: string): Promise<void> {
+    let { _userSnippets } = this
+    if (root.startsWith('~')) root = root.replace(/^~/, os.homedir())
+    let files = await util.promisify(fs.readdir)(root, 'utf8')
+    files = files.filter(f => f.endsWith('.json') || f.endsWith('.code-snippets'))
+    await Promise.all(files.map(file => {
+      file = path.join(root, file)
+      let basename = path.basename(file, '.json')
+      basename = basename.replace(/\.code-snippets$/, '')
+      return this.loadSnippetsFromFile(file).then(snippets => {
+        _userSnippets[basename] = snippets
+      })
+    }))
   }
 
   private async loadSnippetsFromDefinition(def: SnippetDefinition): Promise<void> {
