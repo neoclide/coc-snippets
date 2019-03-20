@@ -2,19 +2,20 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { ExtensionContext, events, listManager, commands, languages, workspace, VimCompleteItem, snippetManager } from 'coc.nvim'
+import { commands, events, ExtensionContext, languages, listManager, snippetManager, VimCompleteItem, workspace } from 'coc.nvim'
+import fs from 'fs'
+import path from 'path'
+import util from 'util'
+import { Position, Range } from 'vscode-languageserver-types'
+import Uri from 'vscode-uri'
 import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
-import { UltiSnippetsProvider } from './ultisnipsProvider'
-import { UltiSnipsConfig } from './types'
 import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
-import { Range, Position } from 'vscode-languageserver-types'
+import { UltiSnipsConfig } from './types'
+import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { wait } from './util'
-import util from 'util'
-import Uri from 'vscode-uri'
-import path from 'path'
-import fs from 'fs'
+import LanguageProvider from './languages'
 
 const docs = `
 # A valid snippet should starts with:
@@ -44,7 +45,11 @@ const docs = `
 # Online reference: https://github.com/SirVer/ultisnips/blob/master/doc/UltiSnips.txt
 `
 
-export async function activate(context: ExtensionContext): Promise<void> {
+interface API {
+  expandable: () => Promise<boolean>
+}
+
+export async function activate(context: ExtensionContext): Promise<API> {
   let { subscriptions } = context
   const { nvim } = workspace
   const configuration = workspace.getConfiguration('snippets')
@@ -138,7 +143,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       }
       commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
-    })
+    }, null, subscriptions)
   }
 
   const statusItem = workspace.createStatusBarItem(90, { progress: true })
@@ -258,7 +263,17 @@ export async function activate(context: ExtensionContext): Promise<void> {
     await workspace.moveTo(range.start)
   }, { silent: true, sync: false, cancel: true }))
 
+  let languageProvider = new LanguageProvider()
+  languages.registerCompletionItemProvider('snippets-source', 'S', ['snippets'], languageProvider)
+
   subscriptions.push(statusItem)
   subscriptions.push(channel)
   subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager, mru)))
+
+  return {
+    expandable: async (): Promise<boolean> => {
+      let edits = await manager.getTriggerSnippets()
+      return edits && edits.length > 0
+    }
+  }
 }
