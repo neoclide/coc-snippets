@@ -149,6 +149,27 @@ function! s:check_back_space() abort
 endfunction
 ```
 
+Q: How to use `<tab>` for completion expand, completion confirm, snippet expand
+and snippet jump?
+
+A: Use condition keymap like:
+
+```vim
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? coc#_select_confirm() :
+      \ <SID>coc#expandableOrJumpable() ? coc#rpc#request('doKeymap', ['snippets-expand-jump','']) :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+```
+
+**Note:** `coc#_select_confirm` could select complete item when necessary (when
+`"suggest.noselect"` is true)
+
 ## License
 
 MIT

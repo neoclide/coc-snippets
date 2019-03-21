@@ -36,6 +36,15 @@
           "default": 90,
           "description": "Completion source priority of snippets."
         },
+        "snippets.trace": {
+          "type": "string",
+          "default": "error",
+          "enum": [
+            "error",
+            "verbose"
+          ],
+          "description": "Trace level of snippets channel."
+        },
         "snippets.loadFromExtensions": {
           "type": "boolean",
           "default": true,

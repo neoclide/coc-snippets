@@ -20,7 +20,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   private disposables: Disposable[] = []
   private directories: string[]
   private parser: UltiSnipsParser
-  constructor(private channel: OutputChannel, config: UltiSnipsConfig) {
+  constructor(private channel: OutputChannel, private trace: string, protected config: UltiSnipsConfig) {
     super(config)
     this.directories = this.config.directories.map(s => {
       return s.startsWith('~') ? os.homedir() + s.slice(1) : s
@@ -42,7 +42,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     } else {
       this.pyMethod = config.pythonVersion == 3 ? 'py3' : 'py'
     }
-    this.parser = new UltiSnipsParser(this.pyMethod, this.channel)
+    this.parser = new UltiSnipsParser(this.pyMethod, this.channel, this.trace)
     let arr = await this.getAllSnippetFiles()
     await Promise.all(arr.map(({ filepath, directory, filetype }) => {
       return this.loadSnippetsFromFile(filetype, directory, filepath)
@@ -73,7 +73,9 @@ export class UltiSnippetsProvider extends BaseProvider {
       filetypes = filetypes.concat(extendFiletypes)
       this.config.extends[filetype] = distinct(filetypes)
     }
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
+    if (this.trace == 'verbose') {
+      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
+    }
     this.pythonCode = this.pythonCode + '\n' + pythonCode
   }
 

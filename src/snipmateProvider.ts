@@ -17,7 +17,7 @@ import Parser from './parser'
 export class SnipmateProvider extends BaseProvider {
   private snippetFiles: SnipmateFile[] = []
   private disposables: Disposable[] = []
-  constructor(private channel: OutputChannel, config: SnipmateConfig) {
+  constructor(private channel: OutputChannel, private trace: string, config: SnipmateConfig) {
     super(config)
     workspace.onDidSaveTextDocument(async doc => {
       let filepath = Uri.parse(doc.uri).fsPath
@@ -46,7 +46,9 @@ export class SnipmateProvider extends BaseProvider {
       filetype,
       snippets
     })
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
+    if (this.trace == 'verbose') {
+      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
+    }
   }
 
   /**

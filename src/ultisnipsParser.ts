@@ -12,7 +12,7 @@ import { Snippet, TriggerKind, UltiSnipsFile } from './types'
 import { convertRegex, headTail, getRegexText } from './util'
 
 export default class UltiSnipsParser {
-  constructor(private pyMethod: string, private channel?: OutputChannel) {
+  constructor(private pyMethod: string, private channel?: OutputChannel, private trace = 'error') {
   }
 
   public parseUltisnipsFile(filepath: string): Promise<Partial<UltiSnipsFile>> {
@@ -170,7 +170,7 @@ export default class UltiSnipsParser {
         } else {
           resolved = resolved + ch
         }
-        prev == ch
+        prev = ch
         return true
       })
     }
@@ -182,7 +182,7 @@ export default class UltiSnipsParser {
   private async execute(code: string, pyMethod: string): Promise<string> {
     let { nvim } = require('coc.nvim').workspace
     if (!nvim) return code
-    let res: string = ''
+    let res = ''
     if (code.startsWith('!')) {
       code = code.trim().slice(1)
       if (code.startsWith('p')) {
@@ -209,6 +209,7 @@ export default class UltiSnipsParser {
     } else {
       try {
         res = await pify(exec)(code)
+        res = res.replace(/\r?\n$/, '')
       } catch (e) {
         res = `Error: ${e.message}`
         this.error(`Error on eval ${code}: ` + e.stack)
@@ -223,7 +224,7 @@ export default class UltiSnipsParser {
   }
 
   private debug(str: string): void {
-    if (!this.channel) return
+    if (!this.channel || this.trace == 'error') return
     this.channel.appendLine(`[Debug ${(new Date()).toLocaleTimeString()}] ${str}`)
   }
 }

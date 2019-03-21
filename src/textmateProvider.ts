@@ -36,7 +36,7 @@ export class TextmateProvider extends BaseProvider {
   private _snippetCache: ExtensionCache = {}
   private _userSnippets: SnippetCache = {}
 
-  constructor(private channel: OutputChannel, config: Config) {
+  constructor(private channel: OutputChannel, private trace: string, config: Config) {
     super(config)
     if (config.loadFromExtensions) {
       extensions.onDidLoadExtension(extension => {
@@ -186,7 +186,9 @@ export class TextmateProvider extends BaseProvider {
       })
     })
     const snippets = this.loadSnippetsFromText(snippetFilePath, contents)
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleDateString()}] Loaded ${snippets.length} snippets from ${snippetFilePath}`)
+    if (this.trace == 'verbose') {
+      this.channel.appendLine(`[Info ${(new Date()).toLocaleDateString()}] Loaded ${snippets.length} snippets from ${snippetFilePath}`)
+    }
     return snippets
   }
 

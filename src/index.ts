@@ -55,6 +55,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const configuration = workspace.getConfiguration('snippets')
   const filetypeExtends = configuration.get<any>('extends', {})
   const manager = new ProviderManager()
+  const trace = configuration.get<string>('trace', 'error')
   let mru = workspace.createMru('snippets-mru')
 
   const channel = workspace.createOutputChannel('snippets')
@@ -87,7 +88,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (c.directories.indexOf(snippetsDir) == -1) {
       c.directories.push(snippetsDir)
     }
-    let provider = new UltiSnippetsProvider(channel, c)
+    let provider = new UltiSnippetsProvider(channel, trace, c)
     manager.regist(provider, 'ultisnips')
     // add rtp if ultisnips not found
     nvim.getOption('runtimepath').then(async rtp => {
@@ -112,7 +113,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
     extends: Object.assign({}, filetypeExtends)
   }
-  let provider = new TextmateProvider(channel, config)
+  let provider = new TextmateProvider(channel, trace, config)
   manager.regist(provider, 'snippets')
 
   if (configuration.get<boolean>('snipmate.enable', true)) {
@@ -120,7 +121,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       author: configuration.get<string>('snipmate.author', ''),
       extends: Object.assign({}, filetypeExtends)
     }
-    let provider = new SnipmateProvider(channel, config)
+    let provider = new SnipmateProvider(channel, trace, config)
     manager.regist(provider, 'snipmate')
   }
 
@@ -263,8 +264,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
     await workspace.moveTo(range.start)
   }, { silent: true, sync: false, cancel: true }))
 
-  let languageProvider = new LanguageProvider()
-  languages.registerCompletionItemProvider('snippets-source', 'S', ['snippets'], languageProvider)
+  let languageProvider = new LanguageProvider(channel, trace)
+  languages.registerCompletionItemProvider('snippets-source', 'S', ['snippets'], languageProvider, ['$'])
 
   subscriptions.push(statusItem)
   subscriptions.push(channel)

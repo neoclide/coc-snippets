@@ -2,12 +2,12 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { CompleteOption, CompletionItemProvider, Document, workspace, snippetManager } from 'coc.nvim'
-import { CancellationToken, CompletionContext, CompletionItem, Disposable, InsertTextFormat, Position, Range, TextDocument, CompletionItemKind } from 'vscode-languageserver-protocol'
+import { CompleteOption, CompletionItemProvider, Document, snippetManager, workspace } from 'coc.nvim'
+import path from 'path'
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
+import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { flatten } from './util'
-import path from 'path'
-import BaseProvider from './baseProvider'
 
 export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
