@@ -94,12 +94,10 @@ snippet.
   ```
 
 - `snippets.shortcut`, shortcut in completion menu, default `S`.
-- `snippets.autoTrigger`: enable auto trigger for auto trigger snippets, default
-  `true`.
+- `snippets.autoTrigger`: enable auto trigger for auto trigger ultisnips snippets, default `true`.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
-- `snippets.loadFromExtensions`: specify whether to load snippets from
+- `snippets.loadFromExtensions`: load snippets from coc.nvim extensions, default: `true`.
 - `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load.
-  extensions, default: `true`
 - `snippets.expandFallbackWithPum`: fallback action when expand failed and pumvisible, default: `refresh`. Possible values:
   - `refresh`: trigger completion for new complete items.
   - `confirm`: confirm completion with current selected complete item.
