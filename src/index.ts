@@ -167,20 +167,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
 
   async function fallback(): Promise<void> {
-    let visible = await nvim.call('pumvisible')
-    if (visible) {
-      let action = configuration.get<string>('expandFallbackWithPum', 'refresh')
-      if (action == 'refresh') {
-        await nvim.call('coc#start', [{ source: 'snippets' }])
-      } else if (action == 'next') {
-        await nvim.eval(`feedkeys("\\<C-n>", 'in')`)
-      } else if (action == 'confirm') {
-        await nvim.call('coc#_select', [])
-      } else {
-        workspace.showMessage('No match snippet found', 'warning')
-      }
-      return
-    }
     await nvim.call('coc#start', [{ source: 'snippets' }])
   }
 

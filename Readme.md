@@ -13,7 +13,7 @@ It's capable of:
 - Provide snippets as completion items.
 - Provide expand and expandOrJump keymaps for snippet.
 - Provide snippets list for edit snippet.
-- Provide `snippets.editSnippets` command for edit snippets of current filetype.
+- Provide `snippets.editSnippets` command for edit user snippets of current filetype.
 
 ## Why?
 
@@ -21,7 +21,7 @@ It's capable of:
 - Nested snippet support.
 - Always async, never slows you down.
 - Improved match for complete items with TextEdit support.
-- Edit snippet by `:CocList snippets`, sorted by mru.
+- Edit snippets of current buffer by `:CocList snippets`, sorted by mru.
 
 ## Install
 
@@ -31,31 +31,54 @@ In your vim/neovim, run command:
 :CocInstall coc-snippets
 ```
 
-## Usage
+## Examples
 
 ```vim
-" Use <C-l> to trigger snippet expand.
+" Use <C-l> for trigger snippet expand.
 imap <C-l> <Plug>(coc-snippets-expand)
-" Use <C-j> to select text for visual text of snippet.
+
+" Use <C-j> for select text for visual placeholder of snippet.
 vmap <C-j> <Plug>(coc-snippets-select)
-" Use <C-j> to jump to forward placeholder, which is default
+
+" Use <C-j> for jump to next placeholder, it's default of coc.nvim
 let g:coc_snippet_next = '<c-j>'
-" Use <C-k> to jump to backward placeholder, which is default
+
+" Use <C-k> for jump to previous placeholder, it's default of coc.nvim
 let g:coc_snippet_prev = '<c-k>'
-```
 
-**Note**: when using same key for expand snippet and jump forward, jump
-forward would have higher priority, to make expand have higher priority, you
-should use:
-
-```vim
+" Use <C-j> for both expand and jump (make expand higher priority.)
 imap <C-j> <Plug>(coc-snippets-expand-jump)
 ```
+
+Make `<tab>` used for trigger completion, completion confirm, snippet expand and jump like VSCode.
+
+```vim
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? coc#_select_confirm() :
+      \ coc#expandableOrJumpable() ? coc#rpc#request('doKeymap', ['snippets-expand-jump','']) :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+let g:coc_snippet_next = '<tab>'
+```
+
+**Note:** `coc#_select_confirm()` could help select complete item (when `"suggest.noselect"` is true)
 
 To open snippet files, use command:
 
 ```vim
 :CocList snippets
+```
+
+To open user snippet of current file, use command:
+
+```vim
+:CocCommand snippets.editSnippets
 ```
 
 ## Ultisnips features
@@ -99,19 +122,12 @@ snippet.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
 - `snippets.loadFromExtensions`: load snippets from coc.nvim extensions, default: `true`.
 - `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load.
-- `snippets.expandFallbackWithPum`: fallback action when expand failed and pumvisible, default: `refresh`. Possible values:
-  - `refresh`: trigger completion for new complete items.
-  - `confirm`: confirm completion with current selected complete item.
-  - `next`: select next complete item.
-  - `none`: do nothing.
 - `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
-- `snippets.ultisnips.usePythonx`: use `pythonx` for eval python code, default
-  `true`.
-- `snippets.ultisnips.pythonVersion`: python version to use for run python code,
-  default to `3`, will always use `pyx` commands on vim.
+- `snippets.ultisnips.usePythonx`: use `pythonx` for eval python code when possible, default `true`.
+- `snippets.ultisnips.pythonVersion`: when `usePythonx` is false, python version to use for
+  python code, default to `3`.
 - `snippets.ultisnips.directories`: directories that searched for snippet files,
-  could be subfolder in every \$runtimepath or absolute paths, default:
-  `["UltiSnips"]`
+  could be subfolder in every \$runtimepath or absolute paths, default: `["UltiSnips"]`
 - `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
 - `snippets.snippets.author`: author name used for `g:snips_author`
 
@@ -127,49 +143,15 @@ output channel:
 
 ## F.A.Q
 
-Q: Can i use this without install ultisnips?
+**Q:** Where to get snippets?
 
-A: Yes, this extension could work with or without UltiSnips installed, it works independently,
-it doesn't use code or read configuration from UltiSnips.
+**A:** One solution is install [honza/vim-snippets](https://github.com/honza/vim-snippets) which is widely used.
 
-Q: How to use `<tab>` for select next completion item and expand snippet?
+**Q:** Do I need to install [Ultisnips](https://github.com/SirVer/ultisnips).
 
-A: Use condition keymap like:
-
-```vim
-inoremap <silent><expr> <TAB>
-      \ pumvisible() ? "\<C-n>" :
-      \ <SID>check_back_space() ? "\<TAB>" :
-      \ coc#rpc#request('doKeymap', ['snippets-expand', "\<TAB>"])
-
-function! s:check_back_space() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
-```
-
-Q: How to use `<tab>` for completion expand, completion confirm, snippet expand
-and snippet jump?
-
-A: Use condition keymap like:
-
-```vim
-inoremap <silent><expr> <TAB>
-      \ pumvisible() ? coc#_select_confirm() :
-      \ coc#expandableOrJumpable() ? coc#rpc#request('doKeymap', ['snippets-expand-jump','']) :
-      \ <SID>check_back_space() ? "\<TAB>" :
-      \ coc#refresh()
-
-function! s:check_back_space() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
-
-let g:coc_snippet_next = '<tab>'
-```
-
-**Note:** `coc#_select_confirm` could select complete item when necessary (when
-`"suggest.noselect"` is true)
+**A:** No! This extension is designed to work with or without Ultisnips, you can
+still install Ultisnips, but this extension would not run any code of read
+configuration from it.
 
 ## License
 
