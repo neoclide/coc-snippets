@@ -2,17 +2,18 @@
 
 Snippets solution for [coc.nvim](https://github.com/neoclide/coc.nvim)
 
-![2019-02-24 12_04_54](https://user-images.githubusercontent.com/251450/53295003-8570f600-382c-11e9-9e3b-5d4ce2689661.gif)
+![2019-03-23 00_09_39](https://user-images.githubusercontent.com/251450/54837017-62891300-4d00-11e9-9e53-49742a1a33f2.gif)
 
 It's capable of:
 
 - Load UltiSnips snippets.
-- Load textmate format snippets from coc extensions.
 - Load snipmate snippets.
+- Load VSCode snippets from coc extensions.
+- Load VSCode snippets from custom directories.
 - Provide snippets as completion items.
-- Provide trigger key for trigger snippet.
+- Provide expand and expandOrJump keymaps for snippet.
 - Provide snippets list for edit snippet.
-- Provide `snippet.editSnippets` command for edit snippets of current filetype.
+- Provide `snippets.editSnippets` command for edit snippets of current filetype.
 
 ## Why?
 
@@ -131,7 +132,7 @@ Q: Can i use this without install ultisnips?
 A: Yes, this extension could work with or without UltiSnips installed, it works independently,
 it doesn't use code or read configuration from UltiSnips.
 
-Q: How to use same key for select next completion item and expand snippet?
+Q: How to use `<tab>` for select next completion item and expand snippet?
 
 A: Use condition keymap like:
 

@@ -74,10 +74,10 @@ export default class UltiSnipsParser {
           let originRegex: string
           let body = preLines.join('\n')
           // convert placeholder regex to javascript regex
-          body = body.replace(/((?:[^\\]?\$\{[^/]+)\/)(.*?[^\\])(?=\/)/g, (_match, p1, p2) => {
+          body = body.replace(/((?:[^\\]?\$\{\w+?)\/)([^\n]*?[^\\])(?=\/)/g, (_match, p1, p2) => {
             return p1 + convertRegex(p2)
           })
-          let ms = first.match(/^(.+?)(?:\s+(?:"(.*?)")?(?:\s+"(.*?)")?(?:\s+(\w+))?)?$/)
+          let ms = first.match(/^(.+?)(?:\s+(?:"(.*?)")?(?:\s+"(.*?)")?(?:\s+(\w+))?)?\s*$/)
           let prefix = ms[1]
           let description = ms[2] || ''
           let context = ms[3]
@@ -119,7 +119,7 @@ export default class UltiSnipsParser {
           }
           snippets.push(snippet)
         } catch (e) {
-          this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1}`)
+          this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1} ${e.message}`)
         } finally {
           parsedContext = null
           preLines = []

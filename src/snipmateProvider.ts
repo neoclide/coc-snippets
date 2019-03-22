@@ -117,6 +117,7 @@ export class SnipmateProvider extends BaseProvider {
       lnum += 1
       if (line.startsWith('#')) return
       if (line.startsWith('snippet')) {
+        line = line.replace(/\s*$/, '')
         if (lines.length && prefix) {
           res.push({
             filepath,

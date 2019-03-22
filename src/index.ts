@@ -17,8 +17,7 @@ import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { wait } from './util'
 import LanguageProvider from './languages'
 
-const docs = `
-# A valid snippet should starts with:
+const docs = `# A valid snippet should starts with:
 #
 #		snippet trigger_word [ "description" [ options ] ]
 #
