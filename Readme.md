@@ -153,6 +153,10 @@ output channel:
 still install Ultisnips, but this extension would not run any code of read
 configuration from it.
 
+**Q:** How to check jumpable or expandable at current position.
+
+**A:** Use functions: `coc#expandable()` `coc#jumpable()` and `coc#expandableOrJumpable()`.
+
 ## License
 
 MIT

@@ -89,6 +89,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     }
     let provider = new UltiSnippetsProvider(channel, trace, c)
     manager.regist(provider, 'ultisnips')
+    subscriptions.push(provider)
     // add rtp if ultisnips not found
     nvim.getOption('runtimepath').then(async rtp => {
       let paths = (rtp as string).split(',')
@@ -141,7 +142,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
-      commands.executeCommand('editor.action.insertSnippet', edits[0])
+      await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
     }, null, subscriptions)
   }
@@ -174,12 +175,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let edits = await manager.getTriggerSnippets()
     if (edits.length == 0) return false
     if (edits.length == 1) {
-      commands.executeCommand('editor.action.insertSnippet', edits[0])
+      await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
     } else {
       let idx = await workspace.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
       if (idx == -1) return
-      commands.executeCommand('editor.action.insertSnippet', edits[idx])
+      await commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
     }
     return true

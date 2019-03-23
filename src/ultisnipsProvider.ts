@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Document, OutputChannel, workspace } from 'coc.nvim'
+import { Document, Watchman, OutputChannel, workspace, disposeAll } from 'coc.nvim'
 import os from 'os'
 import path from 'path'
 import { Disposable } from 'vscode-jsonrpc'
@@ -12,6 +12,7 @@ import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
 import { readdirAsync, readFileAsync, statAsync, writeFileAsync, distinct } from './util'
+import { FileChange } from 'coc.nvim/lib/watchman'
 
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
@@ -25,16 +26,10 @@ export class UltiSnippetsProvider extends BaseProvider {
     this.directories = this.config.directories.map(s => {
       return s.startsWith('~') ? os.homedir() + s.slice(1) : s
     })
-
-    workspace.onDidSaveTextDocument(async doc => {
-      let filepath = Uri.parse(doc.uri).fsPath
-      let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
-      if (snippetFile) await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
-    }, null, this.disposables)
   }
 
   public async init(): Promise<void> {
-    let { config } = this
+    let { config, directories } = this
     let hasPythonx = await workspace.nvim.call('has', ['pythonx'])
     this.pythonCode = await readFileAsync(path.join(__dirname, '../python/ultisnips.py'), 'utf8')
     if (hasPythonx && config.usePythonx) {
@@ -53,6 +48,45 @@ export class UltiSnippetsProvider extends BaseProvider {
       await writeFileAsync(tmpfile, this.pythonCode)
       let escaped = await nvim.call('fnameescape', tmpfile)
       workspace.nvim.command(`${this.pyMethod}file ${escaped}`, true)
+    }
+    let watchmanPath = workspace.getWatchmanPath()
+    if (!watchmanPath) {
+      workspace.onDidSaveTextDocument(async doc => {
+        let filepath = Uri.parse(doc.uri).fsPath
+        let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
+        if (snippetFile) {
+          await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
+        } else {
+          let filetype = path.basename(filepath, '.snippets')
+          await this.loadSnippetsFromFile(filetype, path.dirname(filepath), filepath)
+        }
+      }, null, this.disposables)
+    } else {
+      for (let dir of directories) {
+        if (!path.isAbsolute(dir)) continue
+        let watchman = new Watchman(watchmanPath, this.channel)
+        await watchman.watchProject(dir)
+        let disposable = await watchman.subscribe('**/*.snippets', async (change: FileChange) => {
+          let { files } = change
+          files = files.filter(f => f.type == 'f')
+          for (let fileItem of files) {
+            let filepath = path.join(dir, fileItem.name)
+            if (!fileItem.exists) {
+              let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
+              if (idx !== -1) this.snippetFiles.splice(idx, 1)
+            } else {
+              let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
+              if (snippetFile) {
+                await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
+              } else {
+                let filetype = path.basename(filepath, '.snippets')
+                await this.loadSnippetsFromFile(filetype, path.dirname(filepath), filepath)
+              }
+            }
+          }
+        })
+        this.disposables.push(disposable)
+      }
     }
   }
 
@@ -288,5 +322,9 @@ export class UltiSnippetsProvider extends BaseProvider {
       }
     }
     return res
+  }
+
+  public dispose(): void {
+    disposeAll(this.disposables)
   }
 }
