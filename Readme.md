@@ -69,7 +69,7 @@ let g:coc_snippet_next = '<tab>'
 
 **Note:** `coc#_select_confirm()` could help select complete item (when `"suggest.noselect"` is true)
 
-To open snippet files, use command:
+To open get snippet list of current file, use command:
 
 ```vim
 :CocList snippets
