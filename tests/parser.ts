@@ -2,6 +2,7 @@ import UltiSnipsParser from '../src/ultisnipsParser'
 import path from 'path'
 import fs from 'fs'
 import { TriggerKind } from '../src/types'
+// tslint:disable: no-invalid-template-strings
 
 describe('ultisnips parser', () => {
 
@@ -29,7 +30,6 @@ describe('ultisnips parser', () => {
     expect(res.snippets[4].prefix).toBe('.')
     expect(res.snippets[4].regex != null).toBe(true)
 
-
     expect(res.snippets[5].prefix).toBe('"')
     expect(res.snippets[5].triggerKind).toBe(TriggerKind.LineBegin)
 
@@ -41,6 +41,7 @@ describe('ultisnips parser', () => {
     let parser = new UltiSnipsParser('pyx')
     let file = path.join(__dirname, './files/transform.snippets')
     let res = await parser.parseUltisnipsFile(file)
+    // tslint:disable-next-line: no-invalid-template-strings
     expect(res.snippets[0].body).toBe('${VISUAL/(?<name>\\w+)/, /g}')
     expect(res.snippets[1].body).toBe('${1/^(?<word>[a-z]+)!\\k<word>$/$1/g}')
   })

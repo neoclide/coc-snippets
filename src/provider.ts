@@ -7,7 +7,6 @@ import path from 'path'
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
-import { flatten } from './util'
 
 export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
@@ -32,22 +31,21 @@ export class ProviderManager implements CompletionItemProvider {
 
   public async getSnippets(): Promise<Snippet[]> {
     let names = Array.from(this.providers.keys())
-    let doc = await workspace.document
-    let list = names.map(name => {
+    let list: Snippet[] = []
+    for (let name of names) {
       let provider = this.providers.get(name)
-      let snippets = provider.getSnippets(doc.filetype)
+      let snippets = await provider.getSnippets()
       snippets.map(s => s.provider = name)
-      return snippets
-    })
-    return flatten(list)
+      list.push(...snippets)
+    }
+    return list
   }
 
   public async getSnippetFiles(): Promise<string[]> {
-    let doc = await workspace.document
-    if (!doc) return []
     let files: string[] = []
     for (let provider of this.providers.values()) {
-      files = files.concat(provider.getSnippetFiles(doc.filetype))
+      let res = await provider.getSnippetFiles()
+      files = files.concat(res)
     }
     return files
   }

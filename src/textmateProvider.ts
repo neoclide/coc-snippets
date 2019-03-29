@@ -1,4 +1,4 @@
-import { Document, Extension, extensions, OutputChannel } from 'coc.nvim'
+import { Document, workspace, Extension, extensions, OutputChannel } from 'coc.nvim'
 import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import os from 'os'
@@ -64,7 +64,7 @@ export class TextmateProvider extends BaseProvider {
     }
   }
 
-  public getSnippetFiles(_filetype: string): string[] {
+  public async getSnippetFiles(): Promise<string[]> {
     return []
   }
 
@@ -72,7 +72,7 @@ export class TextmateProvider extends BaseProvider {
     if (autoTrigger) return []
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
-    let snippets = this.getSnippets(document.filetype)
+    let snippets = await this.getSnippets()
     if (!snippets || !snippets.length) return []
     let edits: SnippetEdit[] = []
     for (let snip of snippets) {
@@ -93,9 +93,9 @@ export class TextmateProvider extends BaseProvider {
     return edits
   }
 
-  public getSnippets(filetype: string): Snippet[] {
+  public async getSnippets(): Promise<Snippet[]> {
     let res: Snippet[] = []
-    let filetypes: string[] = this.getFiletypes(filetype)
+    let filetypes: string[] = await this.getFiletypes()
     let added: Set<string> = new Set()
     for (let key of Object.keys(this._snippetCache)) {
       let cache = this._snippetCache[key]
