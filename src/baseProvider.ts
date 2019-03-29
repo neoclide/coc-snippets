@@ -32,7 +32,7 @@ export default abstract class BaseProvider {
     if (filetype == 'javascript.jsx') filetypes.push('javascriptreact')
     if (filetype == 'typescript.jsx' || filetype == 'typescript.tsx') filetypes.push('typescriptreact')
     let map = await workspace.nvim.getVar('coc_filetype_map') as { [key: string]: string }
-    if (map[filetype]) {
+    if (map && map[filetype]) {
       filetypes.push(map[filetype])
     }
     filetypes.reverse()
