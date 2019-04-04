@@ -4,9 +4,10 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { CompleteOption, CompletionItemProvider, Document, snippetManager, workspace } from 'coc.nvim'
 import path from 'path'
-import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range, TextDocument, MarkupContent } from 'vscode-languageserver-protocol'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
+import { markdownBlock } from './util'
 
 export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
@@ -157,11 +158,15 @@ export class ProviderManager implements CompletionItemProvider {
   public async resolveCompletionItem(item: CompletionItem): Promise<CompletionItem> {
     let provider = this.providers.get(item.data.provider)
     if (provider) {
+      let filetype = await workspace.nvim.eval('&filetype') as string
       let insertSnippet = await provider.resolveSnippetBody(item.data.snip, item.textEdit.range, item.data.line)
       item.textEdit.newText = insertSnippet
       if (snippetManager) {
         let snip = await Promise.resolve(snippetManager.resolveSnippet(insertSnippet))
-        item.documentation = snip.toString()
+        item.documentation = {
+          kind: 'markdown',
+          value: markdownBlock(snip.toString(), filetype)
+        }
       }
     }
     return item

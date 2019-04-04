@@ -1,6 +1,6 @@
 import { workspace, snippetManager, languages, CompletionItemProvider, ProviderResult, DiagnosticCollection, CompleteOption, OutputChannel } from 'coc.nvim'
 import { TextDocument, Position, CancellationToken, CompletionContext, CompletionItem, Disposable, CompletionItemKind, InsertTextFormat, Diagnostic, Range, DiagnosticSeverity } from 'vscode-languageserver-protocol'
-import { convertRegex, headTail } from './util'
+import { convertRegex, headTail, markdownBlock } from './util'
 
 const codesMap: Map<number, string> = new Map()
 codesMap.set(1, 'invalid snippet line, trigger requried.')
@@ -136,7 +136,10 @@ export default class LanguageProvider implements CompletionItemProvider {
     let text = item.insertText || item.textEdit.newText
     // tslint:disable-next-line: deprecation
     let snip = await Promise.resolve(snippetManager.resolveSnippet(text))
-    item.documentation = snip.toString()
+    item.documentation = {
+      kind: 'markdown',
+      value: markdownBlock(snip.toString(), 'snippets')
+    }
     return item
   }
 }

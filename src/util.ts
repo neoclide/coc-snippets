@@ -158,3 +158,9 @@ export function getRegexText(prefix: string): string {
   content = content.replace(/\\/g, '')
   return content
 }
+
+export function markdownBlock(code: string, filetype: string): string {
+  filetype = filetype == 'javascriptreact' ? 'javascript' : filetype
+  filetype = filetype == 'typescriptreact' ? 'typescript' : filetype
+  return '``` ' + filetype + '\n' + code + '\n```'
+}
