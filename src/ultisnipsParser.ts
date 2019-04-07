@@ -99,9 +99,9 @@ export default class UltiSnipsParser {
               this.error(`Convert regex error for: ${prefix}`)
             }
           }
-          if (option.indexOf('e') !== -1) {
-            context = context || parsedContext
-          } else {
+          if (parsedContext) {
+            context = parsedContext
+          } else if (option.indexOf('e') == -1) {
             context = null
           }
           let snippet: Snippet = {
