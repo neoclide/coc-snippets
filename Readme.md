@@ -157,6 +157,20 @@ configuration from it.
 
 **A:** Use functions: `coc#expandable()` `coc#jumpable()` and `coc#expandableOrJumpable()`.
 
+**Q:** It doesn't load snippets from [vim-go](https://github.com/fatih/vim-go).
+
+**A:** It use `g:UltiSnipsSnippetDirectories` which is not supported, you can
+add settings:
+
+```
+snippets.ultisnips.directories: [
+  "UltiSnips",
+  "gosnippets/UltiSnips"
+],
+```
+
+to load it.
+
 ## License
 
 MIT
