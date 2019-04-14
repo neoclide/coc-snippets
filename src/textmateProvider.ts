@@ -10,8 +10,8 @@ import { Snippet, SnippetEdit, TriggerKind } from './types'
 
 export interface ISnippetPluginContribution {
   prefix: string
-  body: string[]
-  description: string
+  body: string | string[]
+  description: string | string[]
 }
 
 export interface SnippetDefinition {
@@ -213,9 +213,9 @@ export class TextmateProvider extends BaseProvider {
       return {
         filepath,
         lnum: 0,
-        body: typeof snip.body === 'string' ? snip.body : snip.body.join(os.EOL),
+        body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
         prefix: snip.prefix,
-        description: snip.description,
+        description: typeof snip.description === 'string' ? snip.description : snip.description.join('\n'),
         triggerKind: TriggerKind.LineBegin
       }
     },
