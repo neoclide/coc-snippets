@@ -185,6 +185,11 @@ export class UltiSnippetsProvider extends BaseProvider {
       if (s.triggerKind == TriggerKind.WordBoundary) return pre.length == 0 || !document.isWord(pre[pre.length - 1])
       return false
     })
+    snippets.sort((a, b) => {
+      if (a.context && !b.context) return -1
+      if (b.context && !a.context) return 1
+      return 0
+    })
     let edits: SnippetEdit[] = []
     let contextPrefixes: string[] = []
     for (let s of snippets) {
