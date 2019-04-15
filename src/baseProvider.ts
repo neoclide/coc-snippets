@@ -22,12 +22,19 @@ export default abstract class BaseProvider {
     return true
   }
 
+  protected getExtendsFiletypes(filetype: string): string[] {
+    let extend = this.config.extends ? this.config.extends[filetype] : null
+    if (!extend || extend.length == 0) return []
+    return extend.reduce((arr, curr) => {
+      return arr.concat([curr], this.getExtendsFiletypes(curr))
+    }, [] as string[])
+  }
+
   public async getFiletypes(): Promise<string[]> {
     let filetype = await workspace.nvim.eval('&filetype') as string
-    let extend = this.config.extends ? this.config.extends[filetype] : null
-    let filetypes = filetype.split('.')
-    if (extend && extend.length) {
-      filetypes = extend.concat(filetypes)
+    let filetypes = [filetype]
+    if (filetype.indexOf('.') !== -1) {
+      filetypes.push(...filetype.split('.'))
     }
     if (filetype == 'javascript.jsx') filetypes.push('javascriptreact')
     if (filetype == 'typescript.jsx' || filetype == 'typescript.tsx') filetypes.push('typescriptreact')
@@ -35,6 +42,10 @@ export default abstract class BaseProvider {
     if (map && map[filetype]) {
       filetypes.push(map[filetype])
     }
+    let extendFiletypes = filetypes.reduce((arr, curr) => {
+      return arr.concat(this.getExtendsFiletypes(curr))
+    }, [] as string[])
+    filetypes.push(...extendFiletypes)
     filetypes.reverse()
     return distinct(filetypes)
   }
