@@ -22,11 +22,13 @@ export default abstract class BaseProvider {
     return true
   }
 
-  protected getExtendsFiletypes(filetype: string): string[] {
+  protected getExtendsFiletypes(filetype: string, exists: Set<string> = new Set()): string[] {
+    if (exists.has(filetype)) return []
     let extend = this.config.extends ? this.config.extends[filetype] : null
+    exists.add(filetype)
     if (!extend || extend.length == 0) return []
     return extend.reduce((arr, curr) => {
-      return arr.concat([curr], this.getExtendsFiletypes(curr))
+      return arr.concat([curr], this.getExtendsFiletypes(curr, exists))
     }, [] as string[])
   }
 
