@@ -215,7 +215,7 @@ export class TextmateProvider extends BaseProvider {
         lnum: 0,
         body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
         prefix: snip.prefix,
-        description: typeof snip.description === 'string' ? snip.description : snip.description.join('\n'),
+        description: typeof snip.description === 'string' ? snip.description : typeof snip.description !== 'undefined' ? snip.description.join('\n') : '',
         triggerKind: TriggerKind.LineBegin
       }
     },
