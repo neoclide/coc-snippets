@@ -1,4 +1,4 @@
-import { Document, workspace, Extension, extensions, OutputChannel } from 'coc.nvim'
+import { Document, Extension, extensions, OutputChannel } from 'coc.nvim'
 import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import os from 'os'
@@ -7,6 +7,7 @@ import util from 'util'
 import { Position, Range } from 'vscode-languageserver-types'
 import BaseProvider, { Config } from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
+import { distinct } from './util'
 
 export interface ISnippetPluginContribution {
   prefix: string
@@ -64,15 +65,39 @@ export class TextmateProvider extends BaseProvider {
     }
   }
 
-  public async getSnippetFiles(): Promise<string[]> {
-    return []
+  public async getSnippetFiles(filetype: string): Promise<string[]> {
+    let filetypes = this.getFiletypes(filetype)
+    let filepaths: string[] = []
+    if (this.config.loadFromExtensions) {
+      for (let key of Object.keys(this._snippetCache)) {
+        let cache = this._snippetCache[key]
+        for (let filetype of filetypes) {
+          let snippets = cache[filetype]
+          if (snippets && snippets.length) {
+            filepaths.push(snippets[0].filepath)
+          }
+        }
+      }
+    }
+    for (let filetype of filetypes) {
+      let snippets = this._userSnippets[filetype]
+      if (snippets && snippets.length) {
+        for (let snip of snippets) {
+          let { filepath } = snip
+          if (filepaths.indexOf(filepath) == -1) {
+            filepaths.push(filepath)
+          }
+        }
+      }
+    }
+    return distinct(filepaths)
   }
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
     if (autoTrigger) return []
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
-    let snippets = await this.getSnippets()
+    let snippets = await this.getSnippets(document.filetype)
     if (!snippets || !snippets.length) return []
     let edits: SnippetEdit[] = []
     for (let snip of snippets) {
@@ -93,9 +118,9 @@ export class TextmateProvider extends BaseProvider {
     return edits
   }
 
-  public async getSnippets(): Promise<Snippet[]> {
+  public async getSnippets(filetype: string): Promise<Snippet[]> {
     let res: Snippet[] = []
-    let filetypes: string[] = await this.getFiletypes()
+    let filetypes: string[] = this.getFiletypes(filetype)
     let added: Set<string> = new Set()
     for (let key of Object.keys(this._snippetCache)) {
       let cache = this._snippetCache[key]

@@ -166,7 +166,7 @@ export class SnipmateProvider extends BaseProvider {
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger: boolean): Promise<SnippetEdit[]> {
     if (autoTrigger) return []
-    let snippets = await this.getSnippets()
+    let snippets = await this.getSnippets(document.filetype)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
     if (!line || line[line.length - 1] == ' ') return []
@@ -193,8 +193,8 @@ export class SnipmateProvider extends BaseProvider {
     return edits
   }
 
-  public async getSnippetFiles(): Promise<string[]> {
-    let filetypes: string[] = await this.getFiletypes()
+  public async getSnippetFiles(filetype: string): Promise<string[]> {
+    let filetypes: string[] = this.getFiletypes(filetype)
     let res: string[] = []
     for (let s of this.snippetFiles) {
       if (filetypes.indexOf(s.filetype) !== -1) {
@@ -204,16 +204,14 @@ export class SnipmateProvider extends BaseProvider {
     return res
   }
 
-  public async getSnippets(): Promise<Snippet[]> {
-    let doc = workspace.getDocument(workspace.bufnr)
-    if (!doc) return []
-    let filetypes: string[] = await this.getFiletypes()
+  public async getSnippets(filetype: string): Promise<Snippet[]> {
+    let filetypes: string[] = this.getFiletypes(filetype)
     filetypes.push('_')
     let snippetFiles = this.snippetFiles.filter(o => filetypes.indexOf(o.filetype) !== -1)
     let result: Snippet[] = []
     snippetFiles.sort((a, b) => {
       if (a.filetype == b.filetype) return 1
-      if (a.filetype == doc.filetype) return -1
+      if (a.filetype == filetype) return -1
       return 1
     })
     for (let file of snippetFiles) {

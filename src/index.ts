@@ -17,7 +17,7 @@ import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { wait } from './util'
 import LanguageProvider from './languages'
 
-const docs = `# A valid snippet should starts with:
+const documentation = `# A valid snippet should starts with:
 #
 #		snippet trigger_word [ "description" [ options ] ]
 #
@@ -189,12 +189,33 @@ export async function activate(context: ExtensionContext): Promise<API> {
   subscriptions.push(commands.registerCommand('snippets.editSnippets', async () => {
     let buf = await nvim.buffer
     let doc = workspace.getDocument(buf.id)
-    if (!doc || !doc.filetype) return
+    if (!doc) {
+      workspace.showMessage('Document not found', 'error')
+      return
+    }
     let file = path.join(snippetsDir, `${doc.filetype}.snippets`)
     if (!fs.existsSync(file)) {
-      await util.promisify(fs.writeFile)(file, docs, 'utf8')
+      await util.promisify(fs.writeFile)(file, documentation, 'utf8')
     }
     let uri = Uri.file(file).toString()
+    await workspace.jumpTo(uri)
+  }))
+
+  subscriptions.push(commands.registerCommand('snippets.openSnippetFiles', async () => {
+    let buf = await nvim.buffer
+    let doc = workspace.getDocument(buf.id)
+    if (!doc) {
+      workspace.showMessage('Document not found', 'error')
+      return
+    }
+    let files = await manager.getSnippetFiles(doc.filetype)
+    if (!files.length) {
+      workspace.showMessage('No related snippet file found', 'warning')
+      return
+    }
+    let idx = await workspace.showQuickpick(files, 'choose snippet file:')
+    if (idx == -1) return
+    let uri = Uri.file(files[idx]).toString()
     await workspace.jumpTo(uri)
   }))
 

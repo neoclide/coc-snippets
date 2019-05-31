@@ -23,9 +23,12 @@
   "contributes": {
     "commands": [
       {
-        "title": "Edit user snippets file of current filetype.",
-        "category": "Snippets",
+        "title": "Edit user snippets file of current document filetype.",
         "command": "snippets.editSnippets"
+      },
+      {
+        "title": "Edit snippets files of current document filetype.",
+        "command": "snippets.openSnippetFiles"
       }
     ],
     "configuration": {

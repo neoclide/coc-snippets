@@ -13,8 +13,8 @@ export default abstract class BaseProvider {
   }
 
   public abstract init(): Promise<void>
-  public abstract async getSnippets(): Promise<Snippet[]>
-  public abstract async getSnippetFiles(): Promise<string[]>
+  public abstract async getSnippets(filetype: string): Promise<Snippet[]>
+  public abstract async getSnippetFiles(filetype: string): Promise<string[]>
   public abstract getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]>
   public abstract resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string>
 
@@ -32,15 +32,14 @@ export default abstract class BaseProvider {
     }, [] as string[])
   }
 
-  public async getFiletypes(): Promise<string[]> {
-    let filetype = await workspace.nvim.eval('&filetype') as string
+  public getFiletypes(filetype: string): string[] {
     let filetypes = [filetype]
     if (filetype.indexOf('.') !== -1) {
       filetypes.push(...filetype.split('.'))
     }
     if (filetype == 'javascript.jsx') filetypes.push('javascriptreact')
     if (filetype == 'typescript.jsx' || filetype == 'typescript.tsx') filetypes.push('typescriptreact')
-    let map = await workspace.nvim.getVar('coc_filetype_map') as { [key: string]: string }
+    let map = workspace.env.filetypeMap
     if (map && map[filetype]) {
       filetypes.push(map[filetype])
     }

@@ -24,7 +24,7 @@ export default class SnippetsList extends BasicList {
     let buf = await window.buffer
     let doc = workspace.getDocument(buf.id)
     if (!doc) return []
-    let snippets = await this.manager.getSnippets()
+    let snippets = await this.manager.getSnippets(doc.filetype)
     let res: ListItem[] = []
     let recents = await this.mru.load()
     for (let snip of snippets) {

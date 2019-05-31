@@ -30,22 +30,22 @@ export class ProviderManager implements CompletionItemProvider {
     }))
   }
 
-  public async getSnippets(): Promise<Snippet[]> {
+  public async getSnippets(filetype: string): Promise<Snippet[]> {
     let names = Array.from(this.providers.keys())
     let list: Snippet[] = []
     for (let name of names) {
       let provider = this.providers.get(name)
-      let snippets = await provider.getSnippets()
+      let snippets = await provider.getSnippets(filetype)
       snippets.map(s => s.provider = name)
       list.push(...snippets)
     }
     return list
   }
 
-  public async getSnippetFiles(): Promise<string[]> {
+  public async getSnippetFiles(filetype: string): Promise<string[]> {
     let files: string[] = []
     for (let provider of this.providers.values()) {
-      let res = await provider.getSnippetFiles()
+      let res = await provider.getSnippetFiles(filetype)
       files = files.concat(res)
     }
     return files
@@ -81,7 +81,7 @@ export class ProviderManager implements CompletionItemProvider {
     context: CompletionContext): Promise<CompletionItem[]> {
     let doc = workspace.getDocument(document.uri)
     if (!doc) return []
-    let snippets = await this.getSnippets()
+    let snippets = await this.getSnippets(doc.filetype)
     let currline = doc.getline(position.line, true)
     let { input, col } = (context as any).option! as CompleteOption
     let before_content = currline.slice(0, col)

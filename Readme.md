@@ -67,19 +67,7 @@ endfunction
 let g:coc_snippet_next = '<tab>'
 ```
 
-**Note:** `coc#_select_confirm()` could help select complete item (when `"suggest.noselect"` is true)
-
-To open get snippet list of current file, use command:
-
-```vim
-:CocList snippets
-```
-
-To open user snippet of current file, use command:
-
-```vim
-:CocCommand snippets.editSnippets
-```
+**Note:** `coc#_select_confirm()` helps select complete item (when `"suggest.noselect"` is true)
 
 ## Ultisnips features
 
@@ -131,13 +119,18 @@ snippet.
 - `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
 - `snippets.snippets.author`: author name used for `g:snips_author`
 
+## Commands
+
+- Use `:CocList snippets` to open snippets list.
+- Use `:CocCommand snippets.editSnippets` to edit user snippet of current filetype.
+- Use `:CocCommand snippets.openSnippetFiles` to open snippet files of current filetype.
+
 ## Regular expression convert
 
 Python regular expression of UltiSnips would be converted to javascript regex, however some
-patterns are not supported, including `(?s)`, `\Z`, `(?(id/name)yes-pattern|no-pattern)`.
+patterns are not supported, including `\u` `(?s)` `\Z` `(?(id/name)yes-pattern|no-pattern)`.
 
-The failed snippets would not be loaded, you can checkout the errors by open
-output channel:
+The failed snippets would not be loaded, you can checkout the errors by check output:
 
     :CocCommand workspace.showOutput snippets
 
