@@ -10,6 +10,7 @@ It's capable of:
 - Load snipmate snippets.
 - Load VSCode snippets from coc extensions.
 - Load VSCode snippets from custom directories.
+- Load UltiSnips snippets from configuration folder.
 - Provide snippets as completion items.
 - Provide expand and expandOrJump keymaps for snippet.
 - Provide snippets list for edit snippet.
@@ -163,6 +164,12 @@ snippets.ultisnips.directories: [
 ```
 
 to load it.
+
+**Q:** Ho could I add custom UltiSnips snippets.
+
+**A:** You can create snippet files in folder: `$VIMCONFG/coc/ultisnips`, use
+command `:CocCommand snippets.editSnippets` to open user snippet of current
+filetype.
 
 ## License
 

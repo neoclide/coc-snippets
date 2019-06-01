@@ -130,7 +130,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let lastChange
     events.on('InsertCharPre', () => {
       insertTs = Date.now()
-    })
+    }, null, subscriptions)
     events.on(['TextChangedI', 'TextChangedP'], async () => {
       if (!insertTs || Date.now() - insertTs > 50) return
       let now = lastChange = Date.now()
