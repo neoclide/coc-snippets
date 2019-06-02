@@ -6,7 +6,7 @@ import { commands, events, ExtensionContext, languages, listManager, snippetMana
 import fs from 'fs'
 import path from 'path'
 import util from 'util'
-import { Position, Range } from 'vscode-languageserver-types'
+import { Position, Range, CodeActionKind, CodeAction, Command, TextEdit } from 'vscode-languageserver-types'
 import Uri from 'vscode-uri'
 import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
@@ -186,7 +186,19 @@ export async function activate(context: ExtensionContext): Promise<API> {
     return true
   }
 
-  subscriptions.push(commands.registerCommand('snippets.editSnippets', async () => {
+  subscriptions.push(languages.registerCodeActionProvider([{ scheme: 'file' }, { scheme: 'untitled' }], {
+    provideCodeActions: async (document, range, context): Promise<CodeAction[]> => {
+      if (context.only && !context.only.includes(CodeActionKind.Source)) return
+      let action = CodeAction.create('Convert to snippet', {
+        command: 'snippets.editSnippets',
+        title: 'Convert to snippet',
+        arguments: [document.getText(range)]
+      } as Command)
+      return [action]
+    }
+  }, 'snippets', [CodeActionKind.Source]))
+
+  subscriptions.push(commands.registerCommand('snippets.editSnippets', async (text?: string) => {
     let buf = await nvim.buffer
     let doc = workspace.getDocument(buf.id)
     if (!doc) {
@@ -199,6 +211,18 @@ export async function activate(context: ExtensionContext): Promise<API> {
     }
     let uri = Uri.file(file).toString()
     await workspace.jumpTo(uri)
+    await nvim.command('normal! G')
+    if (text) {
+      await nvim.command('normal! 2o')
+      let position = await workspace.getCursorPosition()
+      let indent = text.match(/^\s*/)[0]
+      text = text.split(/\r?\n/).map(s => s.startsWith(indent) ? s.slice(indent.length) : s).join('\n')
+      let escaped = text.replace(/([$}\]])/g, '\\$1')
+      // tslint:disable-next-line: no-invalid-template-strings
+      let snippet = 'snippet ${1:Tab_trigger} "${2:Description}" ${3:b}\n' + escaped + '\nendsnippet'
+      let edit = TextEdit.insert(position, snippet)
+      await commands.executeCommand('editor.action.insertSnippet', edit)
+    }
   }))
 
   subscriptions.push(commands.registerCommand('snippets.openSnippetFiles', async () => {
