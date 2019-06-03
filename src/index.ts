@@ -297,14 +297,18 @@ export async function activate(context: ExtensionContext): Promise<API> {
 
   let languageProvider = new LanguageProvider(channel, trace)
   languages.registerCompletionItemProvider('snippets-source', 'S', ['snippets'], languageProvider, ['$'])
-
   subscriptions.push(statusItem)
   subscriptions.push(channel)
   subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager, mru)))
 
   return {
     expandable: async (): Promise<boolean> => {
-      let edits = await manager.getTriggerSnippets()
+      let edits
+      try {
+        edits = await manager.getTriggerSnippets()
+      } catch (e) {
+        channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on getTriggerSnippets: ${e}`)
+      }
       return edits && edits.length > 0
     }
   }
