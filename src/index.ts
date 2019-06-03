@@ -189,10 +189,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
   subscriptions.push(languages.registerCodeActionProvider([{ scheme: 'file' }, { scheme: 'untitled' }], {
     provideCodeActions: async (document, range, context): Promise<CodeAction[]> => {
       if (context.only && !context.only.includes(CodeActionKind.Source)) return
+      let text = document.getText(range)
+      if (text.endsWith('\n')) text = text.replace(/\n$/, '')
       let action = CodeAction.create('Convert to snippet', {
         command: 'snippets.editSnippets',
         title: 'Convert to snippet',
-        arguments: [document.getText(range)]
+        arguments: [text]
       } as Command)
       return [action]
     }
