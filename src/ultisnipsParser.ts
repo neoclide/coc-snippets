@@ -3,7 +3,7 @@ MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { exec } from 'child_process'
-import { OutputChannel } from 'coc.nvim'
+import { OutputChannel, workspace } from 'coc.nvim'
 import fs from 'fs'
 import pify from 'pify'
 import readline from 'readline'
@@ -180,7 +180,7 @@ export default class UltiSnipsParser {
   }
 
   private async execute(code: string, pyMethod: string): Promise<string> {
-    let { nvim } = require('coc.nvim').workspace
+    let { nvim } = workspace
     if (!nvim) return code
     let res = ''
     if (code.startsWith('!')) {

@@ -129,7 +129,10 @@ export class UltiSnippetsProvider extends BaseProvider {
       let indexes = Array.from(values.keys())
       indexes.sort((a, b) => a - b)
       let vals = indexes.map(idx => values.get(idx))
-      vals = vals.map(s => `'${s.replace(/'/g, "\\'")}'`)
+      vals = vals.map(s => {
+        if (/^`!\w/.test(s)) return ''
+        return `'${s.replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
+      })
       let pyCodes: string[] = []
       pyCodes.push('import re, os, vim, string, random')
       pyCodes.push(`t = ('', ${vals.join(',')})`)
@@ -148,7 +151,12 @@ export class UltiSnippetsProvider extends BaseProvider {
         pyCodes.push(`pattern = re.compile(r"${originRegex.replace(/"/g, '\\"')}")`)
         pyCodes.push(`match = pattern.search("${line.replace(/"/g, '\\"')}")`)
       }
-      await nvim.command(`${this.pyMethod} ${pyCodes.join('\n')}`)
+      try {
+        await nvim.command(`${this.pyMethod} ${pyCodes.join('\n')}`)
+      } catch (e) {
+        this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}]: ${e.message}`)
+        this.channel.appendLine(`code: ${pyCodes.join('\n')}`)
+      }
     }
     return this.parser.resolveUltisnipsBody(body)
   }
