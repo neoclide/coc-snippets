@@ -151,7 +151,8 @@ export default class UltiSnipsParser {
         }
         let code = parser.eatTo(idx + 1)
         code = code.slice(1, -1)
-        resolved = resolved + await this.execute(code, pyMethod)
+        let indent = resolved.split(/\n/).slice(-1)[0].match(/^\s*/)[0]
+        resolved = resolved + await this.execute(code, pyMethod, indent)
         continue
       } else if (parser.curr == '$') {
         let text = parser.next(7)
@@ -179,7 +180,7 @@ export default class UltiSnipsParser {
     return resolved
   }
 
-  private async execute(code: string, pyMethod: string): Promise<string> {
+  private async execute(code: string, pyMethod: string, indent: string): Promise<string> {
     let { nvim } = workspace
     if (!nvim) return code
     let res = ''
@@ -214,6 +215,13 @@ export default class UltiSnipsParser {
         res = `Error: ${e.message}`
         this.error(`Error on eval ${code}: ` + e.stack)
       }
+    }
+    let parts = res.split(/\r?\n/)
+    if (parts.length > 1) {
+      res = parts.map((s, idx) => {
+        if (idx == 0 || s.length == 0) return s
+        return `${indent}${s}`
+      }).join('\n')
     }
     return res
   }
