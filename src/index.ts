@@ -269,7 +269,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (!doc) return
     let mode = await nvim.call('mode')
     if (['v', 'V'].indexOf(mode) == -1) {
-      workspace.showMessage('select of visual block not supported', 'warning')
+      workspace.showMessage(`visual mode ${mode} not supported`, 'warning')
       return
     }
     await nvim.call('feedkeys', [String.fromCharCode(27), 'in'])
