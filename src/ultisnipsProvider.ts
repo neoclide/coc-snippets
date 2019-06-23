@@ -44,7 +44,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     }))
     if (this.pythonCode) {
       let { nvim } = workspace
-      let tmpfile = path.join(os.tmpdir(), 'coc-ultisnips.py')
+      let tmpfile = path.join(os.tmpdir(), `coc-ultisnips-${process.pid}.py`)
       await writeFileAsync(tmpfile, this.pythonCode)
       let escaped = await nvim.call('fnameescape', tmpfile)
       workspace.nvim.command(`${this.pyMethod}file ${escaped}`, true)
