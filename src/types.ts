@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Range } from 'vscode-languageserver-types'
+import {Range} from 'vscode-languageserver-types'
 
 export enum TriggerKind {
   SpaceBefore,
@@ -16,12 +16,12 @@ export interface UltiSnipsConfig {
   usePythonx: boolean
   pythonVersion: number
   directories: string[]
-  extends: { [key: string]: string[] }
+  extends: {[key: string]: string[]}
 }
 
 export interface SnipmateConfig {
   author: string
-  extends: { [key: string]: string[] }
+  extends: {[key: string]: string[]}
 }
 
 export interface UltiSnipsFile {
