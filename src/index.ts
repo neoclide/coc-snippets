@@ -298,7 +298,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }, { silent: true, sync: false, cancel: true }))
 
   let languageProvider = new LanguageProvider(channel, trace)
-  languages.registerCompletionItemProvider('snippets-source', 'S', ['snippets'], languageProvider, ['$'])
+  subscriptions.push(languages.registerCompletionItemProvider('snippets-source', 'S', ['snippets'], languageProvider, ['$']))
   subscriptions.push(statusItem)
   subscriptions.push(channel)
   subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager, mru)))
