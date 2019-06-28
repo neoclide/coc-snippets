@@ -39,6 +39,11 @@
           "default": 90,
           "description": "Completion source priority of snippets."
         },
+        "snippets.editSnippetsCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Open command used for snippets.editSnippets command, use coc.preferences.jumpCommand by default."
+        },
         "snippets.trace": {
           "type": "string",
           "default": "error",

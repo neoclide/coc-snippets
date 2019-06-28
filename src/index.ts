@@ -212,9 +212,9 @@ export async function activate(context: ExtensionContext): Promise<API> {
       await util.promisify(fs.writeFile)(file, documentation, 'utf8')
     }
     let uri = Uri.file(file).toString()
-    await workspace.jumpTo(uri)
-    await nvim.command('normal! G')
+    await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
     if (text) {
+      await nvim.command('normal! G')
       await nvim.command('normal! 2o')
       let position = await workspace.getCursorPosition()
       let indent = text.match(/^\s*/)[0]
