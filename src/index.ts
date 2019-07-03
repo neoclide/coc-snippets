@@ -3,6 +3,7 @@ MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { commands, events, ExtensionContext, languages, listManager, snippetManager, VimCompleteItem, workspace } from 'coc.nvim'
+import os from 'os'
 import fs from 'fs'
 import path from 'path'
 import util from 'util'
@@ -58,7 +59,16 @@ export async function activate(context: ExtensionContext): Promise<API> {
   let mru = workspace.createMru('snippets-mru')
 
   const channel = workspace.createOutputChannel('snippets')
-  const snippetsDir = path.join(path.dirname(workspace.env.extensionRoot), 'ultisnips')
+
+  let snippetsDir = configuration.get<string>('userSnippetsDirectory')
+  if (snippetsDir) {
+    snippetsDir = snippetsDir.replace(/^~/, os.homedir())
+    if (!path.isAbsolute(snippetsDir)) {
+      workspace.showMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`, 'warning')
+      snippetsDir = null
+    }
+  }
+  if (!snippetsDir) snippetsDir = path.join(path.dirname(workspace.env.extensionRoot), 'ultisnips')
   if (!fs.existsSync(snippetsDir)) {
     await util.promisify(fs.mkdir)(snippetsDir)
   }
