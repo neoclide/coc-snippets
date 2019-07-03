@@ -106,6 +106,7 @@ snippet.
   }
   ```
 
+- `snippets.userSnippetsDirectory`, Directory that contains custom user ultisnips snippets, use ultisnips in extension root by default.
 - `snippets.shortcut`, shortcut in completion menu, default `S`.
 - `snippets.autoTrigger`: enable auto trigger for auto trigger ultisnips snippets, default `true`.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
