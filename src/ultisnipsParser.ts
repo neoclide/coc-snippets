@@ -158,7 +158,10 @@ export default class UltiSnipsParser {
         let text = parser.next(7)
         if (text.startsWith('VISUAL') || text.startsWith('{VISUAL')) {
           parser.eat(8)
-          resolved = resolved + '$' + text.replace('VISUAL', 'TM_SELECTED_TEXT')
+          resolved += '$' + text.replace('VISUAL', 'TM_SELECTED_TEXT')
+        } else if (!/^\d/.test(text) && !text.startsWith('{') && p != '\\') {
+          // escape $ if it's not escaped and not a placeholder, ultisnips sucks
+          resolved += '\\' + parser.eat(1)
         } else {
           // skip current
           resolved += parser.eat(1)
