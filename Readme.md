@@ -10,11 +10,13 @@ It's capable of:
 - Load snipmate snippets.
 - Load VSCode snippets from coc extensions.
 - Load VSCode snippets from custom directories.
-- Load UltiSnips snippets from configuration folder.
+- Load UltiSnips snippets from configured folder.
 - Provide snippets as completion items.
 - Provide expand and expandOrJump keymaps for snippet.
 - Provide snippets list for edit snippet.
 - Provide `snippets.editSnippets` command for edit user snippets of current filetype.
+
+**Note:** some features of ultisnips and snipmate format snippets not supported, checkout [faq](#faq).
 
 ## Why?
 
@@ -88,11 +90,6 @@ Some ultisnips features are **not** supported:
 - [ ] Format related snippet options, including `t`, `s` and `m` (can't support).
 - [ ] Snippet actions (can't support).
 
-**Note** coc-snippets convert UltiSnips snippets to textmate snippets and send
-it to coc's snippets manager, format snippets after snippet insert will not be
-supported except for placeholder transform which also supported by textmate
-snippet.
-
 ## Options
 
 - `snippets.priority`: priority of snippets source, default `90`.
@@ -132,11 +129,17 @@ snippet.
 Python regular expression of UltiSnips would be converted to javascript regex, however some
 patterns are not supported, including `\u` `(?s)` `\Z` `(?(id/name)yes-pattern|no-pattern)`.
 
-The failed snippets would not be loaded, you can checkout the errors by check output:
-
-    :CocCommand workspace.showOutput snippets
-
 ## F.A.Q
+
+**Q:** How to check if a snippet successfully loaded?
+
+**A:** Use command `:CocCommand workspace.showOutput snippets`
+
+**Q:** Some ultisnips snippet not works as expected.
+
+**A:** Reformat after change of placeholder feature can't be supported for now,
+and some regex pattern can't be converted to javascript regex pattern, so the
+snippet can be failed to load.
 
 **Q:** Where to get snippets?
 
@@ -150,11 +153,11 @@ configuration from it.
 
 **Q:** How to check jumpable or expandable at current position.
 
-**A:** Use functions: `coc#expandable()` `coc#jumpable()` and `coc#expandableOrJumpable()`.
+**A:** Use functions provided by coc.nvim: `coc#expandable()` `coc#jumpable()` and `coc#expandableOrJumpable()`.
 
 **Q:** It doesn't load snippets from [vim-go](https://github.com/fatih/vim-go).
 
-**A:** It use `g:UltiSnipsSnippetDirectories` which is not supported, you can
+**A:** It uses `g:UltiSnipsSnippetDirectories` which is not supported, you can
 add settings:
 
 ```
