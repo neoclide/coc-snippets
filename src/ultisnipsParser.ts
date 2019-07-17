@@ -204,7 +204,6 @@ export default class UltiSnipsParser {
         code = code.replace(/^v\s*/, '')
         try {
           res = await nvim.eval(code) as any
-          res = res.toString()
         } catch (e) {
           res = `Error: ${e.message}`
           this.error(e.stack)
@@ -213,12 +212,13 @@ export default class UltiSnipsParser {
     } else {
       try {
         res = await pify(exec)(code)
-        res = res.replace(/\r?\n$/, '')
       } catch (e) {
         res = `Error: ${e.message}`
         this.error(`Error on eval ${code}: ` + e.stack)
       }
     }
+    res = res.toString()
+    res = res.replace(/\r?\n$/, '')
     let parts = res.split(/\r?\n/)
     if (parts.length > 1) {
       res = parts.map((s, idx) => {
