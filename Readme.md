@@ -4,6 +4,8 @@ Snippets solution for [coc.nvim](https://github.com/neoclide/coc.nvim)
 
 ![2019-03-23 00_09_39](https://user-images.githubusercontent.com/251450/54837017-62891300-4d00-11e9-9e53-49742a1a33f2.gif)
 
+_Snippet preview requires [neovim 0.4 or latest vim8](https://github.com/neoclide/coc.nvim/wiki/F.A.Q#how-to-make-preview-window-shown-aside-with-pum)_
+
 It's capable of:
 
 - Load UltiSnips snippets.
@@ -70,7 +72,9 @@ endfunction
 let g:coc_snippet_next = '<tab>'
 ```
 
-**Note:** `coc#_select_confirm()` helps select complete item (when `"suggest.noselect"` is true)
+**Note:** `coc#_select_confirm()` helps select first complete item when there's
+no complete item selected, neovim 0.4 or latest vim8 required for this function
+work as expected.
 
 ## Ultisnips features
 
@@ -89,6 +93,10 @@ Some ultisnips features are **not** supported:
 - [ ] Automatic reformat snippet after change of placeholder (can't support).
 - [ ] Format related snippet options, including `t`, `s` and `m` (can't support).
 - [ ] Snippet actions (can't support).
+
+**Note**: python regex in snippet are converted to javascript regex, however,
+some regex patterns can't be supported by javascript, including
+`\u` `(?s)` `\Z` `(?(id/name)yes-pattern|no-pattern)`.
 
 ## Options
 
@@ -123,11 +131,6 @@ Some ultisnips features are **not** supported:
 - Use `:CocList snippets` to open snippets list.
 - Use `:CocCommand snippets.editSnippets` to edit user snippet of current filetype.
 - Use `:CocCommand snippets.openSnippetFiles` to open snippet files of current filetype.
-
-## Regular expression convert
-
-Python regular expression of UltiSnips would be converted to javascript regex, however some
-patterns are not supported, including `\u` `(?s)` `\Z` `(?(id/name)yes-pattern|no-pattern)`.
 
 ## F.A.Q
 
