@@ -277,7 +277,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
     let doc = await workspace.document
     if (!doc) return
-    let mode = await nvim.call('mode')
+    let mode = await nvim.call('visualmode')
     if (['v', 'V'].indexOf(mode) == -1) {
       workspace.showMessage(`visual mode ${mode} not supported`, 'warning')
       return
