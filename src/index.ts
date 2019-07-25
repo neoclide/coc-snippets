@@ -2,13 +2,12 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { commands, events, ExtensionContext, languages, listManager, snippetManager, VimCompleteItem, workspace } from 'coc.nvim'
+import { Uri, commands, events, ExtensionContext, languages, listManager, snippetManager, VimCompleteItem, workspace } from 'coc.nvim'
 import os from 'os'
 import fs from 'fs'
 import path from 'path'
 import util from 'util'
 import { Position, Range, CodeActionKind, CodeAction, Command, TextEdit } from 'vscode-languageserver-types'
-import Uri from 'vscode-uri'
 import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'

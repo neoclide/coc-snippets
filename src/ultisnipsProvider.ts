@@ -2,12 +2,12 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Document, Watchman, OutputChannel, workspace, disposeAll } from 'coc.nvim'
+import { Uri, Document, Watchman, OutputChannel, workspace, disposeAll } from 'coc.nvim'
 import os from 'os'
+import fs from 'fs'
 import path from 'path'
 import { Disposable } from 'vscode-jsonrpc'
 import { Position, Range } from 'vscode-languageserver-types'
-import Uri from 'vscode-uri'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
@@ -52,7 +52,10 @@ export class UltiSnippetsProvider extends BaseProvider {
     let watchmanPath = workspace.getWatchmanPath()
     if (!watchmanPath) {
       workspace.onDidSaveTextDocument(async doc => {
-        let filepath = Uri.parse(doc.uri).fsPath
+        let uri = Uri.parse(doc.uri)
+        if (uri.scheme != 'file' || !doc.uri.endsWith('.snippets')) return
+        let filepath = uri.fsPath
+        if (!fs.existsSync(filepath)) return
         let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
         if (snippetFile) {
           await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)

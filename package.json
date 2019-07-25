@@ -155,7 +155,7 @@
     "@types/pify": "^3.0.2",
     "@types/uuid": "^3.4.4",
     "@types/which": "^1.3.1",
-    "coc.nvim": "^0.0.61",
+    "coc.nvim": "^0.0.73",
     "jest": "^24.5.0",
     "rimraf": "^2.6.3",
     "ts-jest": "^24.0.0",
@@ -169,7 +169,6 @@
     "uuid": "^3.3.2",
     "vscode-languageserver": "^5.3.0-next.1",
     "vscode-languageserver-protocol": "^3.15.0-next.1",
-    "vscode-uri": "^1.0.6",
     "which": "^1.3.1"
   },
   "dependencies": {}

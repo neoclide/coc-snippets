@@ -2,13 +2,12 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Document, OutputChannel, workspace } from 'coc.nvim'
+import { Uri, Document, OutputChannel, workspace } from 'coc.nvim'
 import fs from 'fs'
 import path from 'path'
 import readline from 'readline'
 import { Disposable } from 'vscode-jsonrpc'
 import { Position, Range } from 'vscode-languageserver-types'
-import Uri from 'vscode-uri'
 import BaseProvider from './baseProvider'
 import { FileItem, SnipmateConfig, SnipmateFile, Snippet, SnippetEdit, TriggerKind } from './types'
 import { readdirAsync, statAsync } from './util'
@@ -20,7 +19,10 @@ export class SnipmateProvider extends BaseProvider {
   constructor(private channel: OutputChannel, private trace: string, config: SnipmateConfig) {
     super(config)
     workspace.onDidSaveTextDocument(async doc => {
-      let filepath = Uri.parse(doc.uri).fsPath
+      let uri = Uri.parse(doc.uri)
+      if (uri.scheme != 'file') return
+      let filepath = uri.fsPath
+      if (!fs.existsSync(filepath)) return
       let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
       if (snippetFile) await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
     }, null, this.disposables)
