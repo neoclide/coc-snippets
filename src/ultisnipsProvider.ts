@@ -2,17 +2,18 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Uri, Document, Watchman, OutputChannel, workspace, disposeAll } from 'coc.nvim'
-import os from 'os'
+import { disposeAll, Document, OutputChannel, Uri, Watchman, workspace } from 'coc.nvim'
+import { FileChange } from 'coc.nvim/lib/watchman'
+import crypto from 'crypto'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { Disposable } from 'vscode-jsonrpc'
 import { Position, Range } from 'vscode-languageserver-types'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
-import { readdirAsync, readFileAsync, statAsync, writeFileAsync, distinct } from './util'
-import { FileChange } from 'coc.nvim/lib/watchman'
+import { distinct, readdirAsync, readFileAsync, statAsync } from './util'
 
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
@@ -44,8 +45,11 @@ export class UltiSnippetsProvider extends BaseProvider {
     }))
     if (this.pythonCode) {
       let { nvim } = workspace
-      let tmpfile = path.join(os.tmpdir(), `coc-ultisnips-${process.pid}.py`)
-      await writeFileAsync(tmpfile, this.pythonCode)
+      let hash = crypto.createHash('md5').update(this.pythonCode).digest('hex')
+      let tmpfile = path.join(os.tmpdir(), `coc-ultisnips-${hash}.py`)
+      if (!fs.existsSync(tmpfile)) {
+        fs.writeFileSync(tmpfile, this.pythonCode, 'utf8')
+      }
       let escaped = await nvim.call('fnameescape', tmpfile)
       workspace.nvim.command(`${this.pyMethod}file ${escaped}`, true)
     }
