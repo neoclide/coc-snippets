@@ -17,7 +17,7 @@ import { distinct, readdirAsync, readFileAsync, statAsync } from './util'
 
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
-  private pythonCode: string
+  private pythonCodes: Map<string, string> = new Map()
   private pyMethod: string
   private disposables: Disposable[] = []
   private directories: string[]
@@ -32,7 +32,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   public async init(): Promise<void> {
     let { config, directories } = this
     let hasPythonx = await workspace.nvim.call('has', ['pythonx'])
-    this.pythonCode = await readFileAsync(path.join(__dirname, '../python/ultisnips.py'), 'utf8')
+    let pythonCode = await readFileAsync(path.join(__dirname, '../python/ultisnips.py'), 'utf8')
     if (hasPythonx && config.usePythonx) {
       this.pyMethod = 'pyx'
     } else {
@@ -43,12 +43,15 @@ export class UltiSnippetsProvider extends BaseProvider {
     await Promise.all(arr.map(({ filepath, directory, filetype }) => {
       return this.loadSnippetsFromFile(filetype, directory, filepath)
     }))
-    if (this.pythonCode) {
+    let pythonPaths = Array.from(this.pythonCodes.keys())
+    pythonPaths.sort()
+    pythonCode += '\n' + pythonPaths.map(p => this.pythonCodes.get(p)).join('\n')
+    if (pythonCode) {
       let { nvim } = workspace
-      let hash = crypto.createHash('md5').update(this.pythonCode).digest('hex')
+      let hash = crypto.createHash('md5').update(pythonCode).digest('hex')
       let tmpfile = path.join(os.tmpdir(), `coc-ultisnips-${hash}.py`)
       if (!fs.existsSync(tmpfile)) {
-        fs.writeFileSync(tmpfile, this.pythonCode, 'utf8')
+        fs.writeFileSync(tmpfile, pythonCode, 'utf8')
       }
       let escaped = await nvim.call('fnameescape', tmpfile)
       workspace.nvim.command(`${this.pyMethod}file ${escaped}`, true)
@@ -117,7 +120,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     if (this.trace == 'verbose') {
       this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
     }
-    this.pythonCode = this.pythonCode + '\n' + pythonCode
+    this.pythonCodes.set(filepath, pythonCode)
   }
 
   public async resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string> {
