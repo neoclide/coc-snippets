@@ -174,7 +174,7 @@ to load it.
 
 **Q:** Ho could I add custom UltiSnips snippets.
 
-**A:** You can create snippet files in folder: `$VIMCONFG/coc/ultisnips`, use
+**A:** You can create snippet files in folder: `$VIMCONFIG/coc/ultisnips`, use
 command `:CocCommand snippets.editSnippets` to open user snippet of current
 filetype.
 
