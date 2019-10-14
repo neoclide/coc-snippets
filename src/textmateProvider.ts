@@ -242,7 +242,7 @@ export class TextmateProvider extends BaseProvider {
         body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
         prefix,
         description: typeof snip.description === 'string' ? snip.description : typeof snip.description !== 'undefined' ? snip.description.join('\n') : '',
-        triggerKind: TriggerKind.LineBegin
+        triggerKind: TriggerKind.WordBoundary
       }
     },
     )
