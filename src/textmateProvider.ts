@@ -1,13 +1,13 @@
-import {Document, Extension, extensions, OutputChannel} from 'coc.nvim'
+import { Document, Extension, extensions, OutputChannel } from 'coc.nvim'
 import fs from 'fs'
-import {parse, ParseError} from 'jsonc-parser'
+import { parse, ParseError } from 'jsonc-parser'
 import os from 'os'
 import path from 'path'
 import util from 'util'
-import {Position, Range} from 'vscode-languageserver-types'
-import BaseProvider, {Config} from './baseProvider'
-import {Snippet, SnippetEdit, TriggerKind} from './types'
-import {distinct} from './util'
+import { Position, Range } from 'vscode-languageserver-types'
+import BaseProvider, { Config } from './baseProvider'
+import { Snippet, SnippetEdit, TriggerKind } from './types'
+import { distinct } from './util'
 
 export interface ISnippetPluginContribution {
   prefix: string
@@ -83,7 +83,7 @@ export class TextmateProvider extends BaseProvider {
       let snippets = this._userSnippets[filetype]
       if (snippets && snippets.length) {
         for (let snip of snippets) {
-          let {filepath} = snip
+          let { filepath } = snip
           if (filepaths.indexOf(filepath) == -1) {
             filepaths.push(filepath)
           }
@@ -101,11 +101,11 @@ export class TextmateProvider extends BaseProvider {
     if (!snippets || !snippets.length) return []
     let edits: SnippetEdit[] = []
     for (let snip of snippets) {
-      let {prefix} = snip
+      let { prefix } = snip
       if (!line.endsWith(prefix)) continue
       let pre = line.slice(0, line.length - prefix.length)
-      // only allow in line begin
-      if (pre.trim().length) continue
+      // not allowed after word
+      if (pre.length && /\w/.test(pre[pre.length - 1])) continue
       edits.push({
         prefix,
         range: Range.create(position.line, position.character - prefix.length, position.line, position.character),
@@ -155,9 +155,9 @@ export class TextmateProvider extends BaseProvider {
   }
 
   private async loadSnippetsFromExtension(extension: Extension<any>): Promise<void> {
-    let {packageJSON} = extension
+    let { packageJSON } = extension
     if (packageJSON.contributes && packageJSON.contributes.snippets) {
-      let {snippets} = packageJSON.contributes
+      let { snippets } = packageJSON.contributes
       let map: Map<string, string[]> = new Map()
       let def: SnippetDefinition = {
         extensionId: extension.id,
@@ -165,7 +165,7 @@ export class TextmateProvider extends BaseProvider {
       }
       for (let item of snippets) {
         let p = path.join(extension.extensionPath, item.path)
-        let {language} = item
+        let { language } = item
         let ids: string[] = map.get(p) || []
         ids.push(language)
         map.set(p, ids)
@@ -177,7 +177,7 @@ export class TextmateProvider extends BaseProvider {
   }
 
   private async loadSnippetsFromRoot(root: string): Promise<void> {
-    let {_userSnippets} = this
+    let { _userSnippets } = this
     if (root.startsWith('~')) root = root.replace(/^~/, os.homedir())
     let files = await util.promisify(fs.readdir)(root, 'utf8')
     files = files.filter(f => f.endsWith('.json') || f.endsWith('.code-snippets'))
@@ -192,7 +192,7 @@ export class TextmateProvider extends BaseProvider {
   }
 
   private async loadSnippetsFromDefinition(def: SnippetDefinition): Promise<void> {
-    let {extensionId, snippets} = def
+    let { extensionId, snippets } = def
     let cache = this._snippetCache[extensionId] = {}
     for (let path of snippets.keys()) {
       let arr = await this.loadSnippetsFromFile(path)
@@ -221,7 +221,7 @@ export class TextmateProvider extends BaseProvider {
     let snippets: ISnippetPluginContribution[] = []
     try {
       let errors: ParseError[] = []
-      let snippetObject = parse(contents, errors, {allowTrailingComma: true}) as KeyToSnippet
+      let snippetObject = parse(contents, errors, { allowTrailingComma: true }) as KeyToSnippet
       if (errors.length) {
         this.channel.appendLine(`[Error ${(new Date()).toLocaleDateString()}] parser error: ${errors[0].error}`)
       }
