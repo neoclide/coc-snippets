@@ -106,7 +106,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       if (idx !== -1) return
       let directory = path.resolve(__dirname, '..')
       nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets', true)
-      nvim.command(`execute 'noa set rtp^='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
+      nvim.command(`execute 'noa set rtp+='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
       workspace.documents.forEach(doc => {
         if (doc.uri.endsWith('.snippets')) {
           doc.buffer.setOption('filetype', 'snippets', true)
