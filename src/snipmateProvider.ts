@@ -142,6 +142,9 @@ export class SnipmateProvider extends BaseProvider {
         return
       }
       if (prefix) {
+        if (line.indexOf('VISUAL') !== -1) {
+          line = line.replace(/\$\{?VISUAL\b\}?/g, '$TM_SELECTED_TEXT')
+        }
         if (line.startsWith('\t')) {
           lines.push(line.slice(1))
         } else {
