@@ -13,11 +13,11 @@ export default class Parser {
   constructor(private _content: string) {
   }
 
-  eof(): boolean {
+  public eof(): boolean {
     return this._curr >= this._content.length
   }
 
-  skipSpaces(): void {
+  public skipSpaces(): void {
     for (let i = this._curr; i <= this._content.length; i++) {
       let ch = this._content[i]
       if (!ch || /\S/.test(ch)) {
@@ -27,23 +27,23 @@ export default class Parser {
     }
   }
 
-  get index(): number {
+  public get index(): number {
     return this._curr
   }
 
-  get curr(): string | undefined {
+  public get curr(): string | undefined {
     return this._content[this._curr] || ''
   }
 
-  get len(): number {
+  public get len(): number {
     return this._content.length
   }
 
-  next(count = 1): string {
+  public next(count = 1): string {
     return this._content.slice(this._curr + 1, this._curr + 1 + count)
   }
 
-  nextIndex(character: string, checkEscape = true, allowEnd = true): number {
+  public nextIndex(character: string, checkEscape = true, allowEnd = true): number {
     if (this._curr >= this.len - 1) return allowEnd ? this.len - 1 : -1
     let i = this._curr + 1
     let pre = this.curr || ''
@@ -61,11 +61,11 @@ export default class Parser {
     return i
   }
 
-  prev(): string {
+  public prev(): string {
     return this._content[this._curr - 1] || ''
   }
 
-  iterate(fn: (character: string, idx: number) => boolean): void {
+  public iterate(fn: (character: string, idx: number) => boolean): void {
     while (this._curr < this._content.length) {
       let fine = fn(this.curr, this._curr)
       if (fine === false) {
@@ -75,7 +75,7 @@ export default class Parser {
     }
   }
 
-  eat(count: number): string {
+  public eat(count: number): string {
     let end = this._curr + count
     end = Math.min(end, this.len)
     let str = this._content.slice(this._curr, end)
@@ -84,7 +84,7 @@ export default class Parser {
   }
 
   // make curr to index, return contnet between curr (inclusive) and index (exclusive)
-  eatTo(index: number): string {
+  public eatTo(index: number): string {
     if (index == this._curr) return ''
     let str = this._content.slice(this._curr, index)
     this._curr = index
