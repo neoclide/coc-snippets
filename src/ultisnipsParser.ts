@@ -155,19 +155,10 @@ export default class UltiSnipsParser {
         resolved = resolved + await this.execute(code, pyMethod, indent)
         continue
       } else if (parser.curr == '$') {
-        // let idx = parser.nextIndex('}', true, false)
         let text = parser.next(7)
         if (text.startsWith('VISUAL') || text.startsWith('{VISUAL')) {
           parser.eat(8)
           resolved += '$' + text.replace('VISUAL', 'TM_SELECTED_TEXT')
-        } else if (text.startsWith('{')) {
-          let idx = parser.nextIndex('}', true, false)
-          if (idx == -1) {
-            resolved += parser.eat(1)
-          } else {
-            let text = parser.eatTo(idx + 1)
-            resolved = resolved + text.replace(/\\n/g, '\n')
-          }
         } else if (!/^\d/.test(text) && !text.startsWith('{') && p != '\\') {
           // escape $ if it's not escaped and not a placeholder, ultisnips sucks
           resolved += '\\' + parser.eat(1)
