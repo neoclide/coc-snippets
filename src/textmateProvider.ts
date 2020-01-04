@@ -15,10 +15,15 @@ export interface ISnippetPluginContribution {
   description: string | string[]
 }
 
+export interface SnippetItem {
+  languageId: string
+  filepath: string
+}
+
 export interface SnippetDefinition {
   extensionId: string
   // path => languageIds
-  snippets: Map<string, string[]>
+  snippets: SnippetItem[]
 }
 
 export interface SnippetCache {
@@ -158,17 +163,17 @@ export class TextmateProvider extends BaseProvider {
     let { packageJSON } = extension
     if (packageJSON.contributes && packageJSON.contributes.snippets) {
       let { snippets } = packageJSON.contributes
-      let map: Map<string, string[]> = new Map()
       let def: SnippetDefinition = {
         extensionId: extension.id,
-        snippets: map
+        snippets: []
       }
       for (let item of snippets) {
         let p = path.join(extension.extensionPath, item.path)
         let { language } = item
-        let ids: string[] = map.get(p) || []
-        ids.push(language)
-        map.set(p, ids)
+        def.snippets.push({
+          languageId: language,
+          filepath: p
+        })
       }
       if (snippets && snippets.length) {
         await this.loadSnippetsFromDefinition(def)
@@ -194,12 +199,12 @@ export class TextmateProvider extends BaseProvider {
   private async loadSnippetsFromDefinition(def: SnippetDefinition): Promise<void> {
     let { extensionId, snippets } = def
     let cache = this._snippetCache[extensionId] = {}
-    for (let path of snippets.keys()) {
-      let arr = await this.loadSnippetsFromFile(path)
-      let languageIds = snippets.get(path)
-      for (let id of languageIds) {
-        cache[id] = arr
-      }
+    for (let item of snippets) {
+      let { languageId } = item
+      if (!fs.existsSync(item.filepath)) continue
+      let arr = await this.loadSnippetsFromFile(item.filepath)
+      let exists = cache[languageId] || []
+      cache[languageId] = [...exists, ...arr]
     }
   }
 
