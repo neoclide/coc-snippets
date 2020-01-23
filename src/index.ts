@@ -286,7 +286,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
       workspace.showMessage(`visual mode ${mode} not supported`, 'warning')
       return
     }
-    await nvim.call('feedkeys', [String.fromCharCode(27), 'in'])
     await nvim.command('normal! `<')
     let start = await workspace.getCursorPosition()
     await nvim.command('normal! `>')
