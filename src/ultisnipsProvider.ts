@@ -140,7 +140,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       indexes.sort((a, b) => a - b)
       let vals = indexes.map(idx => values.get(idx))
       vals = vals.map(s => {
-        if (/^`!\w/.test(s)) return ''
+        if (/^`!\w/.test(s)) return "''"
         return `'${s.replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
       })
       let pyCodes: string[] = []
