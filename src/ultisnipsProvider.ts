@@ -49,7 +49,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     if (pythonCode) {
       let { nvim } = workspace
       let hash = crypto.createHash('md5').update(pythonCode).digest('hex')
-      let tmpfile = path.join(os.tmpdir(), `coc-ultisnips-${hash}.py`)
+      let tmpfile = path.join(os.tmpdir(), 'coc.nvim', `coc-ultisnips-${hash}.py`)
       if (!fs.existsSync(tmpfile)) {
         fs.writeFileSync(tmpfile, pythonCode, 'utf8')
       }
