@@ -151,7 +151,7 @@ snippet can be failed to load.
 **Q:** Do I need to install [Ultisnips](https://github.com/SirVer/ultisnips).
 
 **A:** No! This extension is designed to work with or without Ultisnips, you can
-still install Ultisnips, but this extension would not run any code of read
+still install Ultisnips, but this extension would not run any code or read
 configuration from it.
 
 **Q:** How to check jumpable or expandable at current position.
