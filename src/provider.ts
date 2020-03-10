@@ -84,7 +84,8 @@ export class ProviderManager implements CompletionItemProvider {
     let snippets = await this.getSnippets(doc.filetype)
     let currline = doc.getline(position.line, true)
     let { input, col } = (context as any).option! as CompleteOption
-    let before_content = currline.slice(0, col)
+    let character = characterIndex(currline, col)
+    let before_content = currline.slice(0, character)
     let res: CompletionItem[] = []
     let contextPrefixes: string[] = []
     for (let snip of snippets) {
@@ -121,7 +122,7 @@ export class ProviderManager implements CompletionItemProvider {
         let prefix = snip.prefix.slice(head.length)
         Object.assign(item, {
           textEdit: {
-            range: Range.create({ line: position.line, character: col - head.length }, position),
+            range: Range.create({ line: position.line, character: character - head.length }, position),
             newText: prefix
           }
         })
@@ -131,7 +132,7 @@ export class ProviderManager implements CompletionItemProvider {
         Object.assign(item, {
           preselect: true,
           textEdit: {
-            range: Range.create({ line: position.line, character: col - prefix.length }, position),
+            range: Range.create({ line: position.line, character: character - prefix.length }, position),
             newText: prefix
           }
         })
@@ -144,7 +145,7 @@ export class ProviderManager implements CompletionItemProvider {
       }
       if (!item.textEdit) {
         item.textEdit = {
-          range: Range.create({ line: position.line, character: col }, position),
+          range: Range.create({ line: position.line, character }, position),
           newText: item.label
         }
       }
@@ -182,4 +183,9 @@ export class ProviderManager implements CompletionItemProvider {
     }
     return res == 0 ? '' : prefix.slice(0, res + 1)
   }
+}
+
+export function characterIndex(content: string, byteIndex: number): number {
+  let buf = Buffer.from(content, 'utf8')
+  return buf.slice(0, byteIndex).toString('utf8').length
 }
