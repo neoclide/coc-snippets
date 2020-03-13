@@ -317,7 +317,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     ['snippets'],
     languageProvider,
     ['$'],
-    configuration.get<number>('priority', 90)));
+    configuration.get<number>('priority', 90)))
   subscriptions.push(statusItem)
   subscriptions.push(channel)
   subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager, mru)))
