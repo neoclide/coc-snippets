@@ -128,6 +128,11 @@
           "type": "string",
           "default": "",
           "description": "Author name used for g:snips_author"
+        },
+        "snippets.convertToSnippetsAction": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add convert to snippet to action list"
         }
       }
     }
