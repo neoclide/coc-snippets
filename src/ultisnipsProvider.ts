@@ -384,6 +384,8 @@ export class UltiSnippetsProvider extends BaseProvider {
       await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${tmpfile}')`)
       pythonCodes.clear()
     } catch (e) {
+      this.channel.appendLine(`Error on execute python script:`)
+      this.channel.append(e.message)
       workspace.showMessage(`Error on execute python script: ${e.message}`, 'error')
     }
   }

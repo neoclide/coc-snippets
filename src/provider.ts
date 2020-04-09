@@ -4,7 +4,7 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { CompleteOption, CompletionItemProvider, Document, snippetManager, workspace } from 'coc.nvim'
 import path from 'path'
-import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range } from 'vscode-languageserver-protocol'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { markdownBlock } from './util'
@@ -75,7 +75,7 @@ export class ProviderManager implements CompletionItemProvider {
   }
 
   public async provideCompletionItems(
-    document: TextDocument,
+    document,
     position: Position,
     _token: CancellationToken,
     context: CompletionContext): Promise<CompletionItem[]> {

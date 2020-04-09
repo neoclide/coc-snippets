@@ -14,7 +14,7 @@ import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
 import { UltiSnipsConfig } from './types'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
-import { wait } from './util'
+import debounce from 'debounce'
 import LanguageProvider from './languages'
 
 const documentation = `# A valid snippet should starts with:
@@ -141,24 +141,22 @@ export async function activate(context: ExtensionContext): Promise<API> {
 
   if (configuration.get<boolean>('autoTrigger', true)) {
     let insertTs
-    let lastChange
     events.on('InsertCharPre', () => {
       insertTs = Date.now()
     }, null, subscriptions)
-    events.on(['TextChangedI', 'TextChangedP'], async () => {
-      if (!insertTs || Date.now() - insertTs > 50) return
-      let now = lastChange = Date.now()
+    events.on(['TextChanged', 'TextChangedP', 'TextChangedI'], debounce(async () => {
+      if (!workspace.insertMode) return
+      if (!insertTs || Date.now() - insertTs > 200) return
       let curr = insertTs
-      await wait(50)
       let edits = await manager.getTriggerSnippets(true)
-      if (insertTs != curr || now != lastChange || edits.length == 0) return
+      if (insertTs != curr || edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
-    }, null, subscriptions)
+    }, 100), null, subscriptions)
   }
 
   const statusItem = workspace.createStatusBarItem(90, { progress: true })

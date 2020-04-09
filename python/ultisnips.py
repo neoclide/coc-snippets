@@ -1,9 +1,10 @@
 import re, os, vim, string, random
 from collections import deque, namedtuple
 
-_Placeholder = namedtuple('_FrozenPlaceholder', ['current_text', 'start', 'end'])
-_VisualContent = namedtuple('_VisualContent', ['mode', 'text'])
-_Position = namedtuple('_Position', ['line', 'col'])
+_Placeholder = namedtuple("_FrozenPlaceholder", ["current_text", "start", "end"])
+_VisualContent = namedtuple("_VisualContent", ["mode", "text"])
+_Position = namedtuple("_Position", ["line", "col"])
+
 
 class _SnippetUtilCursor(object):
     def __init__(self, cursor):
@@ -12,10 +13,7 @@ class _SnippetUtilCursor(object):
 
     def preserve(self):
         self._set = True
-        self._cursor = [
-            vim.buf.cursor[0],
-            vim.buf.cursor[1],
-        ]
+        self._cursor = [vim.buf.cursor[0], vim.buf.cursor[1]]
 
     def is_set(self):
         return self._set
@@ -50,13 +48,15 @@ class IndentUtil(object):
 
     def reset(self):
         """Gets the spacing properties from Vim."""
-        self.shiftwidth = int(vim.eval("exists('*shiftwidth') ? shiftwidth() : &shiftwidth"))
-        self._expandtab = (vim.eval('&expandtab') == '1')
-        self._tabstop = int(vim.eval('&tabstop'))
+        self.shiftwidth = int(
+            vim.eval("exists('*shiftwidth') ? shiftwidth() : &shiftwidth")
+        )
+        self._expandtab = vim.eval("&expandtab") == "1"
+        self._tabstop = int(vim.eval("&tabstop"))
 
     def ntabs_to_proper_indent(self, ntabs):
         """Convert 'ntabs' number of tabs to the proper indent prefix."""
-        line_ind = ntabs * self.shiftwidth * ' '
+        line_ind = ntabs * self.shiftwidth * " "
         line_ind = self.indent_to_spaces(line_ind)
         line_ind = self.spaces_to_indent(line_ind)
         return line_ind
@@ -64,16 +64,17 @@ class IndentUtil(object):
     def indent_to_spaces(self, indent):
         """Converts indentation to spaces respecting Vim settings."""
         indent = indent.expandtabs(self._tabstop)
-        right = (len(indent) - len(indent.rstrip(' '))) * ' '
-        indent = indent.replace(' ', '')
-        indent = indent.replace('\t', ' ' * self._tabstop)
+        right = (len(indent) - len(indent.rstrip(" "))) * " "
+        indent = indent.replace(" ", "")
+        indent = indent.replace("\t", " " * self._tabstop)
         return indent + right
 
     def spaces_to_indent(self, indent):
         """Converts spaces to proper indentation respecting Vim settings."""
         if not self._expandtab:
-            indent = indent.replace(' ' * self._tabstop, '\t')
+            indent = indent.replace(" " * self._tabstop, "\t")
         return indent
+
 
 class SnippetUtil(object):
 
@@ -85,9 +86,11 @@ class SnippetUtil(object):
 
     def __init__(self, _initial_indent, start, end, context):
         self._ind = IndentUtil()
-        self._visual = _VisualContent(vim.eval('visualmode()'), vim.eval('get(g:,"coc_selected_text","")'))
+        self._visual = _VisualContent(
+            vim.eval("visualmode()"), vim.eval('get(g:,"coc_selected_text","")')
+        )
         self._initial_indent = _initial_indent
-        self._reset('')
+        self._reset("")
         self._start = start
         self._end = end
         self._context = context
@@ -100,10 +103,9 @@ class SnippetUtil(object):
         """
         self._ind.reset()
         self._cur = cur
-        self._rv = ''
+        self._rv = ""
         self._changed = False
         self.reset_indent()
-
 
     def shift(self, amount=1):
         """Shifts the indentation level. Note that this uses the shiftwidth
@@ -112,7 +114,7 @@ class SnippetUtil(object):
         :amount: the amount by which to shift.
 
         """
-        self.indent += ' ' * self._ind.shiftwidth * amount
+        self.indent += " " * self._ind.shiftwidth * amount
 
     def unshift(self, amount=1):
         """Unshift the indentation level. Note that this uses the shiftwidth
@@ -125,9 +127,9 @@ class SnippetUtil(object):
         try:
             self.indent = self.indent[:by]
         except IndexError:
-            self.indent = ''
+            self.indent = ""
 
-    def mkline(self, line='', indent=''):
+    def mkline(self, line="", indent=""):
         """Creates a properly set up line.
 
         :line: the text to add
@@ -145,17 +147,17 @@ class SnippetUtil(object):
     @property
     def fn(self):  # pylint:disable=no-self-use,invalid-name
         """The filename."""
-        return vim.eval('expand("%:t")') or ''
+        return vim.eval('expand("%:t")') or ""
 
     @property
     def basename(self):  # pylint:disable=no-self-use
         """The filename without extension."""
-        return vim.eval('expand("%:t:r")') or ''
+        return vim.eval('expand("%:t:r")') or ""
 
     @property
     def ft(self):  # pylint:disable=invalid-name
         """The filetype."""
-        return self.opt('&filetype', '')
+        return self.opt("&filetype", "")
 
     @property
     def rv(self):  # pylint:disable=invalid-name
@@ -180,7 +182,7 @@ class SnippetUtil(object):
     @property
     def c(self):  # pylint:disable=invalid-name
         """The current text of the placeholder."""
-        return ''
+        return ""
 
     @property
     def v(self):  # pylint:disable=invalid-name
@@ -189,11 +191,11 @@ class SnippetUtil(object):
 
     @property
     def p(self):
-        if 'coc_last_placeholder' in vim.vars:
-            p = vim.vars['coc_last_placeholder']
-            start = _Position(p['start']['line'], p['start']['col'])
-            end = _Position(p['end']['line'], p['end']['col'])
-            return _Placeholder(p['current_text'], start, end)
+        if "coc_last_placeholder" in vim.vars:
+            p = vim.vars["coc_last_placeholder"]
+            start = _Position(p["start"]["line"], p["start"]["col"])
+            end = _Position(p["end"]["line"], p["end"]["col"])
+            return _Placeholder(p["current_text"], start, end)
         return None
 
     @property
@@ -202,7 +204,7 @@ class SnippetUtil(object):
 
     def opt(self, option, default=None):  # pylint:disable=no-self-use
         """Gets a Vim variable."""
-        if vim.eval("exists('%s')" % option) == '1':
+        if vim.eval("exists('%s')" % option) == "1":
             try:
                 return vim.eval(option)
             except vim.error:
@@ -211,7 +213,7 @@ class SnippetUtil(object):
 
     def __add__(self, value):
         """Appends the given line to rv using mkline."""
-        self.rv += '\n'  # pylint:disable=invalid-name
+        self.rv += "\n"  # pylint:disable=invalid-name
         self.rv += self.mkline(value)
         return self
 
@@ -241,26 +243,26 @@ class SnippetUtil(object):
     def buffer(self):
         return vim.buf
 
-class ContextSnippet(object):
 
+class ContextSnippet(object):
     def __init__(self):
         self.buffer = vim.current.buffer
         self.window = vim.current.window
         self.cursor = _SnippetUtilCursor(vim.current.window.cursor)
-        self.line = vim.call('line', '.') - 1
-        self.column = vim.call('col', '.') - 1
-        line = vim.call('getline', '.')
+        self.line = vim.call("line", ".") - 1
+        self.column = vim.call("col", ".") - 1
+        line = vim.call("getline", ".")
         self.after = line[self.column :]
-        if 'coc_selected_text' in vim.vars:
-            self.visual_mode = vim.eval('visualmode()')
-            self.visual_text = vim.vars['coc_selected_text']
+        if "coc_selected_text" in vim.vars:
+            self.visual_mode = vim.eval("visualmode()")
+            self.visual_text = vim.vars["coc_selected_text"]
         else:
             self.visual_mode = None
-            self.visual_text = ''
-        if 'coc_last_placeholder' in vim.vars:
-            p = vim.vars['coc_last_placeholder']
-            start = _Position(p['start']['line'], p['start']['col'])
-            end = _Position(p['end']['line'], p['end']['col'])
-            self.last_placeholder = _Placeholder(p['current_text'], start, end)
+            self.visual_text = ""
+        if "coc_last_placeholder" in vim.vars:
+            p = vim.vars["coc_last_placeholder"]
+            start = _Position(p["start"]["line"], p["start"]["col"])
+            end = _Position(p["end"]["line"], p["end"]["col"])
+            self.last_placeholder = _Placeholder(p["current_text"], start, end)
         else:
             self.last_placeholder = None
