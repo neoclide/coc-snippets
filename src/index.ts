@@ -258,7 +258,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let idx = await workspace.showQuickpick(files, 'choose snippet file:')
     if (idx == -1) return
     let uri = Uri.file(files[idx]).toString()
-    await workspace.jumpTo(uri)
+    await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
   }))
 
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
