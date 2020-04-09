@@ -101,6 +101,8 @@ some regex patterns can't be supported by javascript, including
 ## Options
 
 - `snippets.priority`: priority of snippets source, default `90`.
+- `snippets.editSnippetsCommand`: Open command used for snippets.editSnippets command, use coc.preferences.jumpCommand by default.
+- `snippets.trace`: Trace level of snippets channel.
 - `snippets.extends`: extends filetype's snippets with other filetypes, example:
 
   ```json
@@ -116,6 +118,7 @@ some regex patterns can't be supported by javascript, including
 - `snippets.autoTrigger`: enable auto trigger for auto trigger ultisnips snippets, default `true`.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
 - `snippets.loadFromExtensions`: load snippets from coc.nvim extensions, default: `true`.
+- `snippets.convertToSnippetsAction`: Add convert to snippet to code action list.
 - `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load.
 - `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
 - `snippets.ultisnips.usePythonx`: use `pythonx` for eval python code when possible, default `true`.

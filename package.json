@@ -94,6 +94,11 @@
           "default": true,
           "description": "Enable trigger auto trigger snippet after type character."
         },
+        "snippets.convertToSnippetsAction": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add convert to snippet to code action list."
+        },
         "snippets.ultisnips.enable": {
           "type": "boolean",
           "default": true,
@@ -128,11 +133,6 @@
           "type": "string",
           "default": "",
           "description": "Author name used for g:snips_author"
-        },
-        "snippets.convertToSnippetsAction": {
-          "type": "boolean",
-          "default": true,
-          "description": "Add convert to snippet to action list"
         }
       }
     }

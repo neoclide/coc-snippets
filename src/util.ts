@@ -5,8 +5,24 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 import pify from 'pify'
 import fs from 'fs'
 import { ReplaceItem } from './types'
+import crypto from 'crypto'
 
-export function replaceText(content: string, items: ReplaceItem[]) {
+const BASE64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'
+
+function tostr(bytes: Uint8Array): string {
+  let r: string[] = []
+  let i
+  for (i = 0; i < bytes.length; i++) {
+    r.push(BASE64[bytes[i] % 64])
+  }
+  return r.join('')
+}
+
+export function uid(): string {
+  return tostr(crypto.randomBytes(10))
+}
+
+export function replaceText(content: string, items: ReplaceItem[]): string {
   let res = ''
   items.sort((a, b) => a.index - b.index)
   let item = items.shift()

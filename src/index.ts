@@ -101,7 +101,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (c.directories.indexOf(snippetsDir) == -1) {
       c.directories.push(snippetsDir)
     }
-    let provider = new UltiSnippetsProvider(channel, trace, c)
+    let provider = new UltiSnippetsProvider(channel, trace, c, context)
     manager.regist(provider, 'ultisnips')
     subscriptions.push(provider)
     // add rtp if ultisnips not found
@@ -201,7 +201,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
 
   if (configuration.get<Boolean>("convertToSnippetsAction")) {
-    subscriptions.push(languages.registerCodeActionProvider([{scheme: 'file'}, {scheme: 'untitled'}], {
+    subscriptions.push(languages.registerCodeActionProvider([{ scheme: 'file' }, { scheme: 'untitled' }], {
       provideCodeActions: async (document, range, context): Promise<CodeAction[]> => {
         if (context.only && !context.only.includes(CodeActionKind.Source)) return
         let text = document.getText(range)
