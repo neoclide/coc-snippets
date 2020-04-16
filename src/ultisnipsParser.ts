@@ -183,9 +183,8 @@ export default class UltiSnipsParser {
     return resolved
   }
 
-  private async execute(code: string, pyMethod: string, indent: string): Promise<string> {
+  public async execute(code: string, pyMethod: string, indent: string): Promise<string> {
     let { nvim } = workspace
-    if (!nvim) return code
     let res = ''
     if (code.startsWith('!')) {
       code = code.trim().slice(1)

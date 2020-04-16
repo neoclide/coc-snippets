@@ -146,17 +146,35 @@ export class UltiSnippetsProvider extends BaseProvider {
     let ind = ' '.repeat(indentCount)
     if (body.indexOf('`!p') !== -1) {
       let values: Map<number, string> = new Map()
-      body.replace(/\$\{(\d+):([^}]+)\}/g, (_, p1, p2) => {
-        if (p1 == 0) return ''
-        values.set(Number(p1), p2)
-      })
-      let indexes = Array.from(values.keys())
-      indexes.sort((a, b) => a - b)
-      let vals = indexes.map(idx => values.get(idx))
-      vals = vals.map(s => {
-        if (/^`!\w/.test(s)) return "''"
-        return `'${s.replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
-      })
+      let re = /\$\{(\d+)(?::([^}]+))?\}/g
+      let r
+      // tslint:disable-next-line: no-conditional-assignment
+      while (r = re.exec(body)) {
+        let idx = parseInt(r[1], 10)
+        let val: string = r[2] || ''
+        let exists = values.get(idx)
+        if (exists == null || (val && exists == "''")) {
+          if (/^`!\w/.test(val) && val.endsWith('`')) {
+            let code = val.slice(1).slice(0, -1)
+            val = await this.parser.execute(code, this.pyMethod, ind)
+          }
+          val = val.replace(/'/g, "\\'").replace(/\n/g, '\\n')
+          values.set(idx, "'" + val + "'")
+        }
+      }
+      re = /\$(\d+)/g
+      // tslint:disable-next-line: no-conditional-assignment
+      while (r = re.exec(body)) {
+        let idx = parseInt(r[1], 10)
+        if (!values.has(idx)) {
+          values.set(idx, "''")
+        }
+      }
+      let len = values.size == 0 ? 0 : Math.max.apply(null, Array.from(values.keys()))
+      let vals = (new Array(len)).fill('""')
+      for (let [idx, val] of values.entries()) {
+        vals[idx] = val
+      }
       let pyCodes: string[] = []
       pyCodes.push('import re, os, vim, string, random')
       pyCodes.push(`t = ('', ${vals.join(',')})`)
