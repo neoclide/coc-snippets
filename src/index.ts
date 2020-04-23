@@ -158,14 +158,16 @@ export async function activate(context: ExtensionContext): Promise<API> {
       await mru.add(edits[0].prefix)
     }, 100), null, subscriptions)
   }
-
-  const statusItem = workspace.createStatusBarItem(90, { progress: true })
-  statusItem.text = 'loading snippets'
-  statusItem.show()
+  let statusItem
+  if (configuration.get<boolean>('enableStatusItem', true)) {
+    statusItem = workspace.createStatusBarItem(90, { progress: true })
+    statusItem.text = 'loading snippets'
+    statusItem.show()
+  }
   manager.init().then(() => {
-    statusItem.hide()
+    statusItem?.hide()
   }, e => {
-    statusItem.hide()
+    statusItem?.hide()
     workspace.showMessage(`Error on load snippets: ${e.message}`, 'error')
   })
 

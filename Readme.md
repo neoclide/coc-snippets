@@ -103,6 +103,7 @@ some regex patterns can't be supported by javascript, including
 - `snippets.priority`: priority of snippets source, default `90`.
 - `snippets.editSnippetsCommand`: Open command used for snippets.editSnippets command, use coc.preferences.jumpCommand by default.
 - `snippets.trace`: Trace level of snippets channel.
+- `snippets.enableStatusItem`: Enable status item in `g:coc_status` used for statusline.
 - `snippets.extends`: extends filetype's snippets with other filetypes, example:
 
   ```json

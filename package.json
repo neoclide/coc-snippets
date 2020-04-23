@@ -53,6 +53,11 @@
           ],
           "description": "Trace level of snippets channel."
         },
+        "snippets.enableStatusItem": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable status item in g:coc_status used for statusline."
+        },
         "snippets.loadFromExtensions": {
           "type": "boolean",
           "default": true,
