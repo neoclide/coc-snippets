@@ -398,7 +398,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       let dir = path.join(os.tmpdir(), `coc.nvim-${process.pid}`)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir)
       let tmpfile = path.join(os.tmpdir(), `coc.nvim-${process.pid}`, `coc-ultisnips-${uid()}.py`)
-      fs.writeFileSync(tmpfile, pythonCode, 'utf8')
+      fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + pythonCode, 'utf8')
       await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${tmpfile}')`)
       pythonCodes.clear()
     } catch (e) {
