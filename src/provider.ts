@@ -55,6 +55,7 @@ export class ProviderManager implements CompletionItemProvider {
     let bufnr = await workspace.nvim.call('bufnr', '%')
     let doc = workspace.getDocument(bufnr)
     if (!doc) return []
+    await doc.patchChange()
     let position = await workspace.getCursorPosition()
     let names = Array.from(this.providers.keys())
     let list: SnippetEdit[] = []
