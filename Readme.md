@@ -128,7 +128,7 @@ some regex patterns can't be supported by javascript, including
 - `snippets.ultisnips.directories`: directories that searched for snippet files,
   could be subfolder in every \$runtimepath or absolute paths, default: `["UltiSnips"]`
 - `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
-- `snippets.snippets.author`: author name used for `g:snips_author`
+- `snippets.snipmate.author`: author name used for `g:snips_author`
 
 ## Commands
 
