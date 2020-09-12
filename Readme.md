@@ -53,6 +53,9 @@ let g:coc_snippet_prev = '<c-k>'
 
 " Use <C-j> for both expand and jump (make expand higher priority.)
 imap <C-j> <Plug>(coc-snippets-expand-jump)
+
+" Use <leader>x for convert visual selected code to snippet
+xmap <leader>x  <Plug>(coc-convert-snippet)
 ```
 
 Make `<tab>` used for trigger completion, completion confirm, snippet expand and jump like VSCode.
@@ -119,7 +122,6 @@ some regex patterns can't be supported by javascript, including
 - `snippets.autoTrigger`: enable auto trigger for auto trigger ultisnips snippets, default `true`.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
 - `snippets.loadFromExtensions`: load snippets from coc.nvim extensions, default: `true`.
-- `snippets.convertToSnippetsAction`: Add convert to snippet to code action list.
 - `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load.
 - `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
 - `snippets.ultisnips.usePythonx`: use `pythonx` for eval python code when possible, default `true`.

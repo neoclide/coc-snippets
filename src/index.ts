@@ -200,21 +200,16 @@ export async function activate(context: ExtensionContext): Promise<API> {
     return true
   }
 
-  if (configuration.get<Boolean>("convertToSnippetsAction")) {
-    subscriptions.push(languages.registerCodeActionProvider([{ scheme: 'file' }, { scheme: 'untitled' }], {
-      provideCodeActions: async (document, range, context): Promise<CodeAction[]> => {
-        if (context.only && !context.only.includes(CodeActionKind.Source)) return
-        let text = document.getText(range)
-        if (text.endsWith('\n')) text = text.replace(/\n$/, '')
-        let action = CodeAction.create('Convert to snippet', {
-          command: 'snippets.editSnippets',
-          title: 'Convert to snippet',
-          arguments: [text]
-        } as Command)
-        return [action]
-      }
-    }, 'snippets', [CodeActionKind.Source]))
-  }
+  subscriptions.push(workspace.registerKeymap(['x'], 'convert-snippet', async () => {
+    let mode = await workspace.nvim.call('visualmode')
+    if (!mode) return
+    let doc = await workspace.document
+    if (!doc) return
+    doc.forceSync()
+    let range = await workspace.getSelectedRange(mode, doc)
+    let text = doc.textDocument.getText(range)
+    if (text) await commands.executeCommand('snippets.editSnippets', text)
+  }, { sync: false }))
 
   subscriptions.push(commands.registerCommand('snippets.editSnippets', async (text?: string) => {
     let buf = await nvim.buffer
