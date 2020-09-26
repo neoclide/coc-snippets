@@ -78,7 +78,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
 
   events.on('CompleteDone', async (item: VimCompleteItem) => {
-    if (item.user_data && item.user_data.indexOf('snippets') !== -1) {
+    if (typeof item.user_data === 'string' && item.user_data.indexOf('snippets') !== -1) {
       await mru.add(item.word)
     }
   }, null, subscriptions)
