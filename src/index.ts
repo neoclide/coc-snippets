@@ -2,20 +2,20 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Uri, commands, events, ExtensionContext, languages, listManager, snippetManager, VimCompleteItem, workspace } from 'coc.nvim'
-import os from 'os'
+import { commands, events, ExtensionContext, languages, listManager, snippetManager, Uri, VimCompleteItem, workspace } from 'coc.nvim'
+import debounce from 'debounce'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import util from 'util'
-import { Position, Range, CodeActionKind, CodeAction, Command, TextEdit } from 'vscode-languageserver-types'
+import { Position, Range, TextEdit } from 'vscode-languageserver-types'
+import LanguageProvider from './languages'
 import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
 import { UltiSnipsConfig } from './types'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
-import debounce from 'debounce'
-import LanguageProvider from './languages'
 
 const documentation = `# A valid snippet should starts with:
 #
@@ -292,7 +292,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let text = doc.textDocument.getText(range)
     await nvim.call('feedkeys', ['i', 'in'])
     if (mode == 'v') {
-      await doc.applyEdits(workspace.nvim, [{ range, newText: '' }])
+      await doc.applyEdits([{ range, newText: '' }])
     } else {
       // keep indent
       let currline = doc.getline(start.line)
@@ -301,7 +301,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       lines = lines.map(s => s.startsWith(indent) ? s.slice(indent.length) : s)
       text = lines.join('\n')
       range = Range.create(Position.create(start.line, indent.length), end)
-      await doc.applyEdits(workspace.nvim, [{ range, newText: '' }])
+      await doc.applyEdits([{ range, newText: '' }])
     }
     await nvim.setVar('coc_selected_text', text)
     await workspace.moveTo(range.start)
