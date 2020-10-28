@@ -216,9 +216,7 @@ export class TextmateProvider extends BaseProvider {
       })
     })
     const snippets = this.loadSnippetsFromText(snippetFilePath, contents)
-    if (this.trace == 'verbose') {
-      this.channel.appendLine(`[Info ${(new Date()).toLocaleDateString()}] Loaded ${snippets.length} snippets from ${snippetFilePath}`)
-    }
+    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} textmate snippets from ${snippetFilePath}`)
     return snippets
   }
 

@@ -119,7 +119,7 @@
           "default": [
             "UltiSnips"
           ],
-          "description": "Directories that searched for snippet files, could be directory as subfolder in $runtimepath or absolute paths.",
+          "description": "Directories that searched for ultisnips snippet files, could be directory as subfolder in $runtimepath or absolute paths.",
           "items": {
             "type": "string"
           }

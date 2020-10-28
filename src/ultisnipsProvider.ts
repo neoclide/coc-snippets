@@ -77,7 +77,7 @@ export class UltiSnippetsProvider extends BaseProvider {
         this.directories.push(dir)
       }
     }
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Using ultisnips directories: ${this.directories.join(' ')}`)
+    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Using ultisnips directories: ${this.directories.join(' ')}`)
     let hasPythonx = await nvim.call('has', ['pythonx'])
     let pythonCode = await readFileAsync(this.context.asAbsolutePath('python/ultisnips.py'), 'utf8')
     if (hasPythonx && config.usePythonx) {
@@ -131,9 +131,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       filetypes = filetypes.concat(extendFiletypes)
       this.config.extends[filetype] = distinct(filetypes)
     }
-    if (this.trace == 'verbose') {
-      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
-    }
+    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} UltiSnip snippets from: ${filepath}`)
     pythonCodes.set(filepath, pythonCode)
   }
 

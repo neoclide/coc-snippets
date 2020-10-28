@@ -48,9 +48,7 @@ export class SnipmateProvider extends BaseProvider {
       filetype,
       snippets
     })
-    if (this.trace == 'verbose') {
-      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} snippets from: ${filepath}`)
-    }
+    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} snipmate snippets from: ${filepath}`)
   }
 
   /**
