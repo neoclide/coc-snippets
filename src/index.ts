@@ -3,7 +3,6 @@ MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import { commands, events, ExtensionContext, languages, listManager, snippetManager, Uri, VimCompleteItem, workspace } from 'coc.nvim'
-import debounce from 'debounce'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -141,12 +140,17 @@ export async function activate(context: ExtensionContext): Promise<API> {
 
   if (configuration.get<boolean>('autoTrigger', true)) {
     let insertTs
+    let insertLeaveTs: number
     events.on('InsertCharPre', () => {
       insertTs = Date.now()
     }, null, subscriptions)
-    events.on(['TextChanged', 'TextChangedP', 'TextChangedI'], debounce(async () => {
+    events.on('InsertLeave', () => {
+      insertLeaveTs = Date.now()
+    }, null, subscriptions)
+    events.on(['TextChangedP', 'TextChangedI'], async () => {
       if (!workspace.insertMode) return
-      if (!insertTs || Date.now() - insertTs > 200) return
+      let now = Date.now()
+      if (!insertTs || now - insertTs > 200) return
       let curr = insertTs
       let edits = await manager.getTriggerSnippets(true)
       if (insertTs != curr || edits.length == 0) return
@@ -154,9 +158,10 @@ export async function activate(context: ExtensionContext): Promise<API> {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
+      if (insertLeaveTs > now) return
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
-    }, 100), null, subscriptions)
+    }, null, subscriptions)
   }
   let statusItem
   if (configuration.get<boolean>('enableStatusItem', true)) {
