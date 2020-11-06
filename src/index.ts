@@ -147,8 +147,9 @@ export async function activate(context: ExtensionContext): Promise<API> {
     events.on('InsertLeave', () => {
       insertLeaveTs = Date.now()
     }, null, subscriptions)
+    let inserting = false
     events.on(['TextChangedP', 'TextChangedI'], async () => {
-      if (!workspace.insertMode) return
+      if (!workspace.insertMode || inserting) return
       let now = Date.now()
       if (!insertTs || now - insertTs > 200) return
       let curr = insertTs
@@ -159,8 +160,14 @@ export async function activate(context: ExtensionContext): Promise<API> {
         workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
       if (insertLeaveTs > now) return
-      await commands.executeCommand('editor.action.insertSnippet', edits[0])
-      await mru.add(edits[0].prefix)
+      inserting = true
+      try {
+        await commands.executeCommand('editor.action.insertSnippet', edits[0])
+        await mru.add(edits[0].prefix)
+      } catch (e) {
+        console.error(e)
+      }
+      inserting = false
     }, null, subscriptions)
   }
   let statusItem
