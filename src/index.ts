@@ -271,7 +271,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
     let expanded = await doExpand()
     if (!expanded) await fallback()
-  }, { silent: true, sync: true, cancel: true }))
+  }, { silent: true, sync: false, cancel: true }))
 
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', async () => {
     let expanded = await doExpand()
@@ -285,7 +285,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       }
       await fallback()
     }
-  }, { silent: true, sync: true, cancel: true }))
+  }, { silent: true, sync: false, cancel: true }))
 
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
     let doc = await workspace.document
