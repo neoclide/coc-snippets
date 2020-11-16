@@ -82,7 +82,7 @@ export default class UltiSnipsParser {
           let description = ms[2] || ''
           let context = ms[3]
           let option = ms[4] || ''
-          if (prefix.length > 2 && prefix[0] == prefix[prefix.length - 1] && !/\w/.test(prefix[0])) {
+          if (prefix.length > 2 && prefix[1] != prefix[0] && prefix[0] == prefix[prefix.length - 1] && !/\w/.test(prefix[0])) {
             prefix = prefix.slice(1, prefix.length - 1)
           }
           let isExpression = option.indexOf('r') !== -1
