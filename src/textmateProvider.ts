@@ -226,7 +226,7 @@ export class TextmateProvider extends BaseProvider {
       let errors: ParseError[] = []
       let snippetObject = parse(contents, errors, { allowTrailingComma: true }) as KeyToSnippet
       if (errors.length) {
-        this.channel.appendLine(`[Error ${(new Date()).toLocaleDateString()}] parser error: ${errors[0].error}`)
+        this.channel.appendLine(`[Error ${(new Date()).toLocaleDateString()}] parser error of ${filepath}: ${JSON.stringify(errors, null, 2)}`)
       }
       if (snippetObject) {
         for (let key of Object.keys(snippetObject)) {
