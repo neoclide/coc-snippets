@@ -159,7 +159,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
-      if (insertLeaveTs > now) return
+      if (insertLeaveTs > now || inserting) return
       inserting = true
       try {
         await commands.executeCommand('editor.action.insertSnippet', edits[0])

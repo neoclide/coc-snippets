@@ -154,7 +154,12 @@ export class UltiSnippetsProvider extends BaseProvider {
         if (exists == null || (val && exists == "''")) {
           if (/^`!\w/.test(val) && val.endsWith('`')) {
             let code = val.slice(1).slice(0, -1)
-            val = await this.parser.execute(code, this.pyMethod, ind)
+            // not execute python code since we don't have snip yet.
+            if (code.startsWith('!p')) {
+              val = ''
+            } else {
+              val = await this.parser.execute(code, this.pyMethod, ind)
+            }
           }
           val = val.replace(/'/g, "\\'").replace(/\n/g, '\\n')
           values.set(idx, "'" + val + "'")
