@@ -141,20 +141,25 @@ export async function activate(context: ExtensionContext): Promise<API> {
   if (configuration.get<boolean>('autoTrigger', true)) {
     let insertTs
     let insertLeaveTs: number
-    events.on('InsertCharPre', () => {
+    let lastInsert: string
+    events.on('InsertCharPre', character => {
       insertTs = Date.now()
+      lastInsert = character
     }, null, subscriptions)
     events.on('InsertLeave', () => {
       insertLeaveTs = Date.now()
     }, null, subscriptions)
     let inserting = false
-    events.on(['TextChangedP', 'TextChangedI'], async () => {
-      if (!workspace.insertMode || inserting) return
+    const handleTextChange = async (bufnr, pre: string) => {
+      let lastInsertTs = insertTs
+      insertTs = undefined
+      if (inserting) return
+      let doc = workspace.getDocument(bufnr)
+      if (doc.isCommandLine || !doc.attached) return
       let now = Date.now()
-      if (!insertTs || now - insertTs > 200) return
-      let curr = insertTs
+      if (!lastInsertTs || now - lastInsertTs > 100 || !pre.endsWith(lastInsert)) return
       let edits = await manager.getTriggerSnippets(true)
-      if (insertTs != curr || edits.length == 0) return
+      if (edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
@@ -168,6 +173,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
         console.error(e)
       }
       inserting = false
+    }
+    events.on('TextChangedI', async (bufnr, info) => {
+      await handleTextChange(bufnr, info.pre)
+    }, null, subscriptions)
+    events.on('TextChangedP', async (bufnr, info) => {
+      await handleTextChange(bufnr, info.pre)
     }, null, subscriptions)
   }
   let statusItem
