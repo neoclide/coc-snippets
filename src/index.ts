@@ -155,7 +155,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       insertTs = undefined
       if (inserting) return
       let doc = workspace.getDocument(bufnr)
-      if (doc.isCommandLine || !doc.attached) return
+      if (!doc || doc.isCommandLine || !doc.attached) return
       let now = Date.now()
       if (!lastInsertTs || now - lastInsertTs > 100 || !pre.endsWith(lastInsert)) return
       let edits = await manager.getTriggerSnippets(true)
