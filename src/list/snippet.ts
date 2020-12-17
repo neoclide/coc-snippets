@@ -2,11 +2,10 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Uri, BasicList, ListContext, workspace, ListItem } from 'coc.nvim'
-import { ProviderManager } from '../provider'
-import { Position, Range, Location } from 'vscode-languageserver-protocol'
-import Mru from 'coc.nvim/lib/model/mru'
+import { BasicList, ListContext, Mru, ListItem, Uri, workspace } from 'coc.nvim'
 import os from 'os'
+import { Location, Position, Range } from 'vscode-languageserver-protocol'
+import { ProviderManager } from '../provider'
 
 export default class SnippetsList extends BasicList {
   public readonly name = 'snippets'
@@ -25,7 +24,6 @@ export default class SnippetsList extends BasicList {
     if (!doc) return []
     let snippets = await this.manager.getSnippets(doc.filetype)
     let res: ListItem[] = []
-    let recents = await this.mru.load()
     for (let snip of snippets) {
       let pos: Position = Position.create(snip.lnum, 0)
       let location: Location = Location.create(Uri.file(snip.filepath).toString(), Range.create(pos, pos))
@@ -33,12 +31,10 @@ export default class SnippetsList extends BasicList {
       if (prefix.length < 20) {
         prefix = `${prefix}${' '.repeat(20 - prefix.length)}`
       }
-      let idx = recents.indexOf(snip.prefix)
       res.push({
         label: `${prefix}\t${snip.description}\t${snip.filepath.replace(os.homedir(), '~')}`,
         filterText: `${snip.prefix} ${snip.description}`,
-        location,
-        recentScore: idx == -1 ? -1 : recents.length - idx
+        location
       })
     }
     return res

@@ -1,8 +1,4 @@
-/******************************************************************
-MIT License http://www.opensource.org/licenses/mit-license.php
-Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
-*******************************************************************/
-import { commands, events, ExtensionContext, languages, listManager, snippetManager, Uri, VimCompleteItem, workspace } from 'coc.nvim'
+import { commands, events, ExtensionContext, languages, listManager, snippetManager, Uri, VimCompleteItem, window, workspace } from 'coc.nvim'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -56,7 +52,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const trace = configuration.get<string>('trace', 'error')
   let mru = workspace.createMru('snippets-mru')
 
-  const channel = workspace.createOutputChannel('snippets')
+  const channel = window.createOutputChannel('snippets')
 
   let snippetsDir = configuration.get<string>('userSnippetsDirectory')
   if (snippetsDir) {
@@ -67,7 +63,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       })
     }
     if (!path.isAbsolute(snippetsDir)) {
-      workspace.showMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`, 'warning')
+      window.showMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`, 'warning')
       snippetsDir = null
     }
   }
@@ -162,7 +158,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       if (edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
-        workspace.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
+        window.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
       if (insertLeaveTs > now || inserting) return
       inserting = true
@@ -183,7 +179,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
   let statusItem
   if (configuration.get<boolean>('enableStatusItem', true)) {
-    statusItem = workspace.createStatusBarItem(90, { progress: true })
+    statusItem = window.createStatusBarItem(90, { progress: true })
     statusItem.text = 'loading snippets'
     statusItem.show()
   }
@@ -191,7 +187,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     statusItem?.hide()
   }, e => {
     statusItem?.hide()
-    workspace.showMessage(`Error on load snippets: ${e.message}`, 'error')
+    window.showMessage(`Error on load snippets: ${e.message}`, 'error')
   })
 
   if (manager.hasProvider) {
@@ -215,7 +211,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
       await mru.add(edits[0].prefix)
     } else {
-      let idx = await workspace.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
+      let idx = await window.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
       if (idx == -1) return
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
       await mru.add(edits[idx].prefix)
@@ -238,7 +234,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let buf = await nvim.buffer
     let doc = workspace.getDocument(buf.id)
     if (!doc) {
-      workspace.showMessage('Document not found', 'error')
+      window.showMessage('Document not found', 'error')
       return
     }
     let file = path.join(snippetsDir, `${doc.filetype}.snippets`)
@@ -250,7 +246,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (text) {
       await nvim.command('normal! G')
       await nvim.command('normal! 2o')
-      let position = await workspace.getCursorPosition()
+      let position = await window.getCursorPosition()
       let indent = text.match(/^\s*/)[0]
       text = text.split(/\r?\n/).map(s => s.startsWith(indent) ? s.slice(indent.length) : s).join('\n')
       let escaped = text.replace(/([$}\]])/g, '\\$1')
@@ -265,15 +261,15 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let buf = await nvim.buffer
     let doc = workspace.getDocument(buf.id)
     if (!doc) {
-      workspace.showMessage('Document not found', 'error')
+      window.showMessage('Document not found', 'error')
       return
     }
     let files = await manager.getSnippetFiles(doc.filetype)
     if (!files.length) {
-      workspace.showMessage('No related snippet file found', 'warning')
+      window.showMessage('No related snippet file found', 'warning')
       return
     }
-    let idx = await workspace.showQuickpick(files, 'choose snippet file:')
+    let idx = await window.showQuickpick(files, 'choose snippet file:')
     if (idx == -1) return
     let uri = Uri.file(files[idx]).toString()
     await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
@@ -303,13 +299,13 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (!doc) return
     let mode = await nvim.call('visualmode')
     if (['v', 'V'].indexOf(mode) == -1) {
-      workspace.showMessage(`visual mode ${mode} not supported`, 'warning')
+      window.showMessage(`visual mode ${mode} not supported`, 'warning')
       return
     }
     await nvim.command('normal! `<')
-    let start = await workspace.getCursorPosition()
+    let start = await window.getCursorPosition()
     await nvim.command('normal! `>')
-    let end = await workspace.getCursorPosition()
+    let end = await window.getCursorPosition()
     end = Position.create(end.line, end.character + 1)
     let range = Range.create(start, end)
     let text = doc.textDocument.getText(range)
@@ -327,7 +323,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       await doc.applyEdits([{ range, newText: '' }])
     }
     await nvim.setVar('coc_selected_text', text)
-    await workspace.moveTo(range.start)
+    await window.moveTo(range.start)
   }, { silent: true, sync: false, cancel: true }))
 
   let languageProvider = new LanguageProvider(channel, trace)

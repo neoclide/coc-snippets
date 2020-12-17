@@ -159,14 +159,6 @@ export function convertRegex(str: string): string {
   })
 }
 
-export function wait(ms: number): Promise<any> {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve()
-    }, ms)
-  })
-}
-
 export function getRegexText(prefix: string): string {
   if (prefix.startsWith('^')) prefix = prefix.slice(1)
   if (prefix.endsWith('$')) prefix = prefix.slice(0, -1)

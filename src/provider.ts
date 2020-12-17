@@ -1,8 +1,4 @@
-/******************************************************************
-MIT License http://www.opensource.org/licenses/mit-license.php
-Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
-*******************************************************************/
-import { CompleteOption, CompletionItemProvider, Document, snippetManager, workspace } from 'coc.nvim'
+import { CompleteOption, CompletionItemProvider, Document, snippetManager, window, workspace } from 'coc.nvim'
 import path from 'path'
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range } from 'vscode-languageserver-protocol'
 import BaseProvider from './baseProvider'
@@ -55,8 +51,8 @@ export class ProviderManager implements CompletionItemProvider {
     let bufnr = await workspace.nvim.call('bufnr', '%')
     let doc = workspace.getDocument(bufnr)
     if (!doc) return []
-    await doc.patchChange()
-    let position = await workspace.getCursorPosition()
+    doc.forceSync()
+    let position = await window.getCursorPosition()
     let names = Array.from(this.providers.keys())
     let list: SnippetEdit[] = []
     for (let name of names) {

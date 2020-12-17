@@ -1,8 +1,4 @@
-/******************************************************************
-MIT License http://www.opensource.org/licenses/mit-license.php
-Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
-*******************************************************************/
-import { disposeAll, Document, OutputChannel, Uri, workspace, ExtensionContext } from 'coc.nvim'
+import { disposeAll, Document, ExtensionContext, OutputChannel, Uri, window, workspace } from 'coc.nvim'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -11,7 +7,7 @@ import { Position, Range } from 'vscode-languageserver-types'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
-import { distinct, uid, readdirAsync, readFileAsync, statAsync } from './util'
+import { distinct, readdirAsync, readFileAsync, statAsync, uid } from './util'
 
 const pythonCodes: Map<string, string> = new Map()
 
@@ -407,7 +403,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     } catch (e) {
       this.channel.appendLine(`Error on execute python script:`)
       this.channel.append(e.message)
-      workspace.showMessage(`Error on execute python script: ${e.message}`, 'error')
+      window.showMessage(`Error on execute python script: ${e.message}`, 'error')
     }
   }
 

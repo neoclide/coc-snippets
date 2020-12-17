@@ -1,5 +1,5 @@
-import { workspace, snippetManager, languages, CompletionItemProvider, ProviderResult, DiagnosticCollection, CompleteOption, OutputChannel } from 'coc.nvim'
-import { TextDocument, Position, CancellationToken, CompletionContext, CompletionItem, Disposable, CompletionItemKind, InsertTextFormat, Diagnostic, Range, DiagnosticSeverity } from 'vscode-languageserver-protocol'
+import { CompleteOption, CompletionItemProvider, DiagnosticCollection, languages, OutputChannel, ProviderResult, snippetManager, workspace } from 'coc.nvim'
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Disposable, InsertTextFormat, Position, Range, TextDocument } from 'vscode-languageserver-protocol'
 import { convertRegex, headTail, markdownBlock } from './util'
 
 const codesMap: Map<number, string> = new Map()
