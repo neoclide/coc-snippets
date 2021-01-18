@@ -158,7 +158,7 @@ export class UltiSnippetsProvider extends BaseProvider {
             }
           }
           val = val.replace(/'/g, "\\'").replace(/\n/g, '\\n')
-          values.set(idx, "'" + val + "'")
+          values.set(idx, "r'" + val + "'")
         }
       }
       re = /\$(\d+)/g
@@ -177,8 +177,8 @@ export class UltiSnippetsProvider extends BaseProvider {
       let pyCodes: string[] = []
       pyCodes.push('import re, os, vim, string, random')
       pyCodes.push(`t = ('', ${vals.join(',')})`)
-      pyCodes.push(`fn = '${path.basename(filepath)}'`)
-      pyCodes.push(`path = '${filepath}'`)
+      pyCodes.push(`fn = r'${path.basename(filepath)}'`)
+      pyCodes.push(`path = r'${filepath}'`)
       if (context) {
         pyCodes.push(`snip = ContextSnippet()`)
         pyCodes.push(`context = ${context}`)
