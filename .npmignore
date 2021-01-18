@@ -1,9 +1,7 @@
 src
-tsconfig.json
-tslint.json
 *.map
+tsconfig.json
 tests
-.DS_Store
 .ignore
-.netrwhist
 yarn.lock
+esbuild.js

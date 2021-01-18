@@ -2,9 +2,8 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { BasicList, ListContext, Mru, ListItem, Uri, workspace } from 'coc.nvim'
+import { BasicList, ListContext, ListItem, Location, Mru, Position, Range, Uri, workspace } from 'coc.nvim'
 import os from 'os'
-import { Location, Position, Range } from 'vscode-languageserver-protocol'
 import { ProviderManager } from '../provider'
 
 export default class SnippetsList extends BasicList {

@@ -2,16 +2,14 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Uri, Document, OutputChannel, workspace } from 'coc.nvim'
+import { Document, Disposable, OutputChannel, Position, Range, Uri, workspace } from 'coc.nvim'
 import fs from 'fs'
 import path from 'path'
 import readline from 'readline'
-import { Disposable } from 'vscode-jsonrpc'
-import { Position, Range } from 'vscode-languageserver-types'
 import BaseProvider from './baseProvider'
+import Parser from './parser'
 import { FileItem, SnipmateConfig, SnipmateFile, Snippet, SnippetEdit, TriggerKind } from './types'
 import { readdirAsync, statAsync } from './util'
-import Parser from './parser'
 
 export class SnipmateProvider extends BaseProvider {
   private snippetFiles: SnipmateFile[] = []

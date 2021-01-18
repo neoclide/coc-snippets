@@ -1,5 +1,4 @@
-import { Document, workspace } from 'coc.nvim'
-import { Position, Range } from 'vscode-languageserver-types'
+import { Document, Position, Range, workspace } from 'coc.nvim'
 import { Snippet, SnippetEdit } from './types'
 import { distinct } from './util'
 

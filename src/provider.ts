@@ -1,6 +1,5 @@
-import { CompleteOption, CompletionItemProvider, Document, snippetManager, window, workspace } from 'coc.nvim'
+import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
 import path from 'path'
-import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Disposable, InsertTextFormat, Position, Range } from 'vscode-languageserver-protocol'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { markdownBlock } from './util'
