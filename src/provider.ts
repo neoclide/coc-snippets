@@ -162,7 +162,7 @@ export class ProviderManager implements CompletionItemProvider {
         let snip = await Promise.resolve(snippetManager.resolveSnippet(insertSnippet))
         item.documentation = {
           kind: 'markdown',
-          value: markdownBlock(snip.toString(), filetype)
+          value: markdownBlock(snip.toString(), filetype.match(/^\w+/)[0])
         }
       }
     }
