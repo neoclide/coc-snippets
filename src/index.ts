@@ -192,7 +192,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   if (manager.hasProvider) {
     let disposable = languages.registerCompletionItemProvider(
       'snippets',
-      'S',
+      configuration.get('shortcut', 'S'),
       null,
       manager, configuration.get<string[]>('triggerCharacters', []),
       configuration.get<number>('priority', 90))
@@ -328,7 +328,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   let languageProvider = new LanguageProvider(channel, trace)
   subscriptions.push(languages.registerCompletionItemProvider(
     'snippets-source',
-    'S',
+    configuration.get('shortcut', 'S'),
     ['snippets'],
     languageProvider,
     ['$'],
