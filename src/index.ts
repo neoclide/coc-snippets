@@ -153,6 +153,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
       if (!doc || doc.isCommandLine || !doc.attached) return
       let now = Date.now()
       if (!lastInsertTs || now - lastInsertTs > 100 || !pre.endsWith(lastInsert)) return
+      // @ts-ignore
+      await doc.patchChange(true)
       let edits = await manager.getTriggerSnippets(true)
       if (edits.length == 0) return
       if (edits.length > 1) {
