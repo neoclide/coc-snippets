@@ -189,7 +189,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       pyCodes.push(`snip = SnippetUtil('${ind}', ${start}, ${end}, context)`)
       if (originRegex) {
         pyCodes.push(`pattern = re.compile(r"${originRegex.replace(/"/g, '\\"')}")`)
-        pyCodes.push(`match = pattern.search("${line.replace(/"/g, '\\"')}")`)
+        pyCodes.push(`match = pattern.search(r"${line.replace(/"/g, '\\"')}")`)
       }
       try {
         await nvim.command(`${this.pyMethod} ${pyCodes.join('\n')}`)
