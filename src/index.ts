@@ -270,8 +270,11 @@ export async function activate(context: ExtensionContext): Promise<API> {
       window.showMessage('No related snippet file found', 'warning')
       return
     }
-    let idx = await window.showQuickpick(files, 'choose snippet file:')
-    if (idx == -1) return
+    let idx = 0
+    if (files.length > 1) {
+      idx = await window.showQuickpick(files, 'choose snippet file:')
+      if (idx == -1) return
+    }
     let uri = Uri.file(files[idx]).toString()
     await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
   }))
