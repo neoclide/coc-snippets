@@ -175,7 +175,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       }
       let pyCodes: string[] = []
       pyCodes.push('import re, os, vim, string, random')
-      pyCodes.push(`t = ('', ${vals.join(',')})`)
+      pyCodes.push(`t = (${vals.join(',')})`)
       pyCodes.push(`fn = r'${path.basename(filepath)}'`)
       pyCodes.push(`path = r'${filepath}'`)
       if (context) {
