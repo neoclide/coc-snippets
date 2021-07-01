@@ -129,7 +129,7 @@ class SnippetUtil(object):
         except IndexError:
             self.indent = ""
 
-    def mkline(self, line="", indent=""):
+    def mkline(self, line="", indent=None):
         """Creates a properly set up line.
 
         :line: the text to add
@@ -137,6 +137,17 @@ class SnippetUtil(object):
                  if None, it uses the default amount
 
         """
+        if indent is None:
+            indent = self.indent
+            # this deals with the fact that the first line is
+            # already properly indented
+            if "\n" not in self._rv:
+                try:
+                    indent = indent[len(self._initial_indent) :]
+                except IndexError:
+                    indent = ""
+            indent = self._ind.spaces_to_indent(indent)
+
         return indent + line
 
     def reset_indent(self):
