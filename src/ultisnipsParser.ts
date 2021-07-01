@@ -190,11 +190,12 @@ export default class UltiSnipsParser {
       code = code.trim().slice(1)
       if (code.startsWith('p')) {
         code = code.slice(1).trim()
-        let lines = code.split('\n')
-        lines = lines.map(line => line.replace(/\t/g, '    '))
-        lines = lines.map(line => `    ${line}`)
-        lines.unshift('try:')
-        lines.unshift('import traceback')
+        let lines = [
+          'import traceback',
+          'try:',
+          '    snip._reset("")'
+        ]
+        lines.push(...code.split('\n').map(line => '    ' + line.replace(/\t/g, '    ')))
         lines.push('except Exception as e:')
         lines.push('    snip.rv = traceback.format_exc()')
         await nvim.command(`${pyMethod} ${lines.join('\n')}`)
