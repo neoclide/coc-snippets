@@ -1,4 +1,4 @@
-import { commands, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, VimCompleteItem, window, workspace } from 'coc.nvim'
+import { commands, Document, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, VimCompleteItem, window, workspace } from 'coc.nvim'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -40,6 +40,25 @@ const documentation = `# A valid snippet should starts with:
 
 interface API {
   expandable: () => Promise<boolean>
+}
+
+async function waitDocument(doc: Document, changedtick: number): Promise<boolean> {
+  if (workspace.isNvim) return true
+  return new Promise(resolve => {
+    let timeout = setTimeout(() => {
+      disposable.dispose()
+      resolve(doc.changedtick == changedtick)
+    }, 200)
+    let disposable = doc.onDocumentChange(() => {
+      clearTimeout(timeout)
+      disposable.dispose()
+      if (doc.changedtick == changedtick) {
+        resolve(true)
+      } else {
+        resolve(false)
+      }
+    })
+  })
 }
 
 export async function activate(context: ExtensionContext): Promise<API> {
@@ -145,23 +164,22 @@ export async function activate(context: ExtensionContext): Promise<API> {
       insertLeaveTs = Date.now()
     }, null, subscriptions)
     let inserting = false
-    const handleTextChange = async (bufnr, pre: string) => {
+    const handleTextChange = async (bufnr, pre: string, changedtick: number) => {
       let lastInsertTs = insertTs
-      insertTs = undefined
       if (inserting) return
       let doc = workspace.getDocument(bufnr)
       if (!doc || doc.isCommandLine || !doc.attached) return
       let now = Date.now()
       if (!lastInsertTs || now - lastInsertTs > 100 || !pre.endsWith(lastInsert)) return
-      // @ts-ignore
-      await doc.patchChange(true)
+      let res = await waitDocument(doc, changedtick)
+      if (!res) return
       let edits = await manager.getTriggerSnippets(true)
       if (edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         window.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
-      if (insertLeaveTs > now || inserting) return
+      if (insertLeaveTs > now || insertTs > now || inserting) return
       inserting = true
       try {
         await commands.executeCommand('editor.action.insertSnippet', edits[0])
@@ -172,10 +190,10 @@ export async function activate(context: ExtensionContext): Promise<API> {
       inserting = false
     }
     events.on('TextChangedI', async (bufnr, info) => {
-      await handleTextChange(bufnr, info.pre)
+      await handleTextChange(bufnr, info.pre, info.changedtick)
     }, null, subscriptions)
     events.on('TextChangedP', async (bufnr, info) => {
-      await handleTextChange(bufnr, info.pre)
+      await handleTextChange(bufnr, info.pre, info.changedtick)
     }, null, subscriptions)
   }
   let statusItem
