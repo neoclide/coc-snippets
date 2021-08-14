@@ -243,7 +243,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (!mode) return
     let doc = await workspace.document
     if (!doc) return
-    doc.forceSync()
     let range = await workspace.getSelectedRange(mode, doc)
     let text = doc.textDocument.getText(range)
     if (text) await commands.executeCommand('snippets.editSnippets', text)
