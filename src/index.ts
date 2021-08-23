@@ -73,12 +73,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
 
   let snippetsDir = configuration.get<string>('userSnippetsDirectory')
   if (snippetsDir) {
-    snippetsDir = snippetsDir.replace(/^~/, os.homedir())
-    if (snippetsDir.indexOf('$') !== -1) {
-      snippetsDir = snippetsDir.replace(/\$(\w+)/g, (match, p1) => {
-        return process.env[p1] ?? match
-      })
-    }
+    snippetsDir = workspace.expand(snippetsDir)
     if (!path.isAbsolute(snippetsDir)) {
       window.showMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`, 'warning')
       snippetsDir = null
