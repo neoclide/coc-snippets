@@ -161,6 +161,11 @@ snippet can be failed to load.
 
 **A:** One solution is install [honza/vim-snippets](https://github.com/honza/vim-snippets) which is widely used.
 
+**Q:** Get error message `ModuleNotFoundError: No module named 'vimsnippets'`
+
+**A:** Make sure [honza/vim-snippets](https://github.com/honza/vim-snippets) in
+your vim's `&runtimepath`.
+
 **Q:** Do I need to install [Ultisnips](https://github.com/SirVer/ultisnips).
 
 **A:** No! This extension is designed to work with or without Ultisnips, you can
