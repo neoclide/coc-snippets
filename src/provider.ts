@@ -1,4 +1,4 @@
-import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
+import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, Position, Range, snippetManager, OutputChannel, window, workspace } from 'coc.nvim'
 import path from 'path'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
@@ -6,8 +6,10 @@ import { markdownBlock } from './util'
 
 export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
+  constructor(private channel: OutputChannel) {
+  }
 
-  public regist(provider, name): Disposable {
+  public regist(provider: BaseProvider, name: string): Disposable {
     this.providers.set(name, provider)
     return Disposable.create(() => {
       this.providers.delete(name)
@@ -22,7 +24,9 @@ export class ProviderManager implements CompletionItemProvider {
     let providers = Array.from(this.providers.values())
     await Promise.all(providers.map(provider => {
       return provider.init()
-    }))
+    })).catch(e => {
+      this.appendError('init', e)
+    })
   }
 
   public async getSnippets(filetype: string): Promise<Snippet[]> {
@@ -30,24 +34,31 @@ export class ProviderManager implements CompletionItemProvider {
     let list: Snippet[] = []
     for (let name of names) {
       let provider = this.providers.get(name)
-      let snippets = await provider.getSnippets(filetype)
-      snippets.map(s => s.provider = name)
-      list.push(...snippets)
+      try {
+        let snippets = await provider.getSnippets(filetype)
+        snippets.map(s => s.provider = name)
+        list.push(...snippets)
+      } catch (e) {
+        this.appendError(`getSnippets of ${name}`, e)
+      }
     }
     return list
   }
 
   public async getSnippetFiles(filetype: string): Promise<string[]> {
     let files: string[] = []
-    for (let provider of this.providers.values()) {
-      let res = await provider.getSnippetFiles(filetype)
-      files = files.concat(res)
+    for (let [name, provider] of this.providers.entries()) {
+      try {
+        let res = await provider.getSnippetFiles(filetype)
+        files = files.concat(res)
+      } catch (e) {
+        this.appendError(`getSnippetFiles of ${name}`, e)
+      }
     }
     return files
   }
 
-  public async getTriggerSnippets(autoTrigger = false): Promise<SnippetEdit[]> {
-    let bufnr = await workspace.nvim.call('bufnr', '%')
+  public async getTriggerSnippets(bufnr: number, autoTrigger = false): Promise<SnippetEdit[]> {
     let doc = workspace.getDocument(bufnr)
     if (!doc) return []
     let position = await window.getCursorPosition()
@@ -55,11 +66,15 @@ export class ProviderManager implements CompletionItemProvider {
     let list: SnippetEdit[] = []
     for (let name of names) {
       let provider = this.providers.get(name)
-      let items = await provider.getTriggerSnippets(doc, position, autoTrigger)
-      for (let item of items) {
-        if (list.findIndex(o => o.prefix == item.prefix) == -1) {
-          list.push(item)
+      try {
+        let items = await provider.getTriggerSnippets(doc, position, autoTrigger)
+        for (let item of items) {
+          if (list.findIndex(o => o.prefix == item.prefix) == -1) {
+            list.push(item)
+          }
         }
+      } catch (e) {
+        this.appendError(`getTriggerSnippets of ${name}`, e)
       }
     }
     list.sort((a, b) => b.priority - a.priority)
@@ -67,6 +82,13 @@ export class ProviderManager implements CompletionItemProvider {
       list = list.filter(o => o.priority > 0)
     }
     return list
+  }
+
+  private appendError(name: string, e: Error | string): void {
+    this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on ${name}: ${typeof e === 'string' ? e : e.message}`)
+    if (e instanceof Error) {
+      this.channel.appendLine(e.stack)
+    }
   }
 
   public async provideCompletionItems(
@@ -89,7 +111,13 @@ export class ProviderManager implements CompletionItemProvider {
       if (snip.regex != null && snip.prefix == '') continue
       if (snip.context) {
         let provider = this.providers.get(snip.provider)
-        let valid = await provider.checkContext(snip.context)
+        let valid: boolean
+        try {
+          valid = await provider.checkContext(snip.context)
+        } catch (e) {
+          this.appendError(`checkContext of ${snip.provider}`, e)
+          valid = false
+        }
         if (!valid) continue
         contextPrefixes.push(snip.prefix)
       }
@@ -155,7 +183,13 @@ export class ProviderManager implements CompletionItemProvider {
     let provider = this.providers.get(item.data.provider)
     if (provider) {
       let filetype = await workspace.nvim.eval('&filetype') as string
-      let insertSnippet = await provider.resolveSnippetBody(item.data.snip, item.textEdit.range, item.data.line)
+      let insertSnippet: string
+      try {
+        insertSnippet = await provider.resolveSnippetBody(item.data.snip, item.textEdit.range, item.data.line)
+      } catch (e) {
+        this.appendError(`resolveSnippetBody of ${item.data.provider}`, e)
+        return item
+      }
       item.textEdit.newText = insertSnippet
       if (snippetManager) {
         let snip = await Promise.resolve(snippetManager.resolveSnippet(insertSnippet))

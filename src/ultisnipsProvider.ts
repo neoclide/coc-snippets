@@ -133,8 +133,6 @@ export class UltiSnippetsProvider extends BaseProvider {
   public async resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string> {
     let { nvim } = workspace
     let { body, context, originRegex } = snippet
-    let buf = await nvim.buffer
-    let filepath = await buf.name
     let indentCount = await nvim.call('indent', '.') as number
     let ind = ' '.repeat(indentCount)
     if (body.indexOf('`!p') !== -1) {
@@ -173,11 +171,12 @@ export class UltiSnippetsProvider extends BaseProvider {
       for (let [idx, val] of values.entries()) {
         vals[idx] = val
       }
-      let pyCodes: string[] = []
-      pyCodes.push('import re, os, vim, string, random')
-      pyCodes.push(`t = (${vals.join(',')})`)
-      pyCodes.push(`fn = r'${path.basename(filepath)}'`)
-      pyCodes.push(`path = r'${filepath}'`)
+      let pyCodes: string[] = [
+        'import re, os, vim, string, random',
+        `t = (${vals.join(',')})`,
+        `fn = vim.eval('expand("%:t")') or ""`,
+        `path = vim.eval('expand("%:p")') or ""`
+      ]
       if (context) {
         pyCodes.push(`snip = ContextSnippet()`)
         pyCodes.push(`context = ${context}`)
@@ -191,25 +190,37 @@ export class UltiSnippetsProvider extends BaseProvider {
         pyCodes.push(`pattern = re.compile(r"${originRegex.replace(/"/g, '\\"')}")`)
         pyCodes.push(`match = pattern.search("${line.replace(/"/g, '\\"')}")`)
       }
-      try {
-        await nvim.command(`${this.pyMethod} ${pyCodes.join('\n')}`)
-      } catch (e) {
-        this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}]: ${e.message}`)
-        this.channel.appendLine(`code: ${pyCodes.join('\n')}`)
-      }
+      await nvim.command(`${this.pyMethod} ${this.addPythonTryCatch(pyCodes.join('\n'))}`)
     }
     return this.parser.resolveUltisnipsBody(body)
   }
 
+  /**
+   * vim8 doesn't throw any python error with :py command
+   * we have to use g:errmsg since v:errmsg can't be changed in python script.
+   */
+  private addPythonTryCatch(code: string): string {
+    if (!workspace.isVim) return code
+    let lines = [
+      'import traceback, vim',
+      `vim.vars['errmsg'] = ''`,
+      'try:',
+    ]
+    lines.push(...code.split('\n').map(line => '    ' + line))
+    lines.push('except Exception as e:')
+    lines.push(`    vim.vars['errmsg'] = traceback.format_exc()`)
+    return lines.join('\n')
+  }
+
   public async checkContext(context: string): Promise<any> {
     let { nvim } = workspace
-    let pyCodes: string[] = []
-    pyCodes.push('import re, os, vim, string, random')
-    pyCodes.push(`snip = ContextSnippet()`)
-    pyCodes.push(`context = ${context}`)
-    await nvim.command(`${this.pyMethod} ${pyCodes.join('\n')}`)
-    let res = await nvim.call(`${this.pyMethod}eval`, 'True if context else False')
-    return res
+    let pyCodes: string[] = [
+      'import re, os, vim, string, random',
+      'snip = ContextSnippet()',
+      `context = ${context}`
+    ]
+    await nvim.command(`${this.pyMethod} ${this.addPythonTryCatch(pyCodes.join('\n'))}`)
+    return await nvim.call(`${this.pyMethod}eval`, 'True if context else False')
   }
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
@@ -396,7 +407,8 @@ export class UltiSnippetsProvider extends BaseProvider {
       let dir = path.join(os.tmpdir(), `coc.nvim-${process.pid}`)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir)
       let tmpfile = path.join(os.tmpdir(), `coc.nvim-${process.pid}`, `coc-ultisnips-${uid()}.py`)
-      fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + pythonCode, 'utf8')
+      let code = this.addPythonTryCatch(pythonCode)
+      fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
       await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${tmpfile}')`)
       pythonCodes.clear()
     } catch (e) {

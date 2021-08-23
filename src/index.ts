@@ -66,11 +66,10 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const { nvim } = workspace
   const configuration = workspace.getConfiguration('snippets')
   const filetypeExtends = configuration.get<any>('extends', {})
-  const manager = new ProviderManager()
   const trace = configuration.get<string>('trace', 'error')
   let mru = workspace.createMru('snippets-mru')
-
   const channel = window.createOutputChannel('snippets')
+  const manager = new ProviderManager(channel)
 
   let snippetsDir = configuration.get<string>('userSnippetsDirectory')
   if (snippetsDir) {
@@ -173,7 +172,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       if (!lastInsertTs || now - lastInsertTs > 100 || !pre.endsWith(lastInsert)) return
       let res = await waitDocument(doc, changedtick)
       if (!res) return
-      let edits = await manager.getTriggerSnippets(true)
+      let edits = await manager.getTriggerSnippets(bufnr, true)
       if (edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
@@ -204,9 +203,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
   manager.init().then(() => {
     statusItem?.hide()
-  }, e => {
-    statusItem?.hide()
-    window.showMessage(`Error on load snippets: ${e.message}`, 'error')
   })
 
   if (manager.hasProvider) {
@@ -223,8 +219,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
     await nvim.call('coc#start', [{ source: 'snippets' }])
   }
 
-  async function doExpand(): Promise<boolean> {
-    let edits = await manager.getTriggerSnippets()
+  async function doExpand(bufnr: number): Promise<boolean> {
+    let edits = await manager.getTriggerSnippets(bufnr)
     if (edits.length == 0) return false
     if (edits.length == 1) {
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
@@ -294,14 +290,15 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }))
 
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
-    let expanded = await doExpand()
+    let bufnr = await nvim.eval('bufnr("%")') as number
+    let expanded = await doExpand(bufnr)
     if (!expanded) await fallback()
   }, { silent: true, sync: true, cancel: true }))
 
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', async () => {
-    let expanded = await doExpand()
+    let bufnr = await nvim.eval('bufnr("%")') as number
+    let expanded = await doExpand(bufnr)
     if (!expanded) {
-      let bufnr = await nvim.call('bufnr', '%')
       let session = snippetManager.getSession(bufnr)
       if (session && session.isActive) {
         await nvim.call('coc#_cancel', [])
@@ -358,12 +355,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
 
   return {
     expandable: async (): Promise<boolean> => {
-      let edits
-      try {
-        edits = await manager.getTriggerSnippets()
-      } catch (e) {
-        channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on getTriggerSnippets: ${e}`)
-      }
+      let bufnr = await nvim.eval('bufnr("%")') as number
+      let edits = await manager.getTriggerSnippets(bufnr)
       return edits && edits.length > 0
     }
   }
