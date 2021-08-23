@@ -42,6 +42,12 @@ export default abstract class BaseProvider {
     if (map && map[filetype]) {
       filetypes.push(map[filetype])
     }
+    if (filetype == 'javascriptreact' && !filetypes.includes('javascript')) {
+      filetypes.push('javascript')
+    }
+    if (filetype == 'typescriptreact' && !filetypes.includes('typescript')) {
+      filetypes.push('typescript')
+    }
     let extendFiletypes = filetypes.reduce((arr, curr) => {
       return arr.concat(this.getExtendsFiletypes(curr))
     }, [] as string[])
