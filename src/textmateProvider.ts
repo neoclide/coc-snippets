@@ -168,10 +168,12 @@ export class TextmateProvider extends BaseProvider {
       }
       for (let item of snippets) {
         let p = path.join(extension.extensionPath, item.path)
-        let { language } = item
-        def.snippets.push({
-          languageId: language,
-          filepath: p
+        let languages = typeof item.language == 'string' ? [item.language] : item.language
+        languages.forEach((language: string) => {
+          def.snippets.push({
+            languageId: language,
+            filepath: p
+          })
         })
       }
       if (snippets && snippets.length) {
