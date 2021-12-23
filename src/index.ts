@@ -158,9 +158,11 @@ export async function activate(context: ExtensionContext): Promise<API> {
       insertLeaveTs = Date.now()
     }, null, subscriptions)
     let inserting = false
+    let lastChangedTick: number
     const handleTextChange = async (bufnr, pre: string, changedtick: number) => {
       let lastInsertTs = insertTs
-      if (inserting) return
+      if (inserting || changedtick == lastChangedTick) return
+      lastChangedTick = changedtick
       let doc = workspace.getDocument(bufnr)
       if (!doc || doc.isCommandLine || !doc.attached) return
       let now = Date.now()
