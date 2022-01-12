@@ -9,7 +9,7 @@ import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { distinct } from './util'
 
 export interface ISnippetPluginContribution {
-  prefix: string
+  prefix: string | string[]
   body: string | string[]
   description: string | string[]
 }
@@ -238,18 +238,21 @@ export class TextmateProvider extends BaseProvider {
       this.channel.appendLine(`[Error ${(new Date()).toLocaleDateString()}] ${ex.stack}`)
       snippets = []
     }
-    const normalizedSnippets = snippets.map((snip: ISnippetPluginContribution): Snippet => {
-      let prefix = Array.isArray(snip.prefix) ? snip.prefix[0] : snip.prefix
-      return {
-        filepath,
-        lnum: 0,
-        body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
-        prefix,
-        description: typeof snip.description === 'string' ? snip.description : typeof snip.description !== 'undefined' ? snip.description.join('\n') : '',
-        triggerKind: TriggerKind.WordBoundary
-      }
-    },
-    )
+    const normalizedSnippets: Snippet[] = []
+    snippets.forEach((snip: ISnippetPluginContribution) => {
+      if (!snip.prefix) return
+      let prefixs = Array.isArray(snip.prefix) ? snip.prefix : [snip.prefix]
+      prefixs.forEach(prefix => {
+        normalizedSnippets.push({
+          filepath,
+          lnum: 0,
+          body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
+          prefix,
+          description: typeof snip.description === 'string' ? snip.description : typeof snip.description !== 'undefined' ? snip.description.join('\n') : '',
+          triggerKind: TriggerKind.WordBoundary
+        })
+      })
+    })
     return normalizedSnippets
   }
 }
