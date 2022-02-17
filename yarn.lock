@@ -1104,10 +1104,10 @@ co@^4.6.0:
   resolved "https://registry.yarnpkg.com/co/-/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
   integrity sha1-bqa989hTrlTMuOR7+gvz+QMfsYQ=
 
-coc.nvim@^0.0.81-next.6:
-  version "0.0.81-next.6"
-  resolved "https://registry.yarnpkg.com/coc.nvim/-/coc.nvim-0.0.81-next.6.tgz#c3ee7079a66702ebb3b06d4c2bf333d9306ec561"
-  integrity sha512-VT+DhygyTIzu9IRrwCUljMzfNfh8TeXqqrvFsBE0E8cUwERgCAIvRbBMEDfqaaI+XFgyuwNRwbX5kEvfjG/u3g==
+coc.nvim@^0.0.81-next.16:
+  version "0.0.81-next.16"
+  resolved "https://registry.yarnpkg.com/coc.nvim/-/coc.nvim-0.0.81-next.16.tgz#a010235e8553ce6f7957e321202c6196b52f59c6"
+  integrity sha512-MWRjYkw12OpITHADQ9xLsjSrVrzObahW0K/gYyoJQqPhGnSp876/t3BfWCfEJd3TRNIqTRvzx2ot8Kc++sy/GQ==
 
 collect-v8-coverage@^1.0.0:
   version "1.0.0"

@@ -1,6 +1,5 @@
-import { commands, Document, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, VimCompleteItem, window, workspace } from 'coc.nvim'
+import { commands, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, VimCompleteItem, window, workspace } from 'coc.nvim'
 import fs from 'fs'
-import os from 'os'
 import path from 'path'
 import util from 'util'
 import LanguageProvider from './languages'
@@ -10,55 +9,10 @@ import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
 import { UltiSnipsConfig } from './types'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
-
-const documentation = `# A valid snippet should starts with:
-#
-#		snippet trigger_word [ "description" [ options ] ]
-#
-# and end with:
-#
-#		endsnippet
-#
-# Snippet options:
-#
-#		b - Beginning of line.
-#		i - In-word expansion.
-#		w - Word boundary.
-#		r - Regular expression
-#		e - Custom context snippet
-#		A - Snippet will be triggered automatically, when condition matches.
-#
-# Basic example:
-#
-#		snippet emitter "emitter properties" b
-#		private readonly $\{1} = new Emitter<$2>()
-#		public readonly $\{1/^_(.*)/$1/}: Event<$2> = this.$1.event
-#		endsnippet
-#
-# Online reference: https://github.com/SirVer/ultisnips/blob/master/doc/UltiSnips.txt
-`
+import { documentation, waitDocument } from './util'
 
 interface API {
   expandable: () => Promise<boolean>
-}
-
-async function waitDocument(doc: Document, changedtick: number): Promise<boolean> {
-  if (workspace.isNvim) return true
-  return new Promise(resolve => {
-    let timeout = setTimeout(() => {
-      disposable.dispose()
-      resolve(doc.changedtick == changedtick)
-    }, 200)
-    let disposable = doc.onDocumentChange(() => {
-      clearTimeout(timeout)
-      disposable.dispose()
-      if (doc.changedtick == changedtick) {
-        resolve(true)
-      } else {
-        resolve(false)
-      }
-    })
-  })
 }
 
 export async function activate(context: ExtensionContext): Promise<API> {
@@ -147,26 +101,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
 
   if (configuration.get<boolean>('autoTrigger', true)) {
-    let insertTs
-    let insertLeaveTs: number
-    let lastInsert: string
-    events.on('InsertCharPre', character => {
-      insertTs = Date.now()
-      lastInsert = character
-    }, null, subscriptions)
-    events.on('InsertLeave', () => {
-      insertLeaveTs = Date.now()
-    }, null, subscriptions)
     let inserting = false
-    let lastChangedTick: number
-    const handleTextChange = async (bufnr, pre: string, changedtick: number) => {
-      let lastInsertTs = insertTs
-      if (inserting || changedtick == lastChangedTick) return
-      lastChangedTick = changedtick
+    events.on('TextInsert', async (bufnr, info) => {
+      let changedtick = info.changedtick
+      if (inserting) return
       let doc = workspace.getDocument(bufnr)
       if (!doc || doc.isCommandLine || !doc.attached) return
-      let now = Date.now()
-      if (!lastInsertTs || now - lastInsertTs > 100 || !pre.endsWith(lastInsert)) return
       let res = await waitDocument(doc, changedtick)
       if (!res) return
       let edits = await manager.getTriggerSnippets(bufnr, true)
@@ -175,7 +115,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
         channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
         window.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
       }
-      if (insertLeaveTs > now || insertTs > now || inserting) return
+      if (inserting) return
       inserting = true
       try {
         await commands.executeCommand('editor.action.insertSnippet', edits[0])
@@ -184,12 +124,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
         console.error(e)
       }
       inserting = false
-    }
-    events.on('TextChangedI', async (bufnr, info) => {
-      await handleTextChange(bufnr, info.pre, info.changedtick)
-    }, null, subscriptions)
-    events.on('TextChangedP', async (bufnr, info) => {
-      await handleTextChange(bufnr, info.pre, info.changedtick)
     }, null, subscriptions)
   }
   let statusItem
@@ -236,7 +170,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (!mode) return
     let doc = await workspace.document
     if (!doc) return
-    let range = await workspace.getSelectedRange(mode, doc)
+    let range = await window.getSelectedRange(mode)
     let text = doc.textDocument.getText(range)
     if (text) await commands.executeCommand('snippets.editSnippets', text)
   }, { sync: false }))
