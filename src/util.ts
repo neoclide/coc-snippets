@@ -6,6 +6,7 @@ import pify from 'pify'
 import fs from 'fs'
 import { ReplaceItem } from './types'
 import crypto from 'crypto'
+import { Document } from 'coc.nvim'
 
 const BASE64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'
 
@@ -202,16 +203,16 @@ export function markdownBlock(code: string, filetype: string): string {
 }
 
 export async function waitDocument(doc: Document, changedtick: number): Promise<boolean> {
-  if (workspace.isNvim) return true
+  if (doc.changedtick >= changedtick) return Promise.resolve(doc.changedtick === changedtick)
   return new Promise(resolve => {
     let timeout = setTimeout(() => {
       disposable.dispose()
-      resolve(doc.changedtick >= changedtick)
+      resolve(doc.changedtick == changedtick)
     }, 200)
     let disposable = doc.onDocumentChange(() => {
       clearTimeout(timeout)
       disposable.dispose()
-      if (doc.changedtick >= changedtick) {
+      if (doc.changedtick == changedtick) {
         resolve(true)
       } else {
         resolve(false)
