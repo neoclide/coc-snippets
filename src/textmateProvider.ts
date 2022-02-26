@@ -1,9 +1,7 @@
-import { Document, Extension, extensions, OutputChannel, Position, Range } from 'coc.nvim'
+import { Disposable, Document, Extension, extensions, OutputChannel, Position, Range, workspace } from 'coc.nvim'
 import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
-import os from 'os'
 import path from 'path'
-import util from 'util'
 import BaseProvider, { Config } from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
 import { distinct } from './util'
@@ -19,18 +17,8 @@ export interface SnippetItem {
   filepath: string
 }
 
-export interface SnippetDefinition {
-  extensionId: string
-  // path => languageIds
-  snippets: SnippetItem[]
-}
-
 export interface SnippetCache {
   [language: string]: Snippet[]
-}
-
-export interface ExtensionCache {
-  [id: string]: SnippetCache
 }
 
 interface KeyToSnippet {
@@ -38,53 +26,78 @@ interface KeyToSnippet {
 }
 
 export class TextmateProvider extends BaseProvider {
-  private _snippetCache: ExtensionCache = {}
-  private _userSnippets: SnippetCache = {}
+  private loadedSnippets: SnippetCache = {}
+  private loadedLanguageIds: Set<string> = new Set()
+  private definitions: Map<string, SnippetItem[]> = new Map()
 
-  constructor(private channel: OutputChannel, private trace: string, config: Config) {
+  constructor(
+    private channel: OutputChannel,
+    config: Config,
+    private subscriptions: Disposable[]
+  ) {
     super(config)
-    if (config.loadFromExtensions) {
-      extensions.onDidLoadExtension(extension => {
-        this.loadSnippetsFromExtension(extension).catch(e => {
-          channel.appendLine(`[Error] ${e.message}`)
-        })
-      })
-      extensions.onDidUnloadExtension(id => {
-        delete this._snippetCache[id]
-      })
-    }
   }
 
   public async init(): Promise<void> {
     if (this.config.loadFromExtensions) {
       for (let extension of extensions.all) {
-        await this.loadSnippetsFromExtension(extension)
+        await this.loadSnippetDefinition(extension)
       }
+      extensions.onDidLoadExtension(extension => {
+        this.loadSnippetDefinition(extension).then(items => {
+          if (items?.length) {
+            items = items.filter(o => workspace.languageIds.has(o.languageId))
+            this.loadSnippetsFromDefinition(extension.id, items)
+          }
+        }, e => {
+          this.channel.appendLine(`[Error] ${e.message}`)
+        })
+      }, null, this.subscriptions)
+      extensions.onDidUnloadExtension(id => {
+        for (let [key, val] of Object.entries(this.loadedSnippets)) {
+          let filtered = val.filter(o => o.extensionId !== id)
+          this.loadedSnippets[key] = filtered
+        }
+      }, null, this.subscriptions)
     }
     let paths = this.config.snippetsRoots as string[]
-    if (paths && paths.length) {
-      for (let dir of paths) {
-        await this.loadSnippetsFromRoot(dir)
+    for (let dir of paths ?? []) {
+      await this.loadDefinitionFromRoot(dir)
+    }
+    for (let languageId of workspace.languageIds) {
+      await this.loadByLanguageId(languageId)
+    }
+    workspace.onDidOpenTextDocument(e => {
+      this.loadByLanguageId(e.languageId)
+    }, null, this.subscriptions)
+  }
+
+  private async loadByLanguageId(languageId: string): Promise<void> {
+    if (this.loadedLanguageIds.has(languageId)) return
+    let filetypes = this.getFiletypes(languageId)
+    this.channel.appendLine(`Load textmate snippets from filetypes: ${filetypes.join(', ')}`)
+    let loaded = this.loadedSnippets
+    for (let languageId of filetypes) {
+      if (this.loadedLanguageIds.has(languageId)) continue
+      this.loadedLanguageIds.add(languageId)
+      let snippets: Snippet[] = []
+      for (let [extensionId, items] of this.definitions.entries()) {
+        for (let item of items) {
+          if (item.languageId !== languageId) continue
+          let arr = await this.loadSnippetsFromFile(item.filepath, extensionId)
+          if (arr) snippets.push(...arr)
+        }
       }
+      loaded[languageId] = snippets
     }
   }
+
 
   public async getSnippetFiles(filetype: string): Promise<string[]> {
     let filetypes = this.getFiletypes(filetype)
     let filepaths: string[] = []
-    if (this.config.loadFromExtensions) {
-      for (let key of Object.keys(this._snippetCache)) {
-        let cache = this._snippetCache[key]
-        for (let filetype of filetypes) {
-          let snippets = cache[filetype]
-          if (snippets && snippets.length) {
-            filepaths.push(snippets[0].filepath)
-          }
-        }
-      }
-    }
     for (let filetype of filetypes) {
-      let snippets = this._userSnippets[filetype]
+      let snippets = this.loadedSnippets[filetype]
       if (snippets && snippets.length) {
         for (let snip of snippets) {
           let { filepath } = snip
@@ -126,22 +139,8 @@ export class TextmateProvider extends BaseProvider {
     let res: Snippet[] = []
     let filetypes: string[] = this.getFiletypes(filetype)
     let added: Set<string> = new Set()
-    for (let key of Object.keys(this._snippetCache)) {
-      let cache = this._snippetCache[key]
-      for (let filetype of filetypes) {
-        let snippets = cache[filetype]
-        if (snippets) {
-          for (let snip of snippets) {
-            if (!added.has(snip.prefix)) {
-              added.add(snip.prefix)
-              res.push(snip)
-            }
-          }
-        }
-      }
-    }
     for (let filetype of filetypes) {
-      let snippets = this._userSnippets[filetype]
+      let snippets = this.loadedSnippets[filetype]
       if (snippets && snippets.length) {
         for (let snip of snippets) {
           if (!added.has(snip.prefix)) {
@@ -158,58 +157,60 @@ export class TextmateProvider extends BaseProvider {
     return snip.body
   }
 
-  private async loadSnippetsFromExtension(extension: Extension<any>): Promise<void> {
+  private async loadSnippetDefinition(extension: Extension<any>): Promise<SnippetItem[]> {
     let { packageJSON } = extension
+    const arr: SnippetItem[] = []
     if (packageJSON.contributes && packageJSON.contributes.snippets) {
       let { snippets } = packageJSON.contributes
-      let def: SnippetDefinition = {
-        extensionId: extension.id,
-        snippets: []
-      }
+      const extensionId = extension.id
       for (let item of snippets) {
         let p = path.join(extension.extensionPath, item.path)
-        let languages = typeof item.language == 'string' ? [item.language] : item.language
-        languages.forEach((language: string) => {
-          def.snippets.push({
-            languageId: language,
-            filepath: p
+        if (fs.existsSync(p)) {
+          let languages = typeof item.language == 'string' ? [item.language] : item.language
+          languages.forEach((language: string) => {
+            arr.push({
+              languageId: language,
+              filepath: p
+            })
           })
-        })
+        }
       }
       if (snippets && snippets.length) {
-        await this.loadSnippetsFromDefinition(def)
+        this.definitions.set(extensionId, arr)
+      }
+    }
+    return arr
+  }
+
+  private async loadDefinitionFromRoot(root: string): Promise<void> {
+    root = workspace.expand(root)
+    if (!fs.existsSync(root)) return
+    let files = await fs.promises.readdir(root, 'utf8')
+    files = files.filter(f => f.endsWith('.json') || f.endsWith('.code-snippets'))
+    let items: SnippetItem[] = []
+    for (let file of files) {
+      let filepath = path.join(root, file)
+      let basename = path.basename(file, '.json')
+      let languageId = basename.replace(/\.code-snippets$/, '')
+      items.push({ languageId, filepath })
+    }
+    this.definitions.set('user-snippets', items)
+  }
+
+  private async loadSnippetsFromDefinition(extensionId: string, items: SnippetItem[]): Promise<void> {
+    for (let item of items) {
+      let { languageId } = item
+      if (!fs.existsSync(item.filepath)) continue
+      let arr = await this.loadSnippetsFromFile(item.filepath, extensionId)
+      let curr = this.loadedSnippets[languageId] || []
+      if (arr.length) {
+        curr.push(...arr)
+        this.loadedSnippets[languageId] = curr
       }
     }
   }
 
-  private async loadSnippetsFromRoot(root: string): Promise<void> {
-    let { _userSnippets } = this
-    if (root.startsWith('~')) root = root.replace(/^~/, os.homedir())
-    let files = await util.promisify(fs.readdir)(root, 'utf8')
-    files = files.filter(f => f.endsWith('.json') || f.endsWith('.code-snippets'))
-    await Promise.all(files.map(file => {
-      file = path.join(root, file)
-      let basename = path.basename(file, '.json')
-      basename = basename.replace(/\.code-snippets$/, '')
-      return this.loadSnippetsFromFile(file).then(snippets => {
-        _userSnippets[basename] = snippets
-      })
-    }))
-  }
-
-  private async loadSnippetsFromDefinition(def: SnippetDefinition): Promise<void> {
-    let { extensionId, snippets } = def
-    let cache = this._snippetCache[extensionId] = {}
-    for (let item of snippets) {
-      let { languageId } = item
-      if (!fs.existsSync(item.filepath)) continue
-      let arr = await this.loadSnippetsFromFile(item.filepath)
-      let exists = cache[languageId] || []
-      cache[languageId] = [...exists, ...arr]
-    }
-  }
-
-  private async loadSnippetsFromFile(snippetFilePath: string): Promise<Snippet[]> {
+  private async loadSnippetsFromFile(snippetFilePath: string, extensionId: string): Promise<Snippet[]> {
     const contents = await new Promise<string>((resolve, reject) => {
       fs.readFile(snippetFilePath, "utf8", (err, data) => {
         if (err) return reject(err)
@@ -218,7 +219,7 @@ export class TextmateProvider extends BaseProvider {
     })
     const snippets = this.loadSnippetsFromText(snippetFilePath, contents)
     this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} textmate snippets from ${snippetFilePath}`)
-    return snippets
+    return snippets.map(o => Object.assign({ extensionId }, o))
   }
 
   private loadSnippetsFromText(filepath: string, contents: string): Snippet[] {

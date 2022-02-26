@@ -3,11 +3,14 @@ MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
 import pify from 'pify'
+import path from 'path'
+import os from 'os'
 import fs from 'fs'
 import { ReplaceItem } from './types'
 import crypto from 'crypto'
 import { Document } from 'coc.nvim'
 
+const caseInsensitive = os.platform() == 'win32' || os.platform() == 'darwin'
 const BASE64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'
 
 function tostr(bytes: Uint8Array): string {
@@ -221,3 +224,34 @@ export async function waitDocument(doc: Document, changedtick: number): Promise<
   })
 }
 
+export function isParentFolder(folder: string, filepath: string, checkEqual = false): boolean {
+  let pdir = fixDriver(path.resolve(path.normalize(folder)))
+  let dir = fixDriver(path.resolve(path.normalize(filepath)))
+  if (pdir == '//') pdir = '/'
+  if (sameFile(pdir, dir)) return checkEqual ? true : false
+  if (pdir.endsWith(path.sep)) return fileStartsWith(dir, pdir)
+  return fileStartsWith(dir, pdir) && dir[pdir.length] == path.sep
+}
+
+// use uppercase for windows driver
+export function fixDriver(filepath: string, platform = os.platform()): string {
+  if (platform != 'win32' || filepath[1] != ':') return filepath
+  return filepath[0].toUpperCase() + filepath.slice(1)
+}
+
+
+export function sameFile(fullpath: string | null, other: string | null, caseInsensitive?: boolean): boolean {
+  if (!fullpath || !other) return false
+  if (caseInsensitive) return fullpath.toLowerCase() === other.toLowerCase()
+  return fullpath === other
+}
+
+export function fileStartsWith(dir: string, pdir: string) {
+  if (caseInsensitive) return dir.toLowerCase().startsWith(pdir.toLowerCase())
+  return dir.startsWith(pdir)
+}
+
+export function characterIndex(content: string, byteIndex: number): number {
+  let buf = Buffer.from(content, 'utf8')
+  return buf.slice(0, byteIndex).toString('utf8').length
+}

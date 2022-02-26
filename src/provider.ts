@@ -1,12 +1,18 @@
-import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, Position, Range, snippetManager, OutputChannel, window, workspace } from 'coc.nvim'
+import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, OutputChannel, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
 import path from 'path'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TriggerKind } from './types'
-import { markdownBlock } from './util'
+import { characterIndex, markdownBlock } from './util'
 
 export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
-  constructor(private channel: OutputChannel) {
+  constructor(
+    private channel: OutputChannel,
+    subscriptions: Disposable[]
+  ) {
+    subscriptions.push(Disposable.create(() => {
+      this.providers.clear()
+    }))
   }
 
   public regist(provider: BaseProvider, name: string): Disposable {
@@ -213,9 +219,4 @@ export class ProviderManager implements CompletionItemProvider {
     }
     return res == 0 ? '' : prefix.slice(0, res + 1)
   }
-}
-
-export function characterIndex(content: string, byteIndex: number): number {
-  let buf = Buffer.from(content, 'utf8')
-  return buf.slice(0, byteIndex).toString('utf8').length
 }

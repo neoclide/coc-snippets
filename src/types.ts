@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import {Range} from 'coc.nvim'
+import { Range } from 'coc.nvim'
 
 export enum TriggerKind {
   SpaceBefore,
@@ -16,12 +16,12 @@ export interface UltiSnipsConfig {
   usePythonx: boolean
   pythonVersion: number
   directories: string[]
-  extends: {[key: string]: string[]}
+  extends: { [key: string]: string[] }
 }
 
 export interface SnipmateConfig {
   author: string
-  extends: {[key: string]: string[]}
+  extends: { [key: string]: string[] }
 }
 
 export interface UltiSnipsFile {
@@ -35,7 +35,6 @@ export interface UltiSnipsFile {
 }
 
 export interface SnipmateFile {
-  directory: string
   filepath: string
   filetype: string
   snippets: Snippet[]
@@ -56,6 +55,7 @@ export interface Snippet {
   readonly context?: string
   readonly autoTrigger?: boolean
   readonly originRegex?: string
+  extensionId?: string
   provider?: string
 }
 

@@ -1,22 +1,21 @@
-import { disposeAll, Document, ExtensionContext, OutputChannel, Uri, window, workspace } from 'coc.nvim'
+import { Document, ExtensionContext, OutputChannel, Position, Range, Uri, window, workspace } from 'coc.nvim'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { Disposable, Position, Range } from 'coc.nvim'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
-import { distinct, readdirAsync, readFileAsync, statAsync, uid } from './util'
+import { distinct, readdirAsync, statAsync, uid } from './util'
 
 const pythonCodes: Map<string, string> = new Map()
 
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
+  private loadedFiletypes: string[] = []
+  private fileItems: FileItem[] = []
   private pyMethod: string
-  private disposables: Disposable[] = []
   private directories: string[] = []
   private parser: UltiSnipsParser
-  private runtimeDirs: string[] = []
   constructor(
     private channel: OutputChannel,
     private trace: string,
@@ -24,57 +23,31 @@ export class UltiSnippetsProvider extends BaseProvider {
     private context: ExtensionContext
   ) {
     super(config)
-    this.runtimeDirs = workspace.env.runtimepath.split(',')
-    workspace.watchOption('runtimepath', async (_, newValue: string) => {
-      let parts = newValue.split(',')
-      let subFolders = await this.getSubFolders()
-      let items: FileItem[] = []
-      for (let dir of parts) {
-        if (this.runtimeDirs.indexOf(dir) == -1) {
-          this.runtimeDirs.push(dir)
-          let res = await this.getSnippetsFromPlugin(dir, subFolders)
-          items.push(...res)
-        }
+    workspace.onDidSaveTextDocument(async doc => {
+      let uri = Uri.parse(doc.uri)
+      if (uri.scheme != 'file' || !doc.uri.endsWith('.snippets')) return
+      let filepath = uri.fsPath
+      if (!fs.existsSync(filepath)) return
+      let idx = this.snippetFiles.findIndex(s => s.filepath == filepath)
+      if (idx !== -1) {
+        const snippetFile = this.snippetFiles[idx]
+        this.snippetFiles.splice(idx, 1)
+        await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
+      } else {
+        let filetype = filetypeFromBasename(path.basename(filepath, '.snippets'))
+        await this.loadSnippetsFromFile(filetype, path.dirname(filepath), filepath)
       }
-      if (items.length) {
-        await Promise.all(items.map(({ filepath, directory, filetype }) => {
-          return this.loadSnippetsFromFile(filetype, directory, filepath)
-        }))
-        let files = items.map(o => o.filepath)
-        let pythonCode = ''
-        for (let file of files) {
-          let code = pythonCodes.get(file)
-          if (code) {
-            pythonCode += `# ${file}\n` + code + '\n'
-          }
-        }
-        if (pythonCode) {
-          pythonCodes.clear()
-          await this.executePythonCode(pythonCode)
-        }
-      }
-    }, this.disposables)
-  }
-
-  public checkLoaded(filepath: string): boolean {
-    return this.snippetFiles.findIndex(o => o.filepath == filepath) !== -1
+    }, null, this.context.subscriptions)
   }
 
   public async init(): Promise<void> {
     let { nvim, env } = workspace
-    let { runtimepath } = env
     let { config } = this
     for (let dir of config.directories) {
-      if (dir.startsWith('~') || dir.indexOf('$') !== -1) {
-        let res = await workspace.nvim.call('expand', [dir])
-        this.directories.push(res)
-      } else {
-        this.directories.push(dir)
-      }
+      this.directories.push(workspace.expand(dir))
     }
-    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Using ultisnips directories: ${this.directories.join(' ')}`)
+    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Using ultisnips directories: ${this.directories.join(' ')}`)
     let hasPythonx = await nvim.call('has', ['pythonx'])
-    let pythonCode = await readFileAsync(this.context.asAbsolutePath('python/ultisnips.py'), 'utf8')
     if (hasPythonx && config.usePythonx) {
       this.pyMethod = 'pyx'
     } else {
@@ -82,37 +55,61 @@ export class UltiSnippetsProvider extends BaseProvider {
     }
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Using ultisnips python command: ${this.pyMethod}`)
     this.parser = new UltiSnipsParser(this.pyMethod, this.channel, this.trace)
-    let arr = await this.getAllSnippetFiles(runtimepath)
-    let files = arr.map(o => o.filepath)
-    await Promise.all(arr.map(({ filepath, directory, filetype }) => {
-      return this.loadSnippetsFromFile(filetype, directory, filepath)
-    }))
-    for (let file of files) {
-      let code = pythonCodes.get(file)
-      if (code) {
-        pythonCode += `\n# ${file}\n` + code + '\n'
+    this.fileItems = await this.laodAllFilItems(env.runtimepath)
+    workspace.onDidRuntimePathChange(async e => {
+      let subFolders = await this.getSubFolders()
+      for (const dir of e) {
+        let res = await this.getSnippetsFromPlugin(dir, subFolders)
+        this.fileItems.push(...res)
+      }
+    }, null, this.context.subscriptions)
+    let filepath = this.context.asAbsolutePath('python/ultisnips.py')
+    await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${filepath}')`)
+    for (let filetype of workspace.filetypes) {
+      await this.loadByFiletype(filetype)
+    }
+    workspace.onDidCloseTextDocument(async e => {
+      let doc = workspace.getDocument(e.bufnr)
+      if (doc && !this.loadedFiletypes.includes(doc.filetype)) {
+        await this.loadByFiletype(doc.filetype)
+      }
+    }, null, this.context.subscriptions)
+  }
+
+  private async loadByFiletype(filetype: string): Promise<void> {
+    let items = this.getFileItems(filetype)
+    if (items.length) {
+      await this.loadFromItems(items)
+      this.loadedFiletypes.push(filetype)
+    }
+  }
+
+  private getFileItems(filetype: string): FileItem[] {
+    let filetypes = this.getFiletypes(filetype)
+    filetypes.push('all')
+    return this.fileItems.filter(o => filetypes.includes(o.filetype))
+  }
+
+  private async loadFromItems(items: FileItem[]): Promise<void> {
+    if (items.length) {
+      await Promise.all(items.map(({ filepath, directory, filetype }) => {
+        return this.loadSnippetsFromFile(filetype, directory, filepath)
+      }))
+      let pythonCode = ''
+      for (let [file, code] of pythonCodes.entries()) {
+        pythonCode += `# ${file}\n` + code + '\n'
+      }
+      if (pythonCode) {
+        pythonCodes.clear()
+        await this.executePythonCode(pythonCode)
       }
     }
-    await this.executePythonCode(pythonCode)
-    workspace.onDidSaveTextDocument(async doc => {
-      let uri = Uri.parse(doc.uri)
-      if (uri.scheme != 'file' || !doc.uri.endsWith('.snippets')) return
-      let filepath = uri.fsPath
-      if (!fs.existsSync(filepath)) return
-      let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
-      if (snippetFile) {
-        await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
-      } else {
-        let filetype = path.basename(filepath, '.snippets')
-        await this.loadSnippetsFromFile(filetype, path.dirname(filepath), filepath)
-      }
-    }, null, this.disposables)
   }
 
   public async loadSnippetsFromFile(filetype: string, directory: string, filepath: string): Promise<void> {
-    let { snippets, pythonCode, extendFiletypes, clearsnippets } = await this.parser.parseUltisnipsFile(filepath)
     let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
-    if (idx !== -1) this.snippetFiles.splice(idx, 1)
+    if (idx !== -1) return
+    let { snippets, pythonCode, extendFiletypes, clearsnippets } = await this.parser.parseUltisnipsFile(filepath)
     this.snippetFiles.push({
       extendFiletypes,
       clearsnippets,
@@ -121,10 +118,16 @@ export class UltiSnippetsProvider extends BaseProvider {
       filetype,
       snippets
     })
-    if (extendFiletypes) {
+    if (extendFiletypes?.length) {
       let filetypes = this.config.extends[filetype] || []
       filetypes = filetypes.concat(extendFiletypes)
       this.config.extends[filetype] = distinct(filetypes)
+      for (let f of extendFiletypes) {
+        let items = this.getFileItems(f)
+        await Promise.all(items.map(item => {
+          return this.loadSnippetsFromFile(item.filetype, item.directory, item.filepath)
+        }))
+      }
     }
     this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} UltiSnip snippets from: ${filepath}`)
     pythonCodes.set(filepath, pythonCode)
@@ -332,7 +335,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     return result
   }
 
-  public async getAllSnippetFiles(runtimepath: string): Promise<FileItem[]> {
+  public async laodAllFilItems(runtimepath: string): Promise<FileItem[]> {
     let { directories } = this
     let res: FileItem[] = []
     for (let directory of directories) {
@@ -343,7 +346,6 @@ export class UltiSnippetsProvider extends BaseProvider {
     }
     let subFolders = await this.getSubFolders()
     let rtps = runtimepath.split(',')
-    this.runtimeDirs = rtps
     for (let rtp of rtps) {
       let items = await this.getSnippetsFromPlugin(rtp, subFolders)
       res.push(...items)
@@ -383,7 +385,7 @@ export class UltiSnippetsProvider extends BaseProvider {
           let file = path.join(directory, f)
           if (file.endsWith('.snippets')) {
             let basename = path.basename(f, '.snippets')
-            let filetype = basename.split('_', 2)[0]
+            let filetype = filetypeFromBasename(basename)
             res.push({ filepath: file, directory, filetype })
           } else {
             let stat = await statAsync(file)
@@ -409,16 +411,18 @@ export class UltiSnippetsProvider extends BaseProvider {
       let tmpfile = path.join(os.tmpdir(), `coc.nvim-${process.pid}`, `coc-ultisnips-${uid()}.py`)
       let code = this.addPythonTryCatch(pythonCode)
       fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
+      this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Execute python code in: ${tmpfile}`)
       await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${tmpfile}')`)
-      pythonCodes.clear()
     } catch (e) {
       this.channel.appendLine(`Error on execute python script:`)
       this.channel.append(e.message)
       window.showMessage(`Error on execute python script: ${e.message}`, 'error')
     }
   }
+}
 
-  public dispose(): void {
-    disposeAll(this.disposables)
-  }
+function filetypeFromBasename(basename: string): string {
+  if (basename == 'typescript_react') return 'typescriptreact'
+  if (basename == 'javascript_react') return 'javascriptreact'
+  return basename.split('-', 2)[0]
 }

@@ -37,12 +37,6 @@ export default abstract class BaseProvider {
       filetypes.push(...filetype.split('.'))
     }
     if (filetype == 'latex') filetypes.push('tex')
-    if (filetype == 'javascript.jsx') filetypes.push('javascriptreact')
-    if (filetype == 'typescript.jsx' || filetype == 'typescript.tsx') filetypes.push('typescriptreact')
-    let map = workspace.env.filetypeMap
-    if (map && map[filetype]) {
-      filetypes.push(map[filetype])
-    }
     if (filetype == 'javascriptreact' && !filetypes.includes('javascript')) {
       filetypes.push('javascript')
     }

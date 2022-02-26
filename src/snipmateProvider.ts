@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Document, Disposable, OutputChannel, Position, Range, Uri, workspace } from 'coc.nvim'
+import { Document, Disposable, OutputChannel, Position, Uri, Range, workspace } from 'coc.nvim'
 import fs from 'fs'
 import path from 'path'
 import readline from 'readline'
@@ -12,41 +12,80 @@ import { FileItem, SnipmateConfig, SnipmateFile, Snippet, SnippetEdit, TriggerKi
 import { readdirAsync, statAsync } from './util'
 
 export class SnipmateProvider extends BaseProvider {
+  private fileItems: FileItem[] = []
   private snippetFiles: SnipmateFile[] = []
-  private disposables: Disposable[] = []
-  constructor(private channel: OutputChannel, private trace: string, config: SnipmateConfig) {
+  private loadedFiletypes: string[] = []
+  constructor(
+    private channel: OutputChannel,
+    config: SnipmateConfig,
+    private subscriptions: Disposable[]
+  ) {
     super(config)
     workspace.onDidSaveTextDocument(async doc => {
       let uri = Uri.parse(doc.uri)
       if (uri.scheme != 'file') return
       let filepath = uri.fsPath
       if (!fs.existsSync(filepath)) return
-      let snippetFile = this.snippetFiles.find(s => s.filepath == filepath)
-      if (snippetFile) await this.loadSnippetsFromFile(snippetFile.filetype, snippetFile.directory, filepath)
-    }, null, this.disposables)
+      let idx = this.snippetFiles.findIndex(s => s.filepath == filepath)
+      if (idx !== -1) {
+        let filetype = this.snippetFiles[idx].filetype
+        this.snippetFiles.splice(idx, 1)
+        await this.loadSnippetsFromFile(filetype, filepath)
+      }
+    }, null, this.subscriptions)
   }
 
   public async init(): Promise<void> {
-    let arr = await this.getAllSnippetFiles()
     let { nvim } = workspace
     let author = await nvim.getVar('snips_author')
     if (!author) await nvim.setVar('snips_author', this.config.author)
-    await Promise.all(arr.map(({ filepath, directory, filetype }) => {
-      return this.loadSnippetsFromFile(filetype, directory, filepath)
+    this.fileItems = await this.loadAllSnippetFiles()
+    workspace.onDidRuntimePathChange(async e => {
+      for (let rtp of e) {
+        let items = await this.getSnippetFileItems(path.join(rtp, 'snippets'))
+        if (items?.length) {
+          this.fileItems.push(...items)
+          for (let item of items) {
+            if (workspace.filetypes.has(item.filetype)) {
+              this.loadSnippetsFromFile(item.filetype, item.filepath)
+            }
+          }
+        }
+      }
+    }, null, this.subscriptions)
+    await Promise.all(Array.from(workspace.filetypes).map(filetype => {
+      return this.loadByFiletype(filetype)
     }))
+    this.loadedFiletypes = Array.from(workspace.filetypes)
+    workspace.onDidOpenTextDocument(async e => {
+      let doc = workspace.getDocument(e.bufnr)
+      if (!this.loadedFiletypes.includes(doc.filetype)) {
+        await this.loadByFiletype(doc.filetype)
+      }
+    }, null, this.subscriptions)
   }
 
-  public async loadSnippetsFromFile(filetype: string, directory: string, filepath: string): Promise<void> {
-    let snippets = await this.parseSnippetsFile(filepath)
-    let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
-    if (idx !== -1) this.snippetFiles.splice(idx, 1)
-    this.snippetFiles.push({
-      directory,
-      filepath,
-      filetype,
-      snippets
+  private async loadByFiletype(filetype: string): Promise<void> {
+    let filetypes = filetype ? this.getFiletypes(filetype) : []
+    filetypes.push('_')
+    for (let item of this.fileItems) {
+      if (!filetypes.includes(item.filetype)) continue
+      this.loadSnippetsFromFile(item.filetype, item.filepath)
+    }
+    filetypes.forEach(filetype => {
+      if (!this.loadedFiletypes.includes(filetype)) {
+        this.loadedFiletypes.push(filetype)
+      }
     })
-    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} snipmate snippets from: ${filepath}`)
+  }
+
+
+  public async loadSnippetsFromFile(filetype: string, filepath: string): Promise<void> {
+    let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
+    if (idx !== -1) return
+    let snippets = await this.parseSnippetsFile(filepath)
+    this.snippetFiles.push({ filepath, filetype, snippets })
+    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
   }
 
   /**
@@ -195,7 +234,8 @@ export class SnipmateProvider extends BaseProvider {
   }
 
   public async getSnippetFiles(filetype: string): Promise<string[]> {
-    let filetypes: string[] = this.getFiletypes(filetype)
+    let filetypes: string[] = filetype ? this.getFiletypes(filetype) : []
+    filetypes.push('_')
     let res: string[] = []
     for (let s of this.snippetFiles) {
       if (filetypes.indexOf(s.filetype) !== -1) {
@@ -207,8 +247,7 @@ export class SnipmateProvider extends BaseProvider {
 
   public async getSnippets(filetype: string): Promise<Snippet[]> {
     let filetypes: string[] = this.getFiletypes(filetype)
-    filetypes.push('_')
-    let snippetFiles = this.snippetFiles.filter(o => filetypes.indexOf(o.filetype) !== -1)
+    let snippetFiles = this.snippetFiles.filter(o => o.filetype == '_' || filetypes.indexOf(o.filetype) !== -1)
     let result: Snippet[] = []
     snippetFiles.sort((a, b) => {
       if (a.filetype == b.filetype) return 1
@@ -224,10 +263,9 @@ export class SnipmateProvider extends BaseProvider {
     return result
   }
 
-  public async getAllSnippetFiles(): Promise<FileItem[]> {
-    let { nvim } = workspace
-    let opt = await nvim.eval('&rtp') as string
-    let rtps = opt.split(',')
+  private async loadAllSnippetFiles(): Promise<FileItem[]> {
+    let { env } = workspace
+    let rtps = env.runtimepath.split(',')
     let res: FileItem[] = []
     for (let rtp of rtps) {
       let items = await this.getSnippetFileItems(path.join(rtp, 'snippets'))

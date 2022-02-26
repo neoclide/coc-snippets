@@ -1,4 +1,4 @@
-import { commands, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, VimCompleteItem, window, workspace } from 'coc.nvim'
+import { commands, Disposable, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, VimCompleteItem, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
 import fs from 'fs'
 import path from 'path'
 import util from 'util'
@@ -15,16 +15,10 @@ interface API {
   expandable: () => Promise<boolean>
 }
 
-export async function activate(context: ExtensionContext): Promise<API> {
-  let { subscriptions } = context
-  const { nvim } = workspace
-  const configuration = workspace.getConfiguration('snippets')
-  const filetypeExtends = configuration.get<any>('extends', {})
-  const trace = configuration.get<string>('trace', 'error')
-  let mru = workspace.createMru('snippets-mru')
-  const channel = window.createOutputChannel('snippets')
-  const manager = new ProviderManager(channel)
-
+/*
+ * Get user snippets directory.
+ */
+async function getSnippetsDirectory(configuration: WorkspaceConfiguration): Promise<string> {
   let snippetsDir = configuration.get<string>('userSnippetsDirectory')
   if (snippetsDir) {
     snippetsDir = workspace.expand(snippetsDir)
@@ -35,15 +29,18 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
   if (!snippetsDir) snippetsDir = path.join(path.dirname(workspace.env.extensionRoot), 'ultisnips')
   if (!fs.existsSync(snippetsDir)) {
-    await util.promisify(fs.mkdir)(snippetsDir)
+    await fs.promises.mkdir(snippetsDir)
   }
+  return snippetsDir
+}
 
-  events.on('CompleteDone', async (item: VimCompleteItem) => {
-    if (typeof item.user_data === 'string' && item.user_data.indexOf('snippets') !== -1) {
-      await mru.add(item.word)
+function enableSnippetsFiletype(subscriptions: Disposable[]) {
+  let { nvim } = workspace
+  workspace.documents.forEach(doc => {
+    if (doc.uri.endsWith('.snippets')) {
+      doc.buffer.setOption('filetype', 'snippets', true)
     }
-  }, null, subscriptions)
-
+  })
   workspace.onDidOpenTextDocument(async document => {
     if (document.uri.endsWith('.snippets')) {
       let doc = workspace.getDocument(document.uri)
@@ -52,7 +49,34 @@ export async function activate(context: ExtensionContext): Promise<API> {
       await buffer.setOption('filetype', 'snippets')
     }
   }, null, subscriptions)
+  const rtp = workspace.env.runtimepath
+  let paths = rtp.split(',')
+  let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
+  if (idx === -1) {
+    let directory = path.resolve(__dirname, '..')
+    nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets', true)
+    nvim.command(`execute 'noa set rtp+='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
+  }
+}
 
+export async function activate(context: ExtensionContext): Promise<API> {
+  let { subscriptions } = context
+  const { nvim } = workspace
+  const configuration = workspace.getConfiguration('snippets')
+  const filetypeExtends = configuration.get<any>('extends', {})
+  const trace = configuration.get<string>('trace', 'error')
+  const snippetsDir = await getSnippetsDirectory(configuration)
+  let mru = workspace.createMru('snippets-mru')
+  const channel = window.createOutputChannel('snippets')
+  const manager = new ProviderManager(channel, subscriptions)
+
+  events.on('CompleteDone', async (item: VimCompleteItem) => {
+    if (typeof item.user_data === 'string' && item.user_data.indexOf('snippets') !== -1) {
+      await mru.add(item.word)
+    }
+  }, null, subscriptions)
+
+  enableSnippetsFiletype(subscriptions)
   if (configuration.get<boolean>('ultisnips.enable', true)) {
     let config = configuration.get<any>('ultisnips', {})
     let c = Object.assign({}, config, {
@@ -64,39 +88,24 @@ export async function activate(context: ExtensionContext): Promise<API> {
     }
     let provider = new UltiSnippetsProvider(channel, trace, c, context)
     manager.regist(provider, 'ultisnips')
-    subscriptions.push(provider)
-    // add rtp if ultisnips not found
-    nvim.getOption('runtimepath').then(async rtp => {
-      let paths = (rtp as string).split(',')
-      let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
-      if (idx !== -1) return
-      let directory = path.resolve(__dirname, '..')
-      nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets', true)
-      nvim.command(`execute 'noa set rtp+='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
-      workspace.documents.forEach(doc => {
-        if (doc.uri.endsWith('.snippets')) {
-          doc.buffer.setOption('filetype', 'snippets', true)
-        }
-      })
-    }, _e => {
-      // noop
-    })
   }
 
-  let config = {
-    loadFromExtensions: configuration.get<boolean>('loadFromExtensions', true),
-    snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
-    extends: Object.assign({}, filetypeExtends)
+  if (configuration.loadFromExtensions || configuration.textmateSnippetsRoots?.length > 0) {
+    const config = {
+      loadFromExtensions: configuration.get<boolean>('loadFromExtensions', true),
+      snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
+      extends: Object.assign({}, filetypeExtends)
+    }
+    let provider = new TextmateProvider(channel, config, subscriptions)
+    manager.regist(provider, 'snippets')
   }
-  let provider = new TextmateProvider(channel, trace, config)
-  manager.regist(provider, 'snippets')
 
   if (configuration.get<boolean>('snipmate.enable', true)) {
     let config = {
       author: configuration.get<string>('snipmate.author', ''),
       extends: Object.assign({}, filetypeExtends)
     }
-    let provider = new SnipmateProvider(channel, trace, config)
+    let provider = new SnipmateProvider(channel, config, subscriptions)
     manager.regist(provider, 'snipmate')
   }
 
