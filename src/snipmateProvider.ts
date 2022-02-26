@@ -85,7 +85,7 @@ export class SnipmateProvider extends BaseProvider {
     if (idx !== -1) return
     let snippets = await this.parseSnippetsFile(filepath)
     this.snippetFiles.push({ filepath, filetype, snippets })
-    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
+    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
   }
 
   /**

@@ -135,14 +135,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
       inserting = false
     }, null, subscriptions)
   }
-  let statusItem
-  if (configuration.get<boolean>('enableStatusItem', true)) {
-    statusItem = window.createStatusBarItem(90, { progress: true })
-    statusItem.text = 'loading snippets'
-    statusItem.show()
-  }
-  manager.init().then(() => {
-    statusItem?.hide()
+  manager.init().catch(e => {
+    channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on init: ${e.stack}`)
   })
 
   if (manager.hasProvider) {
@@ -289,7 +283,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
     languageProvider,
     ['$'],
     configuration.get<number>('priority', 90)))
-  subscriptions.push(statusItem)
   subscriptions.push(channel)
   subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager, mru)))
 

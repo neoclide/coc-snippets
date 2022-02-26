@@ -68,7 +68,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     for (let filetype of workspace.filetypes) {
       await this.loadByFiletype(filetype)
     }
-    workspace.onDidCloseTextDocument(async e => {
+    workspace.onDidOpenTextDocument(async e => {
       let doc = workspace.getDocument(e.bufnr)
       if (doc && !this.loadedFiletypes.includes(doc.filetype)) {
         await this.loadByFiletype(doc.filetype)
@@ -97,7 +97,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       }))
       let pythonCode = ''
       for (let [file, code] of pythonCodes.entries()) {
-        pythonCode += `# ${file}\n` + code + '\n'
+        if (code) pythonCode += `# ${file}\n` + code + '\n'
       }
       if (pythonCode) {
         pythonCodes.clear()
@@ -129,8 +129,8 @@ export class UltiSnippetsProvider extends BaseProvider {
         }))
       }
     }
-    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} UltiSnip snippets from: ${filepath}`)
-    pythonCodes.set(filepath, pythonCode)
+    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} UltiSnip snippets from: ${filepath}`)
+    if (pythonCode) pythonCodes.set(filepath, pythonCode)
   }
 
   public async resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string> {
@@ -411,7 +411,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       let tmpfile = path.join(os.tmpdir(), `coc.nvim-${process.pid}`, `coc-ultisnips-${uid()}.py`)
       let code = this.addPythonTryCatch(pythonCode)
       fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
-      this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Execute python code in: ${tmpfile}`)
+      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Execute python code in: ${tmpfile}`)
       await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${tmpfile}')`)
     } catch (e) {
       this.channel.appendLine(`Error on execute python script:`)

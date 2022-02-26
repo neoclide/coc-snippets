@@ -218,7 +218,7 @@ export class TextmateProvider extends BaseProvider {
       })
     })
     const snippets = this.loadSnippetsFromText(snippetFilePath, contents)
-    this.channel.appendLine(`[Info ${(new Date()).toISOString()}] Loaded ${snippets.length} textmate snippets from ${snippetFilePath}`)
+    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} textmate snippets from ${snippetFilePath}`)
     return snippets.map(o => Object.assign({ extensionId }, o))
   }
 
@@ -228,7 +228,7 @@ export class TextmateProvider extends BaseProvider {
       let errors: ParseError[] = []
       let snippetObject = parse(contents, errors, { allowTrailingComma: true }) as KeyToSnippet
       if (errors.length) {
-        this.channel.appendLine(`[Error ${(new Date()).toLocaleDateString()}] parser error of ${filepath}: ${JSON.stringify(errors, null, 2)}`)
+        this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] parser error of ${filepath}: ${JSON.stringify(errors, null, 2)}`)
       }
       if (snippetObject) {
         for (let key of Object.keys(snippetObject)) {
@@ -236,7 +236,7 @@ export class TextmateProvider extends BaseProvider {
         }
       }
     } catch (ex) {
-      this.channel.appendLine(`[Error ${(new Date()).toLocaleDateString()}] ${ex.stack}`)
+      this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] ${ex.stack}`)
       snippets = []
     }
     const normalizedSnippets: Snippet[] = []
