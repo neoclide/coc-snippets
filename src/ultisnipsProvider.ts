@@ -14,7 +14,6 @@ export class UltiSnippetsProvider extends BaseProvider {
   private loadedFiletypes: string[] = []
   private fileItems: FileItem[] = []
   private pyMethod: string
-  private directories: string[] = []
   private parser: UltiSnipsParser
   constructor(
     private channel: OutputChannel,
@@ -40,12 +39,14 @@ export class UltiSnippetsProvider extends BaseProvider {
     }, null, this.context.subscriptions)
   }
 
+  private get directories(): string[] {
+    let dirs = this.config.directories || []
+    return dirs.map(dir => workspace.expand(dir))
+  }
+
   public async init(): Promise<void> {
     let { nvim, env } = workspace
     let { config } = this
-    for (let dir of config.directories) {
-      this.directories.push(workspace.expand(dir))
-    }
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Using ultisnips directories: ${this.directories.join(' ')}`)
     let hasPythonx = await nvim.call('has', ['pythonx'])
     if (hasPythonx && config.usePythonx) {
@@ -58,15 +59,23 @@ export class UltiSnippetsProvider extends BaseProvider {
     this.fileItems = await this.laodAllFilItems(env.runtimepath)
     workspace.onDidRuntimePathChange(async e => {
       let subFolders = await this.getSubFolders()
+      const newItems: FileItem[] = []
       for (const dir of e) {
         let res = await this.getSnippetsFromPlugin(dir, subFolders)
-        this.fileItems.push(...res)
+        if (res?.length) newItems.push(...res)
+      }
+      if (newItems.length) {
+        this.fileItems.push(...newItems)
+        const items = this.getValidItems(newItems)
+        if (items.length) await this.loadFromItems(items)
       }
     }, null, this.context.subscriptions)
     let filepath = this.context.asAbsolutePath('python/ultisnips.py')
     await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${filepath}')`)
-    for (let filetype of workspace.filetypes) {
-      await this.loadByFiletype(filetype)
+    const items = this.getValidItems(this.fileItems)
+    if (items.length) {
+      await this.loadFromItems(items)
+      this.loadedFiletypes.push(...workspace.filetypes)
     }
     workspace.onDidOpenTextDocument(async e => {
       let doc = workspace.getDocument(e.bufnr)
@@ -88,6 +97,25 @@ export class UltiSnippetsProvider extends BaseProvider {
     let filetypes = this.getFiletypes(filetype)
     filetypes.push('all')
     return this.fileItems.filter(o => filetypes.includes(o.filetype))
+  }
+
+  private get allFiletypes(): string[] {
+    let filetypes = Array.from(workspace.filetypes)
+    let res: string[] = []
+    for (let ft of filetypes) {
+      let arr = this.getFiletypes(ft)
+      arr.forEach(val => {
+        if (!res.includes(val)) res.push(val)
+      })
+    }
+    res.push('all')
+    return res
+  }
+
+  // valid items for current filetypes
+  private getValidItems(fileItems: FileItem[]): FileItem[] {
+    let filetypes = this.allFiletypes
+    return fileItems.filter(o => filetypes.includes(o.filetype))
   }
 
   private async loadFromItems(items: FileItem[]): Promise<void> {
