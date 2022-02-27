@@ -1,6 +1,6 @@
 {
   "name": "coc-snippets",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Snippets extension for coc.nvim",
   "main": "lib/index.js",
   "publisher": "chemzqm",
@@ -172,6 +172,5 @@
     "ts-jest": "^27.1.3",
     "typescript": "^4.5.5"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
