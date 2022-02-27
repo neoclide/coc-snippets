@@ -234,7 +234,8 @@ export class UltiSnippetsProvider extends BaseProvider {
       }
       await nvim.command(`${this.pyMethod} ${this.addPythonTryCatch(pyCodes.join('\n'))}`)
     }
-    return this.parser.resolveUltisnipsBody(body)
+    let res = await this.parser.resolveUltisnipsBody(body)
+    return res
   }
 
   /**
