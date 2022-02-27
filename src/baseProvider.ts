@@ -55,7 +55,6 @@ export default abstract class BaseProvider {
       return arr.concat(this.getExtendsFiletypes(curr))
     }, [] as string[])
     filetypes.push(...extendFiletypes)
-    filetypes.reverse()
     return distinct(filetypes)
   }
 }

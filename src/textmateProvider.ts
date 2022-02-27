@@ -3,18 +3,19 @@ import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import path from 'path'
 import BaseProvider from './baseProvider'
-import { Snippet, TextmateConfig, SnippetEdit, TriggerKind } from './types'
-import { distinct } from './util'
+import { Snippet, SnippetEdit, TextmateConfig, TriggerKind } from './types'
+import { distinct, languageIdFromComments } from './util'
 
 export interface ISnippetPluginContribution {
   lnum: number
+  scope?: string
   prefix: string | string[]
   body: string | string[]
   description: string | string[]
 }
 
 export interface SnippetItem {
-  languageId: string
+  languageIds: string[]
   filepath: string
 }
 
@@ -27,7 +28,8 @@ interface KeyToSnippet {
 }
 
 export class TextmateProvider extends BaseProvider {
-  private loadedSnippets: SnippetCache = {}
+  private loadedFiles: Set<string> = new Set()
+  private loadedSnippets: Snippet[] = []
   private loadedLanguageIds: Set<string> = new Set()
   private definitions: Map<string, SnippetItem[]> = new Map()
 
@@ -47,7 +49,7 @@ export class TextmateProvider extends BaseProvider {
       extensions.onDidLoadExtension(extension => {
         this.loadSnippetDefinition(extension).then(items => {
           if (items?.length) {
-            items = items.filter(o => workspace.languageIds.has(o.languageId))
+            items = items.filter(o => o.languageIds.some(id => workspace.languageIds.has(id)))
             this.loadSnippetsFromDefinition(extension.id, items)
           }
         }, e => {
@@ -55,10 +57,9 @@ export class TextmateProvider extends BaseProvider {
         })
       }, null, this.subscriptions)
       extensions.onDidUnloadExtension(id => {
-        for (let [key, val] of Object.entries(this.loadedSnippets)) {
-          let filtered = val.filter(o => o.extensionId !== id)
-          this.loadedSnippets[key] = filtered
-        }
+        this.loadedSnippets = this.loadedSnippets.filter(item => {
+          return item.extensionId !== id
+        })
       }, null, this.subscriptions)
     }
     let paths = this.config.snippetsRoots
@@ -77,19 +78,15 @@ export class TextmateProvider extends BaseProvider {
     if (this.loadedLanguageIds.has(languageId)) return
     let filetypes = this.getFiletypes(languageId)
     this.channel.appendLine(`Load textmate snippets from filetypes: ${filetypes.join(', ')}`)
-    let loaded = this.loadedSnippets
     for (let languageId of filetypes) {
       if (this.loadedLanguageIds.has(languageId)) continue
       this.loadedLanguageIds.add(languageId)
-      let snippets: Snippet[] = []
       for (let [extensionId, items] of this.definitions.entries()) {
         for (let item of items) {
-          if (item.languageId !== languageId) continue
-          let arr = await this.loadSnippetsFromFile(item.filepath, languageId, extensionId)
-          if (arr) snippets.push(...arr)
+          if (!item.languageIds.includes(languageId)) continue
+          await this.loadSnippetsFromFile(item.filepath, item.languageIds, extensionId)
         }
       }
-      loaded[languageId] = snippets
     }
   }
 
@@ -98,8 +95,8 @@ export class TextmateProvider extends BaseProvider {
     let filetypes = this.getFiletypes(filetype)
     let filepaths: string[] = []
     for (let filetype of filetypes) {
-      let snippets = this.loadedSnippets[filetype]
-      if (snippets && snippets.length) {
+      let snippets = this.loadedSnippets.filter(s => s.filetype == filetype)
+      if (snippets.length) {
         for (let snip of snippets) {
           let { filepath } = snip
           if (filepaths.indexOf(filepath) == -1) {
@@ -130,7 +127,7 @@ export class TextmateProvider extends BaseProvider {
         newText: snip.body,
         location: snip.filepath,
         description: snip.description,
-        priority: snip.priority ?? 0
+        priority: snip.priority ?? -1
       })
     }
     return edits
@@ -139,9 +136,12 @@ export class TextmateProvider extends BaseProvider {
   public async getSnippets(filetype: string): Promise<Snippet[]> {
     let res: Snippet[] = []
     let filetypes: string[] = this.getFiletypes(filetype)
+    filetypes.push('all')
+    console.log(555555)
+    console.log(filetypes)
     let added: Set<string> = new Set()
     for (let filetype of filetypes) {
-      let snippets = this.loadedSnippets[filetype]
+      let snippets = this.loadedSnippets.filter(o => o.filetype == filetype)
       if (snippets && snippets.length) {
         for (let snip of snippets) {
           if (!added.has(snip.prefix)) {
@@ -168,11 +168,9 @@ export class TextmateProvider extends BaseProvider {
         let p = path.join(extension.extensionPath, item.path)
         if (fs.existsSync(p)) {
           let languages = typeof item.language == 'string' ? [item.language] : item.language
-          languages.forEach((language: string) => {
-            arr.push({
-              languageId: language,
-              filepath: p
-            })
+          arr.push({
+            languageIds: languages,
+            filepath: p
           })
         }
       }
@@ -191,48 +189,48 @@ export class TextmateProvider extends BaseProvider {
     let items: SnippetItem[] = []
     for (let file of files) {
       let filepath = path.join(root, file)
-      let basename = path.basename(file, '.json')
-      let languageId = basename.replace(/\.code-snippets$/, '')
-      items.push({ languageId, filepath })
+      if (file.endsWith('.code-snippets')) {
+        let extensionId = path.basename(root)
+        // Don't know languageId, load all of them
+        await this.loadSnippetsFromFile(filepath, undefined, extensionId)
+      } else {
+        let basename = path.basename(file, '.json')
+        items.push({ languageIds: [basename], filepath })
+      }
     }
     this.definitions.set('user-snippets', items)
   }
 
   private async loadSnippetsFromDefinition(extensionId: string, items: SnippetItem[]): Promise<void> {
     for (let item of items) {
-      let { languageId } = item
       if (!fs.existsSync(item.filepath)) continue
-      let arr = await this.loadSnippetsFromFile(item.filepath, languageId, extensionId)
-      let curr = this.loadedSnippets[languageId] || []
-      if (arr.length) {
-        curr.push(...arr)
-        this.loadedSnippets[languageId] = curr
-      }
+      await this.loadSnippetsFromFile(item.filepath, item.languageIds, extensionId)
     }
   }
 
-  private async loadSnippetsFromFile(snippetFilePath: string, languageId: string, extensionId: string): Promise<Snippet[]> {
-    let contents: string
+  private async loadSnippetsFromFile(snippetFilePath: string, languageIds: string[] | undefined, extensionId: string): Promise<void> {
+    if (this.loadedFiles.has(snippetFilePath)) return
     if (this.isIgnored(snippetFilePath)) {
       this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${snippetFilePath}`)
-      return []
+      return
     }
+    let contents: string
     try {
       contents = await fs.promises.readFile(snippetFilePath, 'utf8')
     } catch (e) {
       this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on load "${snippetFilePath}": ${e.message}`)
-      return []
+      return
     }
-    const snippets = this.loadSnippetsFromText(snippetFilePath, languageId, contents)
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} textmate snippets from ${snippetFilePath}`)
-    return snippets.map(o => Object.assign({ extensionId }, o))
+    this.loadSnippetsFromText(snippetFilePath, extensionId, languageIds, contents)
   }
 
-  private loadSnippetsFromText(filepath: string, languageId: string, contents: string): Snippet[] {
+  private loadSnippetsFromText(filepath: string, extensionId: string, ids: string[] | undefined, contents: string): void {
     let snippets: ISnippetPluginContribution[] = []
+    let defaulLanguageId: string
     try {
       let errors: ParseError[] = []
       let lines = contents.split(/\r?\n/)
+      defaulLanguageId = languageIdFromComments(lines)
       let snippetObject = parse(contents, errors, { allowTrailingComma: true }) as KeyToSnippet
       if (errors.length) {
         this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] parser error of ${filepath}: ${JSON.stringify(errors, null, 2)}`)
@@ -249,23 +247,32 @@ export class TextmateProvider extends BaseProvider {
       this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] ${ex.stack}`)
       snippets = []
     }
+    this.loadedFiles.add(filepath)
     const normalizedSnippets: Snippet[] = []
     snippets.forEach((snip: ISnippetPluginContribution) => {
       if (!snip.prefix) return
+      let languageIds = snip.scope ? snip.scope.split(',') : undefined
+      if (!languageIds && defaulLanguageId) languageIds = [defaulLanguageId]
+      if (!languageIds && ids) languageIds = ids
+      if (!languageIds) languageIds = ['all']
       let prefixs = Array.isArray(snip.prefix) ? snip.prefix : [snip.prefix]
       prefixs.forEach(prefix => {
-        normalizedSnippets.push({
-          filepath,
-          lnum: snip.lnum,
-          filetype: languageId,
-          body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
-          prefix,
-          description: typeof snip.description === 'string' ? snip.description : typeof snip.description !== 'undefined' ? snip.description.join('\n') : '',
-          triggerKind: TriggerKind.WordBoundary,
-          priority: 0
-        })
+        for (let filetype of languageIds) {
+          normalizedSnippets.push({
+            extensionId,
+            filepath,
+            lnum: snip.lnum,
+            filetype,
+            body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
+            prefix,
+            description: typeof snip.description === 'string' ? snip.description : typeof snip.description !== 'undefined' ? snip.description.join('\n') : '',
+            triggerKind: TriggerKind.WordBoundary,
+            priority: -1
+          })
+        }
       })
     })
-    return normalizedSnippets
+    this.loadedSnippets.push(...normalizedSnippets)
+    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${normalizedSnippets.length} textmate snippets from ${filepath}`)
   }
 }

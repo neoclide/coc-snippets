@@ -255,3 +255,11 @@ export function characterIndex(content: string, byteIndex: number): number {
   let buf = Buffer.from(content, 'utf8')
   return buf.slice(0, byteIndex).toString('utf8').length
 }
+
+export function languageIdFromComments(lines: string[]): string | undefined {
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    let ms = lines[i].match(/^\s*\/\/\sPlace\syour\s(\w+)\sworkspace/)
+    if (ms) return ms[1]
+  }
+  return undefined
+}

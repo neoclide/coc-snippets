@@ -326,7 +326,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     let filetypes = this.getFiletypes(filetype)
     let res: string[] = []
     for (let s of this.snippetFiles) {
-      if (filetypes.indexOf(s.filetype) !== -1) {
+      if (filetypes.includes(s.filetype)) {
         res.push(s.filepath)
       }
     }
