@@ -59,6 +59,39 @@ function enableSnippetsFiletype(subscriptions: Disposable[]) {
   }
 }
 
+async function snippetSelect(): Promise<void> {
+  let doc = await workspace.document
+  if (!doc) return
+  let { nvim } = workspace
+  let mode = await nvim.call('visualmode')
+  if (['v', 'V'].indexOf(mode) == -1) {
+    window.showMessage(`visual mode ${mode} not supported`, 'warning')
+    return
+  }
+  await nvim.command('normal! `<')
+  let start = await window.getCursorPosition()
+  await nvim.command('normal! `>')
+  let end = await window.getCursorPosition()
+  end = Position.create(end.line, end.character + 1)
+  let range = Range.create(start, end)
+  let text = doc.textDocument.getText(range)
+  await nvim.call('feedkeys', ['i', 'in'])
+  if (mode == 'v') {
+    await doc.applyEdits([{ range, newText: '' }])
+  } else {
+    // keep indent
+    let currline = doc.getline(start.line)
+    let indent = currline.match(/^\s*/)[0]
+    let lines = text.split(/\r?\n/)
+    lines = lines.map(s => s.startsWith(indent) ? s.slice(indent.length) : s)
+    text = lines.join('\n')
+    range = Range.create(Position.create(start.line, indent.length), end)
+    await doc.applyEdits([{ range, newText: '' }])
+  }
+  await nvim.setVar('coc_selected_text', text)
+  await window.moveTo(range.start)
+}
+
 export async function activate(context: ExtensionContext): Promise<API> {
   let { subscriptions } = context
   const { nvim } = workspace
@@ -185,7 +218,9 @@ export async function activate(context: ExtensionContext): Promise<API> {
       window.showMessage('Document not found', 'error')
       return
     }
-    let file = path.join(snippetsDir, `${doc.filetype}.snippets`)
+    let filetype = doc.filetype ? doc.filetype : 'all'
+    filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
+    let file = path.join(snippetsDir, `${filetype}.snippets`)
     if (!fs.existsSync(file)) {
       await util.promisify(fs.writeFile)(file, documentation, 'utf8')
     }
@@ -243,37 +278,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     }
   }, { silent: true, sync: true, cancel: true }))
 
-  subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', async () => {
-    let doc = await workspace.document
-    if (!doc) return
-    let mode = await nvim.call('visualmode')
-    if (['v', 'V'].indexOf(mode) == -1) {
-      window.showMessage(`visual mode ${mode} not supported`, 'warning')
-      return
-    }
-    await nvim.command('normal! `<')
-    let start = await window.getCursorPosition()
-    await nvim.command('normal! `>')
-    let end = await window.getCursorPosition()
-    end = Position.create(end.line, end.character + 1)
-    let range = Range.create(start, end)
-    let text = doc.textDocument.getText(range)
-    await nvim.call('feedkeys', ['i', 'in'])
-    if (mode == 'v') {
-      await doc.applyEdits([{ range, newText: '' }])
-    } else {
-      // keep indent
-      let currline = doc.getline(start.line)
-      let indent = currline.match(/^\s*/)[0]
-      let lines = text.split(/\r?\n/)
-      lines = lines.map(s => s.startsWith(indent) ? s.slice(indent.length) : s)
-      text = lines.join('\n')
-      range = Range.create(Position.create(start.line, indent.length), end)
-      await doc.applyEdits([{ range, newText: '' }])
-    }
-    await nvim.setVar('coc_selected_text', text)
-    await window.moveTo(range.start)
-  }, { silent: true, sync: false, cancel: true }))
+  subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', snippetSelect, { silent: true, sync: false, cancel: true }))
 
   let languageProvider = new LanguageProvider(channel, trace)
   subscriptions.push(languages.registerCompletionItemProvider(
