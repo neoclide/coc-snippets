@@ -160,8 +160,6 @@ export class TextmateProvider extends BaseProvider {
     let res: Snippet[] = []
     let filetypes: string[] = this.getFiletypes(filetype)
     filetypes.push('all')
-    console.log(555555)
-    console.log(filetypes)
     let added: Set<string> = new Set()
     for (let filetype of filetypes) {
       let snippets = this.loadedSnippets.filter(o => o.filetype == filetype)

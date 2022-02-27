@@ -166,12 +166,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
       }
       if (inserting) return
       inserting = true
-      try {
-        await commands.executeCommand('editor.action.insertSnippet', edits[0])
-        await mru.add(edits[0].prefix)
-      } catch (e) {
-        console.error(e)
-      }
+      await commands.executeCommand('editor.action.insertSnippet', edits[0])
+      await mru.add(edits[0].prefix)
       inserting = false
     }, null, subscriptions)
   }
