@@ -21,7 +21,7 @@ export class SnipmateProvider extends BaseProvider {
   private snippetFiles: SnipmateFile[] = []
   constructor(
     private channel: OutputChannel,
-    config: SnipmateConfig,
+    protected config: SnipmateConfig,
     private subscriptions: Disposable[]
   ) {
     super(config)
@@ -81,7 +81,12 @@ export class SnipmateProvider extends BaseProvider {
     if (idx !== -1) return
     idx = this.fileItems.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.fileItems.splice(idx, 1)
-    let res = await this.parseSnippetsFile(filepath)
+    if (this.isIgnored(filepath)) {
+      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${filepath}`)
+      this.snippetFiles.push({ filepath, filetype, snippets: [] })
+      return
+    }
+    let res = await this.parseSnippetsFile(filetype, filepath)
     this.snippetFiles.push({ filepath, filetype, snippets: res.snippets })
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${res.snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
     if (res.extends.length) {
@@ -145,7 +150,7 @@ export class SnipmateProvider extends BaseProvider {
   /**
    * Parse snippets from snippets file.
    */
-  public parseSnippetsFile(filepath: string): Promise<SnippetResult> {
+  public parseSnippetsFile(filetype: string, filepath: string): Promise<SnippetResult> {
     let res: Snippet[] = []
     let extendsFiletypes: string[] = []
     const rl = readline.createInterface({
@@ -169,6 +174,7 @@ export class SnipmateProvider extends BaseProvider {
         if (lines.length && prefix) {
           res.push({
             filepath,
+            filetype,
             lnum: lnum - lines.length - 1,
             body: lines.join('\n').replace(/\s+$/, ''),
             prefix,
@@ -204,6 +210,7 @@ export class SnipmateProvider extends BaseProvider {
           res.push({
             filepath,
             lnum: lnum - lines.length - 1,
+            filetype,
             body: lines.join('\n'),
             prefix,
             description,

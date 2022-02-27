@@ -25,7 +25,7 @@ export default class SnippetsList extends BasicList {
     let res: ListItem[] = []
     for (let snip of snippets) {
       let pos: Position = Position.create(snip.lnum, 0)
-      let location: Location = Location.create(Uri.file(snip.filepath).toString(), Range.create(pos, pos))
+      let location: Location = Location.create(Uri.file(snip.filepath).toString(), Range.create(pos, Position.create(snip.lnum, 1)))
       let prefix = snip.prefix
       if (prefix.length < 20) {
         prefix = `${prefix}${' '.repeat(20 - prefix.length)}`
@@ -42,10 +42,10 @@ export default class SnippetsList extends BasicList {
   public async doHighlight(): Promise<void> {
     let { nvim } = workspace
     nvim.pauseNotification()
-    nvim.command('syntax match CocSnippetsPrefix /\\v^\\S+/ contained containedin=CocSnippetsLine', true)
+    nvim.command('syntax match CocSnippetsPrefix /\\v^[^\\t]+/ contained containedin=CocSnippetsLine', true)
     nvim.command('syntax match CocSnippetsFile /\\v\\t\\S+$/ contained containedin=CocSnippetsLine', true)
     nvim.command('highlight default link CocSnippetsPrefix Identifier', true)
     nvim.command('highlight default link CocSnippetsFile Comment', true)
-    await nvim.resumeNotification()
+    void nvim.resumeNotification(false, true)
   }
 }

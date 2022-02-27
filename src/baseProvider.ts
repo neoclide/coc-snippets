@@ -1,11 +1,7 @@
-import { Document, Position, Range, workspace } from 'coc.nvim'
-import { Snippet, SnippetEdit } from './types'
+import { Document, Position, Range } from 'coc.nvim'
+import { Config, Snippet, SnippetEdit } from './types'
+import minimatch from 'minimatch'
 import { distinct } from './util'
-
-export interface Config {
-  extends: { [index: string]: string[] }
-  [key: string]: any
-}
 
 export default abstract class BaseProvider {
   constructor(protected config: Config) {
@@ -19,6 +15,18 @@ export default abstract class BaseProvider {
 
   public async checkContext(_context: string): Promise<any> {
     return true
+  }
+
+  protected isIgnored(filepath: string): boolean {
+    let ignored = false
+    let { excludes } = this.config
+    for (let p of excludes) {
+      if (minimatch(filepath, p, { dot: true })) {
+        ignored = true
+        break
+      }
+    }
+    return ignored
   }
 
   protected getExtendsFiletypes(filetype: string, exists: Set<string> = new Set()): string[] {

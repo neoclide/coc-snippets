@@ -2,11 +2,12 @@ import { Disposable, Document, Extension, extensions, OutputChannel, Position, R
 import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import path from 'path'
-import BaseProvider, { Config } from './baseProvider'
-import { Snippet, SnippetEdit, TriggerKind } from './types'
+import BaseProvider from './baseProvider'
+import { Snippet, TextmateConfig, SnippetEdit, TriggerKind } from './types'
 import { distinct } from './util'
 
 export interface ISnippetPluginContribution {
+  lnum: number
   prefix: string | string[]
   body: string | string[]
   description: string | string[]
@@ -32,7 +33,7 @@ export class TextmateProvider extends BaseProvider {
 
   constructor(
     private channel: OutputChannel,
-    config: Config,
+    protected config: TextmateConfig,
     private subscriptions: Disposable[]
   ) {
     super(config)
@@ -60,7 +61,7 @@ export class TextmateProvider extends BaseProvider {
         }
       }, null, this.subscriptions)
     }
-    let paths = this.config.snippetsRoots as string[]
+    let paths = this.config.snippetsRoots
     for (let dir of paths ?? []) {
       await this.loadDefinitionFromRoot(dir)
     }
@@ -84,7 +85,7 @@ export class TextmateProvider extends BaseProvider {
       for (let [extensionId, items] of this.definitions.entries()) {
         for (let item of items) {
           if (item.languageId !== languageId) continue
-          let arr = await this.loadSnippetsFromFile(item.filepath, extensionId)
+          let arr = await this.loadSnippetsFromFile(item.filepath, languageId, extensionId)
           if (arr) snippets.push(...arr)
         }
       }
@@ -129,7 +130,7 @@ export class TextmateProvider extends BaseProvider {
         newText: snip.body,
         location: snip.filepath,
         description: snip.description,
-        priority: -1
+        priority: snip.priority ?? 0
       })
     }
     return edits
@@ -201,7 +202,7 @@ export class TextmateProvider extends BaseProvider {
     for (let item of items) {
       let { languageId } = item
       if (!fs.existsSync(item.filepath)) continue
-      let arr = await this.loadSnippetsFromFile(item.filepath, extensionId)
+      let arr = await this.loadSnippetsFromFile(item.filepath, languageId, extensionId)
       let curr = this.loadedSnippets[languageId] || []
       if (arr.length) {
         curr.push(...arr)
@@ -210,29 +211,38 @@ export class TextmateProvider extends BaseProvider {
     }
   }
 
-  private async loadSnippetsFromFile(snippetFilePath: string, extensionId: string): Promise<Snippet[]> {
-    const contents = await new Promise<string>((resolve, reject) => {
-      fs.readFile(snippetFilePath, "utf8", (err, data) => {
-        if (err) return reject(err)
-        resolve(data)
-      })
-    })
-    const snippets = this.loadSnippetsFromText(snippetFilePath, contents)
+  private async loadSnippetsFromFile(snippetFilePath: string, languageId: string, extensionId: string): Promise<Snippet[]> {
+    let contents: string
+    if (this.isIgnored(snippetFilePath)) {
+      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${snippetFilePath}`)
+      return []
+    }
+    try {
+      contents = await fs.promises.readFile(snippetFilePath, 'utf8')
+    } catch (e) {
+      this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on load "${snippetFilePath}": ${e.message}`)
+      return []
+    }
+    const snippets = this.loadSnippetsFromText(snippetFilePath, languageId, contents)
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} textmate snippets from ${snippetFilePath}`)
     return snippets.map(o => Object.assign({ extensionId }, o))
   }
 
-  private loadSnippetsFromText(filepath: string, contents: string): Snippet[] {
+  private loadSnippetsFromText(filepath: string, languageId: string, contents: string): Snippet[] {
     let snippets: ISnippetPluginContribution[] = []
     try {
       let errors: ParseError[] = []
+      let lines = contents.split(/\r?\n/)
       let snippetObject = parse(contents, errors, { allowTrailingComma: true }) as KeyToSnippet
       if (errors.length) {
         this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] parser error of ${filepath}: ${JSON.stringify(errors, null, 2)}`)
       }
       if (snippetObject) {
         for (let key of Object.keys(snippetObject)) {
-          snippets.push(snippetObject[key])
+          let p = '"' + key + '"'
+          let idx = lines.findIndex(line => line.trim().startsWith(p))
+          let lnum = idx == -1 ? 0 : idx
+          snippets.push(Object.assign({ lnum }, snippetObject[key]))
         }
       }
     } catch (ex) {
@@ -246,11 +256,13 @@ export class TextmateProvider extends BaseProvider {
       prefixs.forEach(prefix => {
         normalizedSnippets.push({
           filepath,
-          lnum: 0,
+          lnum: snip.lnum,
+          filetype: languageId,
           body: typeof snip.body === 'string' ? snip.body : snip.body.join('\n'),
           prefix,
           description: typeof snip.description === 'string' ? snip.description : typeof snip.description !== 'undefined' ? snip.description.join('\n') : '',
-          triggerKind: TriggerKind.WordBoundary
+          triggerKind: TriggerKind.WordBoundary,
+          priority: 0
         })
       })
     })

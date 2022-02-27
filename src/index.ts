@@ -110,9 +110,13 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }, null, subscriptions)
 
   enableSnippetsFiletype(subscriptions)
+  let excludes = configuration.get<string[]>('excludePatterns', [])
+  if (!Array.isArray(excludes)) excludes = []
+  excludes = excludes.map(p => workspace.expand(p))
   if (configuration.get<boolean>('ultisnips.enable', true)) {
     let config = configuration.get<any>('ultisnips', {})
     let c = Object.assign({}, config, {
+      excludes,
       extends: Object.assign({}, filetypeExtends)
     } as UltiSnipsConfig)
     c.directories = c.directories ? c.directories.slice() : []
@@ -127,7 +131,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
     const config = {
       loadFromExtensions: configuration.get<boolean>('loadFromExtensions', true),
       snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
-      extends: Object.assign({}, filetypeExtends)
+      extends: Object.assign({}, filetypeExtends),
+      excludes
     }
     let provider = new TextmateProvider(channel, config, subscriptions)
     manager.regist(provider, 'snippets')
@@ -136,7 +141,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
   if (configuration.get<boolean>('snipmate.enable', true)) {
     let config = {
       author: configuration.get<string>('snipmate.author', ''),
-      extends: Object.assign({}, filetypeExtends)
+      extends: Object.assign({}, filetypeExtends),
+      excludes
     }
     let provider = new SnipmateProvider(channel, config, subscriptions)
     manager.regist(provider, 'snipmate')

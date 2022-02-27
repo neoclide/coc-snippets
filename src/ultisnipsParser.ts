@@ -15,7 +15,7 @@ export default class UltiSnipsParser {
   constructor(private pyMethod: string, private channel?: OutputChannel, private trace = 'error') {
   }
 
-  public parseUltisnipsFile(filepath: string): Promise<Partial<UltiSnipsFile>> {
+  public parseUltisnipsFile(filetype: string, filepath: string): Promise<Partial<UltiSnipsFile>> {
     const rl = readline.createInterface({
       input: fs.createReadStream(filepath, 'utf8'),
       crlfDelay: Infinity
@@ -106,6 +106,7 @@ export default class UltiSnipsParser {
           }
           let snippet: Snippet = {
             filepath,
+            filetype,
             context,
             originRegex,
             autoTrigger: option.indexOf('A') !== -1,

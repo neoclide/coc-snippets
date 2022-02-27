@@ -48,6 +48,19 @@ export class ProviderManager implements CompletionItemProvider {
         this.appendError(`getSnippets of ${name}`, e)
       }
     }
+    list.sort((a, b) => {
+      if (a.filetype != b.filetype && (a.filetype == filetype || b.filetype == filetype)) {
+        return a.filetype == filetype ? -1 : 1
+      }
+      if (a.priority != b.priority) {
+        return b.priority - a.priority
+      }
+      if (a.filepath != b.filepath) {
+        return b.filepath > a.filepath ? 1 : -1
+      }
+      return a.lnum - b.lnum
+    })
+    console.log(JSON.stringify(list, null, 2))
     return list
   }
 
@@ -75,17 +88,16 @@ export class ProviderManager implements CompletionItemProvider {
       try {
         let items = await provider.getTriggerSnippets(doc, position, autoTrigger)
         for (let item of items) {
-          if (list.findIndex(o => o.prefix == item.prefix) == -1) {
-            list.push(item)
-          }
+          list.push(item)
         }
       } catch (e) {
-        this.appendError(`getTriggerSnippets of ${name}`, e)
+        this.appendError(`get trigger snippets of ${name}`, e)
       }
     }
     list.sort((a, b) => b.priority - a.priority)
-    if (list.length > 1 && list[0].priority > 0) {
-      list = list.filter(o => o.priority > 0)
+    if (list.length > 1) {
+      let priority = list[0].priority
+      list = list.filter(o => o.priority == priority)
     }
     return list
   }

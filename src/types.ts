@@ -11,17 +11,25 @@ export enum TriggerKind {
   InWord,
 }
 
-export interface UltiSnipsConfig {
+export interface Config {
+  extends: { [index: string]: string[] }
+  excludes: string[]
+}
+
+export interface UltiSnipsConfig extends Config {
   enable: boolean
   usePythonx: boolean
   pythonVersion: number
   directories: string[]
-  extends: { [key: string]: string[] }
 }
 
-export interface SnipmateConfig {
+export interface SnipmateConfig extends Config {
   author: string
-  extends: { [key: string]: string[] }
+}
+
+export interface TextmateConfig extends Config {
+  snippetsRoots: string[]
+  loadFromExtensions: boolean
 }
 
 export interface UltiSnipsFile {
@@ -48,6 +56,7 @@ export interface Snippet {
   readonly prefix: string
   readonly description: string
   readonly triggerKind: TriggerKind
+  readonly filetype: string
   readonly priority?: number
   // prefix is expression
   readonly regex?: RegExp
