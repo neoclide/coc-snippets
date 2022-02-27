@@ -246,14 +246,14 @@ function decode(str: string): string {
 }
 
 function getTriggerKind(option: string): TriggerKind {
+  if (option.indexOf('i') !== -1) {
+    return TriggerKind.InWord
+  }
   if (option.indexOf('w') !== -1) {
     return TriggerKind.WordBoundary
   }
   if (option.indexOf('b') !== -1) {
     return TriggerKind.LineBegin
-  }
-  if (option.indexOf('i') !== -1) {
-    return TriggerKind.InWord
   }
   return TriggerKind.SpaceBefore
 }

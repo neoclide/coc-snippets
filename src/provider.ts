@@ -60,7 +60,6 @@ export class ProviderManager implements CompletionItemProvider {
       }
       return a.lnum - b.lnum
     })
-    console.log(JSON.stringify(list, null, 2))
     return list
   }
 
