@@ -1,3 +1,7 @@
+# 2.5.2
+
+- Fix escape for `$` in ultisnip body.
+
 # 2.5.1
 
 - Respect languageIds in `scope` for VSCode snippets.
