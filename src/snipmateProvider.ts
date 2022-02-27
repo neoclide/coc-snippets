@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Document, Disposable, OutputChannel, Position, Uri, Range, workspace } from 'coc.nvim'
+import { Disposable, Document, OutputChannel, Position, Range, Uri, workspace } from 'coc.nvim'
 import fs from 'fs'
 import path from 'path'
 import readline from 'readline'
@@ -11,10 +11,14 @@ import Parser from './parser'
 import { FileItem, SnipmateConfig, SnipmateFile, Snippet, SnippetEdit, TriggerKind } from './types'
 import { readdirAsync, statAsync } from './util'
 
+interface SnippetResult {
+  extends: string[]
+  snippets: Snippet[]
+}
+
 export class SnipmateProvider extends BaseProvider {
   private fileItems: FileItem[] = []
   private snippetFiles: SnipmateFile[] = []
-  private loadedFiletypes: string[] = []
   constructor(
     private channel: OutputChannel,
     config: SnipmateConfig,
@@ -47,7 +51,7 @@ export class SnipmateProvider extends BaseProvider {
           this.fileItems.push(...items)
           for (let item of items) {
             if (workspace.filetypes.has(item.filetype)) {
-              this.loadSnippetsFromFile(item.filetype, item.filepath)
+              await this.loadSnippetsFromFile(item.filetype, item.filepath)
             }
           }
         }
@@ -56,12 +60,9 @@ export class SnipmateProvider extends BaseProvider {
     await Promise.all(Array.from(workspace.filetypes).map(filetype => {
       return this.loadByFiletype(filetype)
     }))
-    this.loadedFiletypes = Array.from(workspace.filetypes)
     workspace.onDidOpenTextDocument(async e => {
       let doc = workspace.getDocument(e.bufnr)
-      if (!this.loadedFiletypes.includes(doc.filetype)) {
-        await this.loadByFiletype(doc.filetype)
-      }
+      await this.loadByFiletype(doc.filetype)
     }, null, this.subscriptions)
   }
 
@@ -70,22 +71,30 @@ export class SnipmateProvider extends BaseProvider {
     filetypes.push('_')
     for (let item of this.fileItems) {
       if (!filetypes.includes(item.filetype)) continue
-      this.loadSnippetsFromFile(item.filetype, item.filepath)
+      await this.loadSnippetsFromFile(item.filetype, item.filepath)
     }
-    filetypes.forEach(filetype => {
-      if (!this.loadedFiletypes.includes(filetype)) {
-        this.loadedFiletypes.push(filetype)
-      }
-    })
   }
 
 
   public async loadSnippetsFromFile(filetype: string, filepath: string): Promise<void> {
     let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
     if (idx !== -1) return
-    let snippets = await this.parseSnippetsFile(filepath)
-    this.snippetFiles.push({ filepath, filetype, snippets })
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
+    idx = this.fileItems.findIndex(o => o.filepath == filepath)
+    if (idx !== -1) this.fileItems.splice(idx, 1)
+    let res = await this.parseSnippetsFile(filepath)
+    this.snippetFiles.push({ filepath, filetype, snippets: res.snippets })
+    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${res.snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
+    if (res.extends.length) {
+      let fts = res.extends
+      let curr = this.config.extends[filetype] || []
+      for (let ft of fts) {
+        await this.loadByFiletype(ft)
+        if (!curr.includes(ft)) {
+          curr.push(ft)
+        }
+      }
+      this.config.extends[filetype] = curr
+    }
   }
 
   /**
@@ -135,13 +144,10 @@ export class SnipmateProvider extends BaseProvider {
 
   /**
    * Parse snippets from snippets file.
-   *
-   * @public
-   * @param {string} filepath
-   * @returns {Promise<Snippet[]>}
    */
-  public parseSnippetsFile(filepath: string): Promise<Snippet[]> {
+  public parseSnippetsFile(filepath: string): Promise<SnippetResult> {
     let res: Snippet[] = []
+    let extendsFiletypes: string[] = []
     const rl = readline.createInterface({
       input: fs.createReadStream(filepath, 'utf8'),
       crlfDelay: Infinity
@@ -153,6 +159,11 @@ export class SnipmateProvider extends BaseProvider {
     rl.on('line', line => {
       lnum += 1
       if (line.startsWith('#')) return
+      if (/^extends\s/.test(line)) {
+        let ft = line.replace(/^extends\s+/, '')
+        if (ft) extendsFiletypes.push(ft)
+        return
+      }
       if (line.startsWith('snippet')) {
         line = line.replace(/\s*$/, '')
         if (lines.length && prefix) {
@@ -199,7 +210,7 @@ export class SnipmateProvider extends BaseProvider {
             triggerKind: TriggerKind.SpaceBefore
           })
         }
-        resolve(res)
+        resolve({ snippets: res, extends: extendsFiletypes })
       })
     })
   }
