@@ -99,6 +99,7 @@ Some ultisnips features are **not** supported:
 - [x] Automatic trigger snippet.
 - [x] Context snippets.
 - [x] Support loading snipmate snippets.
+- [ ] Replacement String, (:h UltiSnips-replacement-string), need support by coc.nvim.
 - [ ] Execute shell code with custom shabang (will not support).
 - [ ] Automatic reformat snippet after change of placeholder (can't support).
 - [ ] Format related snippet options, including `t`, `s` and `m` (can't support).
