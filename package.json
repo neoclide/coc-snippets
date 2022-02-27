@@ -72,6 +72,11 @@
             "type": "string"
           }
         },
+        "snippets.loadVSCodeProjectSnippets": {
+          "type": "boolean",
+          "default": true,
+          "description": "Load code snippets in folder ${workspaceFolder}/.vscode"
+        },
         "snippets.extends": {
           "type": "object",
           "default": {},

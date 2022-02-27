@@ -33,7 +33,8 @@ export default class SnippetsList extends BasicList {
       res.push({
         label: `${prefix}\t${snip.description}\t${snip.filepath.replace(os.homedir(), '~')}`,
         filterText: `${snip.prefix} ${snip.description}`,
-        location
+        location,
+        data: { prefix: snip.prefix }
       })
     }
     return res

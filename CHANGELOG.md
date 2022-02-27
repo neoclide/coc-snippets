@@ -3,6 +3,7 @@
 - Respect languageIds in `scope` for VSCode snippets.
 - Respect languageId in comment for VSCode snippets.
 - Load global scoped VSCode snippets for all filetypes.
+- Support workspace snippets in `.vscode` folder.
 
 # 2.5.0
 

@@ -1,4 +1,4 @@
-import { Disposable, Document, Extension, extensions, OutputChannel, Position, Range, workspace } from 'coc.nvim'
+import { Disposable, Document, Uri, Extension, extensions, OutputChannel, Position, Range, workspace } from 'coc.nvim'
 import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import path from 'path'
@@ -72,6 +72,29 @@ export class TextmateProvider extends BaseProvider {
     workspace.onDidOpenTextDocument(e => {
       this.loadByLanguageId(e.languageId)
     }, null, this.subscriptions)
+    if (this.config.projectSnippets) {
+      workspace.workspaceFolders.forEach(folder => {
+        let fsPath = Uri.parse(folder.uri).fsPath
+        void this.loadFromWorkspace(fsPath)
+      })
+      workspace.onDidChangeWorkspaceFolders(e => {
+        e.removed.forEach(folder => {
+          let fsPath = Uri.parse(folder.uri).fsPath
+          this.loadedSnippets = this.loadedSnippets.filter(o => {
+            return !o.filepath.startsWith(fsPath + path.sep)
+          })
+        })
+        e.added.forEach(folder => {
+          let fsPath = Uri.parse(folder.uri).fsPath
+          void this.loadFromWorkspace(fsPath)
+        })
+      })
+    }
+  }
+
+  private async loadFromWorkspace(fsPath: string): Promise<void> {
+    let root = path.join(fsPath, '.vscode')
+    await this.loadDefinitionFromRoot(root)
   }
 
   private async loadByLanguageId(languageId: string): Promise<void> {

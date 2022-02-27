@@ -30,6 +30,7 @@ export interface SnipmateConfig extends Config {
 export interface TextmateConfig extends Config {
   snippetsRoots: string[]
   loadFromExtensions: boolean
+  projectSnippets: boolean
 }
 
 export interface UltiSnipsFile {

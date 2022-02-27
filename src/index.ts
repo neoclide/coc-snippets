@@ -131,6 +131,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     const config = {
       loadFromExtensions: configuration.get<boolean>('loadFromExtensions', true),
       snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
+      projectSnippets: configuration.get<boolean>('loadVSCodeProjectSnippets', true),
       extends: Object.assign({}, filetypeExtends),
       excludes
     }
