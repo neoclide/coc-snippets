@@ -28,13 +28,6 @@ It's capable of:
 - Improved match for complete items with TextEdit support.
 - Edit snippets of current buffer by `:CocList snippets`, sorted by mru.
 
-## Supporting
-
-If you like my work, consider supporting me on Patreon or PayPal:
-
-<a href="https://www.patreon.com/chemzqm"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Patreon donate button" /> </a>
-<a href="https://www.paypal.com/paypalme/chezqm"><img src="https://werwolv.net/assets/paypal_banner.png" alt="PayPal donate button" /> </a>
-
 ## Install
 
 In your vim/neovim, run command:
@@ -99,11 +92,11 @@ Some ultisnips features are **not** supported:
 - [x] Automatic trigger snippet.
 - [x] Context snippets.
 - [x] Support loading snipmate snippets.
-- [ ] Replacement String, (:h UltiSnips-replacement-string), need support by coc.nvim.
+- [x] Replacement String, (:h UltiSnips-replacement-string), need support by coc.nvim.
 - [ ] Execute shell code with custom shabang (will not support).
-- [ ] Automatic reformat snippet after change of placeholder (can't support).
-- [ ] Format related snippet options, including `t`, `s` and `m` (can't support).
-- [ ] Snippet actions (can't support).
+- [ ] Update python code block after change of placeholder (can't support).
+- [ ] Reformat snippet options, including `t`, `s` and `m` (can't support).
+- [ ] Snippet actions including `pre_expand`, `post_expand` and `jump` (can't support).
 
 **Note**: python regex in snippet are converted to javascript regex, however,
 some regex patterns can't be supported by javascript, including
@@ -197,6 +190,13 @@ to load it.
 **A:** You can create snippet files in folder: `$VIMCONFIG/coc/ultisnips`, use
 command `:CocCommand snippets.editSnippets` to open user snippet of current
 filetype.
+
+## Supporting
+
+If you like this extension, consider supporting me on Patreon or PayPal:
+
+<a href="https://www.patreon.com/chemzqm"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Patreon donate button" /> </a>
+<a href="https://www.paypal.com/paypalme/chezqm"><img src="https://werwolv.net/assets/paypal_banner.png" alt="PayPal donate button" /> </a>
 
 ## License
 
