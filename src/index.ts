@@ -10,6 +10,7 @@ import { TextmateProvider } from './textmateProvider'
 import { UltiSnipsConfig } from './types'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { documentation, waitDocument } from './util'
+import merge from 'merge'
 
 interface API {
   expandable: () => Promise<boolean>
@@ -99,15 +100,9 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const filetypeExtends = configuration.get<any>('extends', {})
   const trace = configuration.get<string>('trace', 'error')
   const snippetsDir = await getSnippetsDirectory(configuration)
-  let mru = workspace.createMru('snippets-mru')
+  // let mru = workspace.createMru('snippets-mru')
   const channel = window.createOutputChannel('snippets')
   const manager = new ProviderManager(channel, subscriptions)
-
-  events.on('CompleteDone', async (item: VimCompleteItem) => {
-    if (typeof item.user_data === 'string' && item.user_data.indexOf('snippets') !== -1) {
-      await mru.add(item.word)
-    }
-  }, null, subscriptions)
 
   enableSnippetsFiletype(subscriptions)
   let excludes = configuration.get<string[]>('excludePatterns', [])
@@ -115,9 +110,9 @@ export async function activate(context: ExtensionContext): Promise<API> {
   excludes = excludes.map(p => workspace.expand(p))
   if (configuration.get<boolean>('ultisnips.enable', true)) {
     let config = configuration.get<any>('ultisnips', {})
-    let c = Object.assign({}, config, {
+    let c = merge.recursive(true, config, {
       excludes,
-      extends: Object.assign({}, filetypeExtends)
+      extends: merge.recursive(true, {}, filetypeExtends)
     } as UltiSnipsConfig)
     c.directories = c.directories ? c.directories.slice() : []
     if (c.directories.indexOf(snippetsDir) == -1) {
@@ -132,7 +127,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       loadFromExtensions: configuration.get<boolean>('loadFromExtensions', true),
       snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
       projectSnippets: configuration.get<boolean>('loadVSCodeProjectSnippets', true),
-      extends: Object.assign({}, filetypeExtends),
+      extends: merge.recursive(true, {}, filetypeExtends),
       excludes
     }
     let provider = new TextmateProvider(channel, config, subscriptions)
@@ -142,7 +137,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   if (configuration.get<boolean>('snipmate.enable', true)) {
     let config = {
       author: configuration.get<string>('snipmate.author', ''),
-      extends: Object.assign({}, filetypeExtends),
+      extends: merge.recursive(true, {}, filetypeExtends),
       excludes
     }
     let provider = new SnipmateProvider(channel, config, subscriptions)
@@ -167,7 +162,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
       if (inserting) return
       inserting = true
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
-      await mru.add(edits[0].prefix)
       inserting = false
     }, null, subscriptions)
   }
@@ -194,12 +188,10 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (edits.length == 0) return false
     if (edits.length == 1) {
       await commands.executeCommand('editor.action.insertSnippet', edits[0])
-      await mru.add(edits[0].prefix)
     } else {
       let idx = await window.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
       if (idx == -1) return
       await commands.executeCommand('editor.action.insertSnippet', edits[idx])
-      await mru.add(edits[idx].prefix)
     }
     return true
   }
@@ -292,7 +284,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     ['$'],
     configuration.get<number>('priority', 90)))
   subscriptions.push(channel)
-  subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager, mru)))
+  subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager)))
 
   return {
     expandable: async (): Promise<boolean> => {

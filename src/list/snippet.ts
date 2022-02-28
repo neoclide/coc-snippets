@@ -9,7 +9,7 @@ import { ProviderManager } from '../provider'
 export default class SnippetsList extends BasicList {
   public readonly name = 'snippets'
   public readonly description = 'snippets list'
-  constructor(nvim: any, private manager: ProviderManager, private mru: Mru) {
+  constructor(nvim: any, private manager: ProviderManager) {
     super(nvim)
     this.addLocationActions()
   }
