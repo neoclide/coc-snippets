@@ -177,93 +177,77 @@ export class UltiSnippetsProvider extends BaseProvider {
     let { body, context, originRegex } = snippet
     let indentCount = await nvim.call('indent', '.') as number
     let ind = ' '.repeat(indentCount)
-    if (body.indexOf('`!p') !== -1) {
-      let values: Map<number, string> = new Map()
-      let re = /\$\{(\d+)(?::([^}]+))?\}/g
-      let r
-      // tslint:disable-next-line: no-conditional-assignment
-      while (r = re.exec(body)) {
-        let idx = parseInt(r[1], 10)
-        let val: string = r[2] || ''
-        let exists = values.get(idx)
-        if (exists == null || (val && exists == "''")) {
-          if (/^`!\w/.test(val) && val.endsWith('`')) {
-            let code = val.slice(1).slice(0, -1)
-            // not execute python code since we don't have snip yet.
-            if (code.startsWith('!p')) {
-              val = ''
-            } else {
-              val = await this.parser.execute(code, this.pyMethod, ind)
-            }
+    // values of each placeholder
+    let values: Map<number, string> = new Map()
+    let re = /\$\{(\d+)(?::([^}]+))?\}/g
+    let ms
+    while (ms = re.exec(body)) {
+      let idx = parseInt(ms[1], 10)
+      let val = ms[2] ?? ''
+      let exists = values.get(idx)
+      if (exists == null || (val && exists == "''")) {
+        if (/^`!\w/.test(val) && val.endsWith('`')) {
+          let code = val.slice(1).slice(0, -1)
+          // not execute python code since we don't have snip yet.
+          if (code.startsWith('p')) {
+            val = ''
+          } else {
+            val = await this.parser.execute(code, this.pyMethod, ind)
           }
-          val = val.replace(/'/g, "\\'").replace(/\n/g, '\\n')
-          values.set(idx, "r'" + val + "'")
         }
+        val = val.replace(/'/g, "\\'").replace(/\n/g, '\\n')
+        values.set(idx, "r'" + val + "'")
       }
-      re = /\$(\d+)/g
-      // tslint:disable-next-line: no-conditional-assignment
-      while (r = re.exec(body)) {
-        let idx = parseInt(r[1], 10)
-        if (!values.has(idx)) {
-          values.set(idx, "''")
-        }
-      }
-      let len = values.size == 0 ? 0 : Math.max.apply(null, Array.from(values.keys()))
-      let vals = (new Array(len)).fill('""')
-      for (let [idx, val] of values.entries()) {
-        vals[idx] = val
-      }
-      let pyCodes: string[] = [
-        'import re, os, vim, string, random',
-        `t = (${vals.join(',')})`,
-        `fn = vim.eval('expand("%:t")') or ""`,
-        `path = vim.eval('expand("%:p")') or ""`
-      ]
-      if (context) {
-        pyCodes.push(`snip = ContextSnippet()`)
-        pyCodes.push(`context = ${context}`)
-      } else {
-        pyCodes.push(`context = {}`)
-      }
-      let start = `(${range.start.line},${Buffer.byteLength(line.slice(0, range.start.character))})`
-      let end = `(${range.end.line},${Buffer.byteLength(line.slice(0, range.end.character))})`
-      pyCodes.push(`snip = SnippetUtil('${ind}', ${start}, ${end}, context)`)
-      if (originRegex) {
-        pyCodes.push(`pattern = re.compile(r"${originRegex.replace(/"/g, '\\"')}")`)
-        pyCodes.push(`match = pattern.search("${line.replace(/"/g, '\\"')}")`)
-      }
-      await nvim.command(`${this.pyMethod} ${this.addPythonTryCatch(pyCodes.join('\n'))}`)
     }
+    re = /\$(\d+)/g
+    // tslint:disable-next-line: no-conditional-assignment
+    while (ms = re.exec(body)) {
+      let idx = parseInt(ms[1], 10)
+      if (!values.has(idx)) {
+        values.set(idx, "''")
+      }
+    }
+    let len = values.size == 0 ? 0 : Math.max.apply(null, Array.from(values.keys()))
+    let vals = (new Array(len)).fill('""')
+    for (let [idx, val] of values.entries()) {
+      vals[idx] = val
+    }
+    let pyCodes: string[] = [
+      'import re, os, vim, string, random',
+      `t = (${vals.join(',')})`,
+      `fn = vim.eval('expand("%:t")') or ""`,
+      `path = vim.eval('expand("%:p")') or ""`
+    ]
+    if (context) {
+      pyCodes.push(`snip = ContextSnippet()`)
+      pyCodes.push(`context = ${context}`)
+    } else {
+      pyCodes.push(`context = True`)
+    }
+    let start = `(${range.start.line},${Buffer.byteLength(line.slice(0, range.start.character))})`
+    let end = `(${range.end.line},${Buffer.byteLength(line.slice(0, range.end.character))})`
+    pyCodes.push(`snip = SnippetUtil('${ind}', ${start}, ${end}, context)`)
+    if (originRegex) {
+      pyCodes.push(`pattern = re.compile(r"${originRegex.replace(/"/g, '\\"')}")`)
+      pyCodes.push(`match = pattern.search("${line.replace(/"/g, '\\"')}")`)
+    }
+    await this.executePyCodes(pyCodes)
     let res = await this.parser.resolveUltisnipsBody(body)
     return res
   }
 
-  /**
-   * vim8 doesn't throw any python error with :py command
-   * we have to use g:errmsg since v:errmsg can't be changed in python script.
-   */
-  private addPythonTryCatch(code: string): string {
-    if (!workspace.isVim) return code
-    let lines = [
-      'import traceback, vim',
-      `vim.vars['errmsg'] = ''`,
-      'try:',
-    ]
-    lines.push(...code.split('\n').map(line => '    ' + line))
-    lines.push('except Exception as e:')
-    lines.push(`    vim.vars['errmsg'] = traceback.format_exc()`)
-    return lines.join('\n')
-  }
-
   public async checkContext(context: string): Promise<any> {
-    let { nvim } = workspace
     let pyCodes: string[] = [
       'import re, os, vim, string, random',
       'snip = ContextSnippet()',
       `context = ${context}`
     ]
-    await nvim.command(`${this.pyMethod} ${this.addPythonTryCatch(pyCodes.join('\n'))}`)
-    return await nvim.call(`${this.pyMethod}eval`, 'True if context else False')
+    await this.executePyCodes(pyCodes)
+    return await workspace.nvim.call(`${this.pyMethod}eval`, 'True if context else False')
+  }
+
+  private async executePyCodes(lines: string[]): Promise<void> {
+    await workspace.nvim.command(`${this.pyMethod} ${addPythonTryCatch(lines.join('\n'))}`)
   }
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
@@ -319,6 +303,7 @@ export class UltiSnippetsProvider extends BaseProvider {
         range,
         newText,
       })
+      if (s.context) break
     }
     return edits
   }
@@ -449,7 +434,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       let dir = path.join(os.tmpdir(), `coc.nvim-${process.pid}`)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir)
       let tmpfile = path.join(os.tmpdir(), `coc.nvim-${process.pid}`, `coc-ultisnips-${uid()}.py`)
-      let code = this.addPythonTryCatch(pythonCode)
+      let code = addPythonTryCatch(pythonCode)
       fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
       this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Execute python code in: ${tmpfile}`)
       await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${tmpfile}')`)
@@ -465,4 +450,21 @@ function filetypeFromBasename(basename: string): string {
   if (basename == 'typescript_react') return 'typescriptreact'
   if (basename == 'javascript_react') return 'javascriptreact'
   return basename.split('-', 2)[0]
+}
+
+/**
+  * vim8 doesn't throw any python error with :py command
+  * we have to use g:errmsg since v:errmsg can't be changed in python script.
+  */
+function addPythonTryCatch(code: string): string {
+  if (!workspace.isVim) return code
+  let lines = [
+    'import traceback, vim',
+    `vim.vars['errmsg'] = ''`,
+    'try:',
+  ]
+  lines.push(...code.split('\n').map(line => '    ' + line))
+  lines.push('except Exception as e:')
+  lines.push(`    vim.vars['errmsg'] = traceback.format_exc()`)
+  return lines.join('\n')
 }
