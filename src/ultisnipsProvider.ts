@@ -195,7 +195,7 @@ export class UltiSnippetsProvider extends BaseProvider {
             val = await this.parser.execute(code, this.pyMethod, ind)
           }
         }
-        val = val.replace(/'/g, "\\'").replace(/\n/g, '\\n')
+        val = val.replace(/\\/g, '').replace(/'/g, "\\'").replace(/\n/g, '\\n')
         values.set(idx, "r'" + val + "'")
       }
     }
