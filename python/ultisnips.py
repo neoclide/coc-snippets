@@ -262,6 +262,7 @@ class ContextSnippet(object):
         self.cursor = _SnippetUtilCursor(vim.current.window.cursor)
         self.line = vim.current.window.cursor[0] - 1
         self.column = vim.current.window.cursor[1] - 1
+        self.before = vim.eval('strpart(getline("."), 0, col(".") - 1)')
         line = vim.eval('line(".")')
         self.after = line[self.column :]
         if "coc_selected_text" in vim.vars:
