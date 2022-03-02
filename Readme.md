@@ -28,6 +28,26 @@ It's capable of:
 - Improved match for complete items with TextEdit support.
 - Edit snippets of current buffer by `:CocList snippets`, sorted by mru.
 
+## Python support
+
+Ultisnips provider need python support on (neo)vim.
+
+On neovim, run command:
+
+  :checkhealth
+
+and make sure you have Python 3 provider for neovim installed.
+
+On vim8, run command:
+
+  :pyx print(1)
+
+in your vim, if it throws, it means your vim may not compiled with python
+support or the python dynamic lib required by vim is missing(or broken).
+
+**Note:** some python code may require python feature that not supported by the
+python interpreter used by vim, error will throw on that case.
+
 ## Install
 
 In your vim/neovim, run command:
