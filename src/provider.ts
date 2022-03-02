@@ -1,7 +1,7 @@
 import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, OutputChannel, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
 import path from 'path'
 import BaseProvider from './baseProvider'
-import { Snippet, SnippetEdit, TriggerKind } from './types'
+import { Snippet, SnippetEdit, SnippetEditWithSource, TriggerKind } from './types'
 import { characterIndex, markdownBlock } from './util'
 
 export class ProviderManager implements CompletionItemProvider {
@@ -76,18 +76,18 @@ export class ProviderManager implements CompletionItemProvider {
     return files
   }
 
-  public async getTriggerSnippets(bufnr: number, autoTrigger = false): Promise<SnippetEdit[]> {
+  public async getTriggerSnippets(bufnr: number, autoTrigger = false): Promise<SnippetEditWithSource[]> {
     let doc = workspace.getDocument(bufnr)
     if (!doc) return []
     let position = await window.getCursorPosition()
     let names = Array.from(this.providers.keys())
-    let list: SnippetEdit[] = []
+    let list: SnippetEditWithSource[] = []
     for (let name of names) {
       let provider = this.providers.get(name)
       try {
         let items = await provider.getTriggerSnippets(doc, position, autoTrigger)
         for (let item of items) {
-          list.push(item)
+          list.push(Object.assign({ source: name }, item))
         }
       } catch (e) {
         this.appendError(`get trigger snippets of ${name}`, e)
@@ -149,6 +149,7 @@ export class ProviderManager implements CompletionItemProvider {
       }
       item.data = {
         snip,
+        ultisnip: snip.provider == 'ultisnips',
         provider: snip.provider,
         filepath: `${path.basename(snip.filepath)}:${snip.lnum}`
       }
@@ -189,7 +190,6 @@ export class ProviderManager implements CompletionItemProvider {
           newText: item.label
         }
       }
-      item.data.location = `${snip.filepath}:${snip.lnum}`
       item.data.line = contentBehind + snip.prefix
       res.push(item)
     }
@@ -199,7 +199,8 @@ export class ProviderManager implements CompletionItemProvider {
   public async resolveCompletionItem(item: CompletionItem): Promise<CompletionItem> {
     let provider = this.providers.get(item.data.provider)
     if (provider) {
-      let filetype = await workspace.nvim.eval('&filetype') as string
+      let doc = workspace.getDocument(workspace.bufnr)
+      let filetype = doc ? doc.filetype : undefined
       let insertSnippet: string
       try {
         insertSnippet = await provider.resolveSnippetBody(item.data.snip, item.textEdit.range, item.data.line)
@@ -211,9 +212,10 @@ export class ProviderManager implements CompletionItemProvider {
       if (snippetManager) {
         let snip = await Promise.resolve(snippetManager.resolveSnippet(insertSnippet))
         let ms = filetype?.match(/^\w+/)
+        let block = markdownBlock(snip.toString(), ms == null ? 'txt' : ms[0])
         item.documentation = {
           kind: 'markdown',
-          value: markdownBlock(snip.toString(), ms == null ? 'txt' : ms[0])
+          value: block + (item.data.filepath ? `\n${item.data.filepath}` : '')
         }
       }
     }

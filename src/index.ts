@@ -1,5 +1,6 @@
-import { commands, Disposable, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, VimCompleteItem, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
+import { commands, Disposable, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
 import fs from 'fs'
+import merge from 'merge'
 import path from 'path'
 import util from 'util'
 import LanguageProvider from './languages'
@@ -7,10 +8,9 @@ import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
-import { UltiSnipsConfig } from './types'
+import { SnippetEditWithSource, UltiSnipsConfig } from './types'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { documentation, waitDocument } from './util'
-import merge from 'merge'
 
 interface API {
   expandable: () => Promise<boolean>
@@ -33,6 +33,10 @@ async function getSnippetsDirectory(configuration: WorkspaceConfiguration): Prom
     await fs.promises.mkdir(snippetsDir)
   }
   return snippetsDir
+}
+
+async function insertSnippetEdit(edit: SnippetEditWithSource) {
+  await commands.executeCommand('editor.action.insertSnippet', TextEdit.replace(edit.range, edit.newText), edit.source === 'ultisnips')
 }
 
 function enableSnippetsFiletype(subscriptions: Disposable[]) {
@@ -145,10 +149,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
 
   if (configuration.get<boolean>('autoTrigger', true)) {
-    let inserting = false
     events.on('TextInsert', async (bufnr, info) => {
       let changedtick = info.changedtick
-      if (inserting) return
       let doc = workspace.getDocument(bufnr)
       if (!doc || doc.isCommandLine || !doc.attached) return
       let res = await waitDocument(doc, changedtick)
@@ -156,15 +158,14 @@ export async function activate(context: ExtensionContext): Promise<API> {
       let edits = await manager.getTriggerSnippets(bufnr, true)
       if (edits.length == 0) return
       if (edits.length > 1) {
-        channel.appendLine(`Multiple snippet found for auto trigger: ${edits.map(s => s.prefix).join(', ')}`)
-        window.showMessage('Multiple snippet found for auto trigger, check output by :CocCommand workspace.showOutput', 'warning')
+        channel.appendLine(`Multiple snippets found on auto trigger: ${JSON.stringify(edits, null, 2)}`)
+        window.showMessage('Multiple snippets found on auto trigger', 'warning')
+        await commands.executeCommand('workspace.showOutput', 'snippets')
       }
-      if (inserting) return
-      inserting = true
-      await commands.executeCommand('editor.action.insertSnippet', edits[0])
-      inserting = false
+      await insertSnippetEdit(edits[0])
     }, null, subscriptions)
   }
+
   manager.init().catch(e => {
     channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on init: ${e.stack}`)
   })
@@ -187,11 +188,11 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let edits = await manager.getTriggerSnippets(bufnr)
     if (edits.length == 0) return false
     if (edits.length == 1) {
-      await commands.executeCommand('editor.action.insertSnippet', edits[0])
+      await insertSnippetEdit(edits[0])
     } else {
       let idx = await window.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
       if (idx == -1) return
-      await commands.executeCommand('editor.action.insertSnippet', edits[idx])
+      await insertSnippetEdit(edits[idx])
     }
     return true
   }
@@ -231,7 +232,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       // tslint:disable-next-line: no-invalid-template-strings
       let snippet = 'snippet ${1:Tab_trigger} "${2:Description}" ${3:b}\n' + escaped + '\nendsnippet'
       let edit = TextEdit.insert(position, snippet)
-      await commands.executeCommand('editor.action.insertSnippet', edit)
+      await commands.executeCommand('editor.action.insertSnippet', edit, false)
     }
   }))
 

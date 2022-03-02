@@ -790,10 +790,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.14.5.tgz#e92d3b8f76583efa26c1a63a21c9d3c1143daa29"
   integrity sha512-H5Wn24s/ZOukBmDn03nnGTp18A60ny9AmCwnEcgJiTgSGsCO7k+NWP7zjCCbhlcnVCoI+co52dUAt9GMhOSULw==
 
-"@types/node@^17.0.21":
-  version "17.0.21"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.21.tgz#864b987c0c68d07b4345845c3e63b75edd143644"
-  integrity sha512-DBZCJbhII3r90XbQxI8Y9IjjiiOGlZ0Hr32omXIZvwwZ7p4DMMXGrKXVyPfuoBOri9XNtL0UK69jYIBIsRX3QQ==
+"@types/node@^12.12.0":
+  version "12.20.46"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.46.tgz#7e49dee4c54fd19584e6a9e0da5f3dc2e9136bc7"
+  integrity sha512-cPjLXj8d6anFPzFvOPxS3fvly3Shm5nTfl6g8X5smexixbuGUf7hfr21J5tX9JW+UPStp/5P5R8qrKL5IyVJ+A==
 
 "@types/pify@^5.0.1":
   version "5.0.1"
@@ -1103,10 +1103,10 @@ co@^4.6.0:
   resolved "https://registry.yarnpkg.com/co/-/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
   integrity sha1-bqa989hTrlTMuOR7+gvz+QMfsYQ=
 
-coc.nvim@^0.0.81-next.20:
-  version "0.0.81-next.20"
-  resolved "https://registry.yarnpkg.com/coc.nvim/-/coc.nvim-0.0.81-next.20.tgz#386641d0006fce7fa867b71c2d62d6f4647ebdd6"
-  integrity sha512-H6Dt9ATvJBh7HHk41eCVBSmxyGQ8+z4vXto+GlqNXOXZPpBB7x73N0KdTit2B4/Qj2LeWlnFN9+9TE8wWUgsiQ==
+coc.nvim@^0.0.81-next.21:
+  version "0.0.81-next.21"
+  resolved "https://registry.yarnpkg.com/coc.nvim/-/coc.nvim-0.0.81-next.21.tgz#c56dc01aa755c09d837a26b417c344328410ac1f"
+  integrity sha512-P/YeiOGWeXacdERXyzcHKtXEagvEhvU1J6kLi85b80dUxm2wiUM/pjxSMI91eUgsrTReueOYIm2NEedBaSAKUg==
 
 collect-v8-coverage@^1.0.0:
   version "1.0.0"

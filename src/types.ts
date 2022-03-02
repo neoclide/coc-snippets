@@ -83,6 +83,10 @@ export interface SnippetEdit {
   priority: number
 }
 
+export interface SnippetEditWithSource extends SnippetEdit {
+  source: string
+}
+
 export interface FileItem {
   directory: string
   filetype: string
