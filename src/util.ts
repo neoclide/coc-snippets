@@ -239,8 +239,7 @@ export function fixDriver(filepath: string, platform = os.platform()): string {
   return filepath[0].toUpperCase() + filepath.slice(1)
 }
 
-
-export function sameFile(fullpath: string | null, other: string | null, caseInsensitive?: boolean): boolean {
+export function sameFile(fullpath: string | null, other: string | null): boolean {
   if (!fullpath || !other) return false
   if (caseInsensitive) return fullpath.toLowerCase() === other.toLowerCase()
   return fullpath === other

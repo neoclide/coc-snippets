@@ -9,7 +9,7 @@ import readline from 'readline'
 import BaseProvider from './baseProvider'
 import Parser from './parser'
 import { FileItem, SnipmateConfig, SnipmateFile, Snippet, SnippetEdit, TriggerKind } from './types'
-import { readdirAsync, statAsync } from './util'
+import { readdirAsync, sameFile, statAsync } from './util'
 
 interface SnippetResult {
   extends: string[]
@@ -30,7 +30,7 @@ export class SnipmateProvider extends BaseProvider {
       if (uri.scheme != 'file') return
       let filepath = uri.fsPath
       if (!fs.existsSync(filepath)) return
-      let idx = this.snippetFiles.findIndex(s => s.filepath == filepath)
+      let idx = this.snippetFiles.findIndex(s => sameFile(s.filepath, filepath))
       if (idx !== -1) {
         let filetype = this.snippetFiles[idx].filetype
         this.snippetFiles.splice(idx, 1)
@@ -75,9 +75,8 @@ export class SnipmateProvider extends BaseProvider {
     }
   }
 
-
   public async loadSnippetsFromFile(filetype: string, filepath: string): Promise<void> {
-    let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
+    let idx = this.snippetFiles.findIndex(o => sameFile(o.filepath, filepath))
     if (idx !== -1) return
     idx = this.fileItems.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.fileItems.splice(idx, 1)

@@ -5,7 +5,7 @@ import path from 'path'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
-import { distinct, readdirAsync, statAsync, uid } from './util'
+import { distinct, readdirAsync, sameFile, statAsync, uid } from './util'
 
 const pythonCodes: Map<string, string> = new Map()
 
@@ -26,7 +26,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       if (uri.scheme != 'file' || !doc.uri.endsWith('.snippets')) return
       let filepath = uri.fsPath
       if (!fs.existsSync(filepath)) return
-      let idx = this.snippetFiles.findIndex(s => s.filepath == filepath)
+      let idx = this.snippetFiles.findIndex(s => sameFile(s.filepath, filepath))
       if (idx !== -1) {
         const snippetFile = this.snippetFiles[idx]
         this.snippetFiles.splice(idx, 1)
@@ -128,7 +128,7 @@ export class UltiSnippetsProvider extends BaseProvider {
 
   public async loadSnippetsFromFile(fileItem: FileItem): Promise<void> {
     let { filepath, directory, filetype } = fileItem
-    let idx = this.snippetFiles.findIndex(o => o.filepath == filepath)
+    let idx = this.snippetFiles.findIndex(o => sameFile(o.filepath, filepath))
     if (idx !== -1) return
     if (this.isIgnored(filepath)) {
       this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${filepath}`)

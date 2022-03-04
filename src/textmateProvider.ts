@@ -4,7 +4,7 @@ import { parse, ParseError } from 'jsonc-parser'
 import path from 'path'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TextmateConfig, TriggerKind } from './types'
-import { distinct, languageIdFromComments } from './util'
+import { distinct, languageIdFromComments, sameFile } from './util'
 
 export interface ISnippetPluginContribution {
   lnum: number
@@ -230,7 +230,7 @@ export class TextmateProvider extends BaseProvider {
   }
 
   private async loadSnippetsFromFile(snippetFilePath: string, languageIds: string[] | undefined, extensionId: string): Promise<void> {
-    if (this.loadedFiles.has(snippetFilePath)) return
+    if (this.isLoaded(snippetFilePath)) return
     if (this.isIgnored(snippetFilePath)) {
       this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${snippetFilePath}`)
       return
@@ -243,6 +243,15 @@ export class TextmateProvider extends BaseProvider {
       return
     }
     this.loadSnippetsFromText(snippetFilePath, extensionId, languageIds, contents)
+  }
+
+  private isLoaded(filepath: string): boolean {
+    for (let file of this.loadedFiles) {
+      if (sameFile(file, filepath)) {
+        return true
+      }
+    }
+    return false
   }
 
   private loadSnippetsFromText(filepath: string, extensionId: string, ids: string[] | undefined, contents: string): void {
