@@ -199,6 +199,12 @@ export function getRegexText(prefix: string): string {
   return content
 }
 
+export function getTriggerText(text: string): string {
+  if (!text || /\w/.test(text[0]) || text.length <= 2) return text
+  if (text[0] == text[text.length - 1]) return text.slice(1, -1)
+  return text
+}
+
 export function markdownBlock(code: string, filetype: string): string {
   filetype = filetype == 'javascriptreact' ? 'javascript' : filetype
   filetype = filetype == 'typescriptreact' ? 'typescript' : filetype

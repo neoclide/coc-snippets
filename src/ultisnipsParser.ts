@@ -9,7 +9,7 @@ import pify from 'pify'
 import readline from 'readline'
 import Parser from './parser'
 import { Snippet, TriggerKind, UltiSnipsFile } from './types'
-import { convertRegex, headTail, getRegexText } from './util'
+import { convertRegex, headTail, getRegexText, getTriggerText } from './util'
 
 export default class UltiSnipsParser {
   constructor(private pyMethod: string, private channel?: OutputChannel, private trace = 'error') {
@@ -71,49 +71,34 @@ export default class UltiSnipsParser {
       if (head == 'endsnippet' && block == 'snippet') {
         block = null
         try {
-          let originRegex: string
           let body = preLines.join('\n')
-          // convert placeholder regex to javascript regex
+          // TODO remove this
           body = body.replace(/((?:[^\\]?\$\{\w+?)\/)([^\n]*?[^\\])(?=\/)/g, (_match, p1, p2) => {
             return p1 + convertRegex(p2)
           })
           let ms = first.match(/^(.+?)(?:\s+(?:"(.*?)")?(?:\s+"(.*?)")?(?:\s+(\w+))?)?\s*$/)
-          let prefix = ms[1]
-          let description = ms[2] || ''
-          let context = ms[3]
+          let trigger = getTriggerText(ms[1])
           let option = ms[4] || ''
-          if (prefix.length > 2 && prefix[1] != prefix[0] && prefix[0] == prefix[prefix.length - 1] && !/\w/.test(prefix[0])) {
-            prefix = prefix.slice(1, prefix.length - 1)
-          }
-          let isExpression = option.indexOf('r') !== -1
           let regex: RegExp = null
-          if (isExpression) {
-            originRegex = prefix
-            prefix = convertRegex(prefix)
-            prefix = prefix.endsWith('$') ? prefix : prefix + '$'
-            try {
-              regex = new RegExp(prefix)
-              // get the real text
-              prefix = getRegexText(prefix)
-            } catch (e) {
-              this.error(`Convert regex error for: ${prefix}`)
-            }
-          }
-          if (parsedContext) {
-            context = parsedContext
-          } else if (option.indexOf('e') == -1) {
-            context = null
+          let originRegex: string
+          if (option.indexOf('r') !== -1) {
+            originRegex = trigger
+            let pattern = convertRegex(trigger)
+            regex = new RegExp(pattern.endsWith('$') ? pattern : pattern + '$')
+            // get the real text
+            trigger = getRegexText(trigger)
+            option = option + 'i'
           }
           let snippet: Snippet = {
+            originRegex,
+            context: parsedContext ? parsedContext : (option.includes('e') ? ms[3] : undefined),
             filepath,
             filetype,
-            context,
-            originRegex,
+            prefix: trigger,
             autoTrigger: option.indexOf('A') !== -1,
             lnum: lnum - preLines.length - 2,
-            triggerKind: getTriggerKind(option, regex),
-            prefix,
-            description,
+            triggerKind: getTriggerKind(option),
+            description: ms[2] || '',
             regex,
             body,
             priority
@@ -242,8 +227,8 @@ function decode(str: string): string {
   return str.replace(/\\`/g, '`').replace(/\\{/g, '{')
 }
 
-function getTriggerKind(option: string, regex: string | RegExp): TriggerKind {
-  if (option.indexOf('i') !== -1 || regex) {
+function getTriggerKind(option: string): TriggerKind {
+  if (option.indexOf('i') !== -1) {
     return TriggerKind.InWord
   }
   if (option.indexOf('w') !== -1) {
