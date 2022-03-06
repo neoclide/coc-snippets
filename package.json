@@ -1,6 +1,6 @@
 {
   "name": "coc-snippets",
-  "version": "2.5.8",
+  "version": "2.5.9",
   "description": "Snippets extension for coc.nvim",
   "main": "lib/index.js",
   "publisher": "chemzqm",
