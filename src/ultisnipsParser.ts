@@ -111,7 +111,7 @@ export default class UltiSnipsParser {
             originRegex,
             autoTrigger: option.indexOf('A') !== -1,
             lnum: lnum - preLines.length - 2,
-            triggerKind: getTriggerKind(option),
+            triggerKind: getTriggerKind(option, regex),
             prefix,
             description,
             regex,
@@ -242,8 +242,8 @@ function decode(str: string): string {
   return str.replace(/\\`/g, '`').replace(/\\{/g, '{')
 }
 
-function getTriggerKind(option: string): TriggerKind {
-  if (option.indexOf('i') !== -1) {
+function getTriggerKind(option: string, regex: string | RegExp): TriggerKind {
+  if (option.indexOf('i') !== -1 || regex) {
     return TriggerKind.InWord
   }
   if (option.indexOf('w') !== -1) {
