@@ -193,7 +193,7 @@ class SnippetUtil(object):
     @property
     def c(self):  # pylint:disable=invalid-name
         """The current text of the placeholder."""
-        return ""
+        return self._cur
 
     @property
     def v(self):  # pylint:disable=invalid-name
