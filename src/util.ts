@@ -147,14 +147,12 @@ export function distinct<T>(array: T[], keyFn?: (t: T) => string): T[] {
   })
 }
 
-const conditionRe = /\(\?\(\?:\w+\).+\|/
-const bellRe = /\\a/
-const commentRe = /\(\?#.*?\)/
 const stringStartRe = /\\A/
+const conditionRe = /\(\?\(\w+\).+\|/
+const commentRe = /\(\?#.*?\)/
 const namedCaptureRe = /\(\?P<\w+>.*?\)/
 const namedReferenceRe = /\(\?P=(\w+)\)/
-const braceRe = /\^\]/
-const regex = new RegExp(`${bellRe.source}|${commentRe.source}|${stringStartRe.source}|${namedCaptureRe.source}|${namedReferenceRe.source}|${braceRe}`, 'g')
+const regex = new RegExp(`${commentRe.source}|${stringStartRe.source}|${namedCaptureRe.source}|${namedReferenceRe.source}`, 'g')
 
 /**
  * Convert python regex to javascript regex,
@@ -178,11 +176,9 @@ export function convertRegex(str: string): string {
     throw new Error('multiple line pattern not supported')
   }
   if (conditionRe.test(str)) {
-    throw new Error('condition pattern not supported')
+    throw new Error('(?id/name)yes-pattern|no-pattern not supported')
   }
   return str.replace(regex, (match, p1) => {
-    if (match == '^]') return '^\\]'
-    if (match == '\\a') return ''
     if (match.startsWith('(?#')) return ''
     if (match == '\\A') return '^'
     if (match.startsWith('(?P<')) return '(?' + match.slice(3)
