@@ -1,6 +1,6 @@
-import { Document, Position, Range } from 'coc.nvim'
-import { Config, Snippet, SnippetEdit } from './types'
+import { Document, Position } from 'coc.nvim'
 import minimatch from 'minimatch'
+import { Config, Snippet, SnippetEdit } from './types'
 import { distinct } from './util'
 
 export default abstract class BaseProvider {
@@ -11,7 +11,7 @@ export default abstract class BaseProvider {
   public abstract getSnippets(filetype: string): Promise<Snippet[]>
   public abstract getSnippetFiles(filetype: string): Promise<string[]>
   public abstract getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]>
-  public abstract resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string>
+  public resolveSnippetBody?(snippet: string): Promise<string>
 
   public async checkContext(_context: string): Promise<any> {
     return true

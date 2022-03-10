@@ -8,7 +8,7 @@ import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
-import { SnippetEditWithSource, UltiSnipsConfig } from './types'
+import { SnippetEditWithSource, UltiSnippetOption, UltiSnipsConfig } from './types'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
 import { documentation, waitDocument } from './util'
 
@@ -36,7 +36,15 @@ async function getSnippetsDirectory(configuration: WorkspaceConfiguration): Prom
 }
 
 async function insertSnippetEdit(edit: SnippetEditWithSource) {
-  await commands.executeCommand('editor.action.insertSnippet', TextEdit.replace(edit.range, edit.newText), edit.source === 'ultisnips')
+  let ultisnips = edit.source == 'ultisnips' || edit.source == 'snipmate'
+  let option: UltiSnippetOption
+  if (ultisnips) {
+    option = {
+      regex: edit.regex,
+      context: edit.context
+    }
+  }
+  await commands.executeCommand('editor.action.insertSnippet', TextEdit.replace(edit.range, edit.newText), option)
 }
 
 function enableSnippetsFiletype(subscriptions: Disposable[]) {

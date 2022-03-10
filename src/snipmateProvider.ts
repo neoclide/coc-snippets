@@ -110,8 +110,8 @@ export class SnipmateProvider extends BaseProvider {
    * @param {string} _line
    * @returns {Promise<string>}
    */
-  public async resolveSnippetBody(snippet: Snippet, _range: Range, _line: string): Promise<string> {
-    let parser = new Parser(snippet.body)
+  public async resolveSnippetBody(body: string): Promise<string> {
+    let parser = new Parser(body)
     let resolved = ''
     let { nvim } = workspace
     while (!parser.eof()) {
@@ -125,12 +125,10 @@ export class SnipmateProvider extends BaseProvider {
         code = code.slice(1, -1)
         if (code.startsWith('Filename')) {
           resolved = resolved + await nvim.call('expand', '%:p:t')
+        } else if (!code.startsWith('!')) {
+          resolved = '`!v ' + code + '`'
         } else {
-          try {
-            resolved = resolved + await nvim.eval(code)
-          } catch (e) {
-            this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on eval: ${code}`)
-          }
+          resolved = '`' + code + '`'
         }
         continue
       }
@@ -178,7 +176,8 @@ export class SnipmateProvider extends BaseProvider {
             body: lines.join('\n').replace(/\s+$/, ''),
             prefix,
             description,
-            triggerKind: TriggerKind.SpaceBefore
+            triggerKind: TriggerKind.SpaceBefore,
+            provider: 'snipmate'
           })
           lines = []
         }
@@ -193,9 +192,6 @@ export class SnipmateProvider extends BaseProvider {
         return
       }
       if (prefix) {
-        if (line.indexOf('VISUAL') !== -1) {
-          line = line.replace(/\$(\{?)VISUAL\b(:[^\}])?(\}?)/g, '$$$1TM_SELECTED_TEXT$2$3')
-        }
         if (line.startsWith('\t')) {
           lines.push(line.slice(1))
         } else {
@@ -237,7 +233,7 @@ export class SnipmateProvider extends BaseProvider {
     for (let s of snippets) {
       let character = position.character - s.prefix.length
       let range = Range.create(position.line, character, position.line, position.character)
-      let newText = await this.resolveSnippetBody(s, range, line)
+      let newText = await this.resolveSnippetBody(s.body)
       edits.push({
         prefix: s.prefix,
         description: s.description,

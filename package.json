@@ -163,7 +163,7 @@
     "@types/node": "^12.12.0",
     "@types/pify": "^5.0.1",
     "@types/uuid": "^8.3.4",
-    "coc.nvim": "^0.0.81-next.21",
+    "coc.nvim": "^0.0.81-next.22",
     "esbuild": "^0.14.23",
     "jest": "^27.5.1",
     "jsonc-parser": "^3.0.0",

@@ -1,7 +1,7 @@
-import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, OutputChannel, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
+import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, OutputChannel, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
 import path from 'path'
 import BaseProvider from './baseProvider'
-import { Snippet, SnippetEdit, SnippetEditWithSource, TriggerKind } from './types'
+import { Snippet, SnippetEditWithSource, VimCompletionContext, TriggerKind } from './types'
 import { characterIndex, markdownBlock } from './util'
 
 export class ProviderManager implements CompletionItemProvider {
@@ -31,6 +31,7 @@ export class ProviderManager implements CompletionItemProvider {
     await Promise.all(providers.map(provider => {
       return provider.init()
     })).catch(e => {
+      workspace.nvim.echoError(e)
       this.appendError('init', e)
     })
   }
@@ -112,12 +113,12 @@ export class ProviderManager implements CompletionItemProvider {
     document,
     position: Position,
     _token: CancellationToken,
-    context: CompletionContext): Promise<CompletionItem[]> {
+    context: VimCompletionContext): Promise<CompletionItem[]> {
     let doc = workspace.getDocument(document.uri)
     if (!doc) return []
     let snippets = await this.getSnippets(doc.filetype)
     let currline = doc.getline(position.line, true)
-    let { input, col } = (context as any).option! as CompleteOption
+    let { input, col } = context.option
     let character = characterIndex(currline, col)
     let before_content = currline.slice(0, character)
     let res: CompletionItem[] = []
@@ -140,6 +141,7 @@ export class ProviderManager implements CompletionItemProvider {
       }
       let head = this.getPrefixHead(doc, snip.prefix)
       if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
+      let ultisnip = snip.provider == 'ultisnips' || snip.provider == 'snipmate'
       let item: CompletionItem = {
         label: snip.prefix,
         kind: CompletionItemKind.Snippet,
@@ -149,9 +151,14 @@ export class ProviderManager implements CompletionItemProvider {
       }
       item.data = {
         snip,
-        ultisnip: snip.provider == 'ultisnips',
         provider: snip.provider,
         filepath: `${path.basename(snip.filepath)}:${snip.lnum}`
+      }
+      if (ultisnip) {
+        item.data.ultisnip = {
+          context: snip.context,
+          regex: snip.originRegex
+        }
       }
       if (snip.regex) {
         if (!input.length || snip.prefix && input[0] != snip.prefix[0]) continue
@@ -160,11 +167,10 @@ export class ProviderManager implements CompletionItemProvider {
         if (!ms) continue
       } else if (head && before_content.endsWith(head)) {
         contentBehind = before_content.slice(0, - head.length)
-        let prefix = snip.prefix.slice(head.length)
         Object.assign(item, {
           textEdit: {
             range: Range.create({ line: position.line, character: character - head.length }, position),
-            newText: prefix
+            newText: snip.prefix
           }
         })
       } else if (input.length == 0) {
@@ -174,7 +180,7 @@ export class ProviderManager implements CompletionItemProvider {
           preselect: true,
           textEdit: {
             range: Range.create({ line: position.line, character: character - prefix.length }, position),
-            newText: prefix
+            newText: snip.prefix
           }
         })
       }
@@ -187,10 +193,9 @@ export class ProviderManager implements CompletionItemProvider {
       if (!item.textEdit) {
         item.textEdit = {
           range: Range.create({ line: position.line, character }, position),
-          newText: item.label
+          newText: snip.prefix
         }
       }
-      item.data.line = contentBehind + snip.prefix
       res.push(item)
     }
     return res
@@ -201,18 +206,19 @@ export class ProviderManager implements CompletionItemProvider {
     if (provider) {
       let doc = workspace.getDocument(workspace.bufnr)
       let filetype = doc ? doc.filetype : undefined
-      let insertSnippet: string
-      try {
-        insertSnippet = await provider.resolveSnippetBody(item.data.snip, item.textEdit.range, item.data.line)
-      } catch (e) {
-        this.appendError(`resolveSnippetBody of ${item.data.provider}`, e)
-        return item
-      }
-      item.textEdit.newText = insertSnippet
-      if (snippetManager) {
-        let snip = await Promise.resolve(snippetManager.resolveSnippet(insertSnippet))
+      let insertSnippet = item.data.snip.body
+      if (snippetManager && insertSnippet) {
+        if (typeof provider.resolveSnippetBody === 'function') {
+          insertSnippet = await Promise.resolve(provider.resolveSnippetBody(insertSnippet))
+        }
+        item.textEdit.newText = insertSnippet
+        let resolved = await snippetManager.resolveSnippet(insertSnippet, item.data.ultisnip)
+        if (typeof resolved !== 'string') {
+          window.showErrorMessage(`Please upgrade your coc.nvim to use coc-snippets`)
+          return
+        }
         let ms = filetype?.match(/^\w+/)
-        let block = markdownBlock(snip.toString(), ms == null ? 'txt' : ms[0])
+        let block = markdownBlock(resolved, ms == null ? 'txt' : ms[0])
         item.documentation = {
           kind: 'markdown',
           value: block + (item.data.filepath ? `\n${item.data.filepath}` : '')

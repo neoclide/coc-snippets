@@ -175,10 +175,6 @@ export class TextmateProvider extends BaseProvider {
     return res
   }
 
-  public async resolveSnippetBody(snip: Snippet, _range: Range): Promise<string> {
-    return snip.body
-  }
-
   private async loadSnippetDefinition(extension: Extension<any>): Promise<SnippetItem[]> {
     let { packageJSON } = extension
     const arr: SnippetItem[] = []

@@ -82,14 +82,6 @@ export async function statAsync(filepath: string): Promise<fs.Stats> {
   }
 }
 
-export async function writeFileAsync(fullpath, content: string): Promise<void> {
-  await pify(fs.writeFile)(fullpath, content, 'utf8')
-}
-
-export async function readFileAsync(fullpath, encoding = 'utf8'): Promise<string> {
-  return await pify(fs.readFile)(fullpath, encoding)
-}
-
 export async function readdirAsync(filepath: string): Promise<string[]> {
   try {
     return await pify(fs.readdir)(filepath)

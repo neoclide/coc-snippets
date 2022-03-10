@@ -12,7 +12,6 @@ const pythonCodes: Map<string, string> = new Map()
 export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
   private fileItems: FileItem[] = []
-  private pyMethod: string
   private parser: UltiSnipsParser
   constructor(
     private channel: OutputChannel,
@@ -46,16 +45,13 @@ export class UltiSnippetsProvider extends BaseProvider {
 
   public async init(): Promise<void> {
     let { nvim, env } = workspace
-    let { config } = this
     this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Using ultisnips directories: ${this.directories.join(' ')}`)
-    let hasPythonx = await nvim.call('has', ['pythonx'])
-    if (hasPythonx && config.usePythonx) {
-      this.pyMethod = 'pyx'
-    } else {
-      this.pyMethod = config.pythonVersion == 3 ? 'py3' : 'py'
+    try {
+      await nvim.call('pyxeval', ['1'])
+    } catch (e) {
+      throw new Error(`Error on execute :pyx command, ultisnips feature of coc-snippets requires pyx support on (neo)vim.`)
     }
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Using ultisnips python command: ${this.pyMethod}`)
-    this.parser = new UltiSnipsParser(this.pyMethod, this.channel, this.trace)
+    this.parser = new UltiSnipsParser(this.channel, this.trace)
     this.fileItems = await this.loadAllFilItems(env.runtimepath)
     workspace.onDidRuntimePathChange(async e => {
       let subFolders = await this.getSubFolders()
@@ -71,7 +67,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       }
     }, null, this.context.subscriptions)
     let filepath = this.context.asAbsolutePath('python/ultisnips.py')
-    await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${filepath}')`)
+    await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${filepath}')`)
     const items = this.getValidItems(this.fileItems)
     if (items.length) await this.loadFromItems(items)
     workspace.onDidOpenTextDocument(async e => {
@@ -172,70 +168,6 @@ export class UltiSnippetsProvider extends BaseProvider {
     if (pythonCode) pythonCodes.set(filepath, pythonCode)
   }
 
-  public async resolveSnippetBody(snippet: Snippet, range: Range, line: string): Promise<string> {
-    let { nvim } = workspace
-    let { body, context, originRegex } = snippet
-    let indentCount = await nvim.call('indent', '.') as number
-    let ind = ' '.repeat(indentCount)
-    // values of each placeholder
-    let values: Map<number, string> = new Map()
-    let re = /\$\{(\d+)(?::([^}]+))?\}/g
-    let ms
-    while (ms = re.exec(body)) {
-      let idx = parseInt(ms[1], 10)
-      let val = ms[2] ?? ''
-      let exists = values.get(idx)
-      if (exists == null || (val && exists == "''")) {
-        if (/^`!\w/.test(val) && val.endsWith('`')) {
-          let code = val.slice(1).slice(0, -1)
-          // not execute python code since we don't have snip yet.
-          if (code.startsWith('p')) {
-            val = ''
-          } else {
-            val = await this.parser.execute(code, this.pyMethod, ind)
-          }
-        }
-        val = val.replace(/\\/g, '').replace(/'/g, "\\'").replace(/\n/g, '\\n')
-        values.set(idx, "r'" + val + "'")
-      }
-    }
-    re = /\$(\d+)/g
-    // tslint:disable-next-line: no-conditional-assignment
-    while (ms = re.exec(body)) {
-      let idx = parseInt(ms[1], 10)
-      if (!values.has(idx)) {
-        values.set(idx, "''")
-      }
-    }
-    let len = values.size == 0 ? 0 : Math.max.apply(null, Array.from(values.keys()))
-    let vals = (new Array(len)).fill('""')
-    for (let [idx, val] of values.entries()) {
-      vals[idx] = val
-    }
-    let pyCodes: string[] = [
-      'import re, os, vim, string, random',
-      `t = (${vals.join(',')})`,
-      `fn = vim.eval('expand("%:t")') or ""`,
-      `path = vim.eval('expand("%:p")') or ""`
-    ]
-    if (context) {
-      pyCodes.push(`snip = ContextSnippet()`)
-      pyCodes.push(`context = ${context}`)
-    } else {
-      pyCodes.push(`context = True`)
-    }
-    let start = `(${range.start.line},${Buffer.byteLength(line.slice(0, range.start.character))})`
-    let end = `(${range.end.line},${Buffer.byteLength(line.slice(0, range.end.character))})`
-    pyCodes.push(`snip = SnippetUtil('${ind}', ${start}, ${end}, context)`)
-    if (originRegex) {
-      pyCodes.push(`pattern = re.compile(r"${originRegex.replace(/"/g, '\\"')}")`)
-      pyCodes.push(`match = pattern.search("${line.replace(/"/g, '\\"')}")`)
-    }
-    await this.executePyCodes(pyCodes)
-    let res = await this.parser.resolveUltisnipsBody(body)
-    return res
-  }
-
   public async checkContext(context: string): Promise<any> {
     let pyCodes: string[] = [
       'import re, os, vim, string, random',
@@ -251,7 +183,13 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   private async executePyCodes(lines: string[]): Promise<void> {
-    await workspace.nvim.command(`${this.pyMethod} ${addPythonTryCatch(lines.join('\n'))}`)
+    try {
+      await workspace.nvim.command(`pyx ${addPythonTryCatch(lines.join('\n'))}`)
+    } catch (e) {
+      let err = new Error(e.message)
+      err.stack = `Error on execute python code:\n${lines}\n` + e.stack
+      throw err
+    }
   }
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
@@ -298,14 +236,15 @@ export class UltiSnippetsProvider extends BaseProvider {
         character = position.character - len
       }
       let range = Range.create(position.line, character, position.line, position.character)
-      let newText = await this.resolveSnippetBody(s, range, line)
       edits.push({
+        range,
+        newText: s.body,
         prefix: s.prefix,
         description: s.description,
         location: s.filepath,
         priority: s.priority,
-        range,
-        newText,
+        regex: s.originRegex,
+        context: s.context,
       })
       if (s.context) break
     }
@@ -441,7 +380,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       let code = addPythonTryCatch(pythonCode)
       fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
       this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Execute python code in: ${tmpfile}`)
-      await workspace.nvim.command(`exe '${this.pyMethod}file '.fnameescape('${tmpfile}')`)
+      await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${tmpfile}')`)
     } catch (e) {
       this.channel.appendLine(`Error on execute python script:`)
       this.channel.append(e.message)
@@ -453,6 +392,7 @@ export class UltiSnippetsProvider extends BaseProvider {
 function filetypeFromBasename(basename: string): string {
   if (basename == 'typescript_react') return 'typescriptreact'
   if (basename == 'javascript_react') return 'javascriptreact'
+  if (basename.includes('_')) return basename.split('_', 2)[0]
   return basename.split('-', 2)[0]
 }
 

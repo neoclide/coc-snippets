@@ -2,13 +2,22 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Range } from 'coc.nvim'
+import { Range, CompletionItem, TextEdit, CompletionContext, CompleteOption } from 'coc.nvim'
 
 export enum TriggerKind {
   SpaceBefore,
   LineBegin,
   WordBoundary,
   InWord,
+}
+
+export interface UltiSnippetOption {
+  regex?: string
+  context?: string
+}
+
+export interface VimCompletionContext extends CompletionContext {
+  option: CompleteOption
 }
 
 export interface Config {
@@ -81,6 +90,8 @@ export interface SnippetEdit {
   location: string
   description: string
   priority: number
+  regex?: string
+  context?: string
 }
 
 export interface SnippetEditWithSource extends SnippetEdit {
