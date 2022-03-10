@@ -113,14 +113,14 @@ Some ultisnips features are **not** supported:
 - [x] Context snippets.
 - [x] Support loading snipmate snippets.
 - [x] Replacement String, (:h UltiSnips-replacement-string), need support by coc.nvim.
+- [x] Update python code block after change of placeholder.
 - [ ] Execute shell code with custom shabang (will not support).
-- [ ] Update python code block after change of placeholder (can't support).
 - [ ] Reformat snippet options, including `t`, `s` and `m` (can't support).
 - [ ] Snippet actions including `pre_expand`, `post_expand` and `jump` (can't support).
 
 **Note**: python regex in snippet are converted to javascript regex, however,
 some regex patterns can't be supported by javascript, including
-`\u` `(?s)` `\Z` `(?(id/name)yes-pattern|no-pattern)`.
+`(?x)` `(?s)` `\Z` `(?(id/name)yes-pattern|no-pattern)`.
 
 ## Options
 
