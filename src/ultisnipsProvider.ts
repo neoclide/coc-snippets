@@ -239,11 +239,15 @@ export class UltiSnippetsProvider extends BaseProvider {
   public async checkContext(context: string): Promise<any> {
     let pyCodes: string[] = [
       'import re, os, vim, string, random',
+      'if "snip" in globals():',
+      '  __snip = snip',
       'snip = ContextSnippet()',
-      `context = ${context}`
+      `context = ${context}`,
+      'if "__snip" in globals():',
+      '  snip = __snip',
     ]
     await this.executePyCodes(pyCodes)
-    return await workspace.nvim.call(`${this.pyMethod}eval`, 'True if context else False')
+    return await workspace.nvim.call(`pyxeval`, 'True if context else False')
   }
 
   private async executePyCodes(lines: string[]): Promise<void> {
