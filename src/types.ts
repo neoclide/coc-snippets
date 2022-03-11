@@ -23,6 +23,7 @@ export interface VimCompletionContext extends CompletionContext {
 export interface Config {
   extends: { [index: string]: string[] }
   excludes: string[]
+  trace: boolean
 }
 
 export interface UltiSnipsConfig extends Config {

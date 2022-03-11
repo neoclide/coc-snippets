@@ -20,11 +20,11 @@ export class SnipmateProvider extends BaseProvider {
   private fileItems: FileItem[] = []
   private snippetFiles: SnipmateFile[] = []
   constructor(
-    private channel: OutputChannel,
+    channel: OutputChannel,
     protected config: SnipmateConfig,
     private subscriptions: Disposable[]
   ) {
-    super(config)
+    super(config, channel)
     workspace.onDidSaveTextDocument(async doc => {
       let uri = Uri.parse(doc.uri)
       if (uri.scheme != 'file') return
@@ -57,9 +57,9 @@ export class SnipmateProvider extends BaseProvider {
         }
       }
     }, null, this.subscriptions)
-    await Promise.all(Array.from(workspace.filetypes).map(filetype => {
-      return this.loadByFiletype(filetype)
-    }))
+    for (let filetype of workspace.filetypes) {
+      await this.loadByFiletype(filetype)
+    }
     workspace.onDidOpenTextDocument(async e => {
       let doc = workspace.getDocument(e.bufnr)
       await this.loadByFiletype(doc.filetype)
@@ -80,14 +80,10 @@ export class SnipmateProvider extends BaseProvider {
     if (idx !== -1) return
     idx = this.fileItems.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.fileItems.splice(idx, 1)
-    if (this.isIgnored(filepath)) {
-      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${filepath}`)
-      this.snippetFiles.push({ filepath, filetype, snippets: [] })
-      return
-    }
+    if (this.isIgnored(filepath)) return
     let res = await this.parseSnippetsFile(filetype, filepath)
     this.snippetFiles.push({ filepath, filetype, snippets: res.snippets })
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${res.snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
+    this.info(`Loaded ${res.snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
     if (res.extends.length) {
       let fts = res.extends
       let curr = this.config.extends[filetype] || []
@@ -184,7 +180,7 @@ export class SnipmateProvider extends BaseProvider {
         let ms = line.match(/^snippet\s+(\S+)(?:\s(.+))?$/)
         if (!ms) {
           prefix = ''
-          this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Broken line on ${filepath}:${lnum}`)
+          this.error(`Broken line on ${filepath}:${lnum}`)
           return
         }
         prefix = ms[1]
@@ -212,6 +208,7 @@ export class SnipmateProvider extends BaseProvider {
             triggerKind: TriggerKind.SpaceBefore
           })
         }
+        this.trace('snipmate snippets', res)
         resolve({ snippets: res, extends: extendsFiletypes })
       })
     })

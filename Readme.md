@@ -18,19 +18,24 @@ It's capable of:
 - Provide snippets list for edit snippet.
 - Provide `snippets.editSnippets` command for edit user snippets of current filetype.
 
-**Note:** some features of ultisnips and snipmate format snippets not supported, checkout [faq](#faq).
+**Note:** some features of ultisnips and snipmate format snippets not supported,
+checkout [Ultisnips features](#ultisnips-features).
 
 ## Why?
 
 - Use same keys for jump placeholder.
 - Nested snippet support.
 - Always async, never slows you down.
+- Preview snippet context in float window/popup.
 - Improved match for complete items with TextEdit support.
-- Edit snippets of current buffer by `:CocList snippets`, sorted by mru.
+- Edit snippets of current buffer by `:CocList snippets`.
 
 ## Python support
 
-Ultisnips provider need python support on (neo)vim.
+Ultisnips provider need pythonx support on (neo)vim, to check the feature exists,
+try:
+
+  :echo has('pythonx')
 
 On neovim, run command:
 
@@ -47,6 +52,10 @@ support or the python dynamic lib required by vim is missing(or broken).
 
 **Note:** some python code may require python feature that not supported by the
 python interpreter used by vim, error will throw on that case.
+
+Error will be shown when `pythonx` with (neo)vim can't work, fix pythonx support
+or disable ultisnips support by add `"snippets.ultisnips.enable": false` in your
+configuration file.
 
 ## Install
 
@@ -146,13 +155,12 @@ some regex patterns can't be supported by javascript, including
 - `snippets.loadVSCodeProjectSnippets`: Load code snippets in folder ${workspaceFolder}/.vscode, default: `true`.
 - `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load.
 - `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
-- `snippets.ultisnips.usePythonx`: use `pythonx` for eval python code when possible, default `true`.
-- `snippets.ultisnips.pythonVersion`: when `usePythonx` is false, python version to use for
-  python code, default to `3`.
+- `snippets.ultisnips.trace`: Trace verbose snippet information, default `false`.
 - `snippets.ultisnips.directories`: directories that searched for snippet files,
   could be subfolder in every \$runtimepath or absolute paths, default: `["UltiSnips"]`
 - `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
 - `snippets.snipmate.author`: author name used for `g:snips_author`
+- `snippets.snipmate.trace`: Trace verbose snippet information, default `false`.
 
 ## Commands
 

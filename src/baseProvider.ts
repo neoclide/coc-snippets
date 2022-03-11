@@ -1,10 +1,10 @@
-import { Document, Position } from 'coc.nvim'
+import { Document, OutputChannel, Position } from 'coc.nvim'
 import minimatch from 'minimatch'
 import { Config, Snippet, SnippetEdit } from './types'
 import { distinct } from './util'
 
 export default abstract class BaseProvider {
-  constructor(protected config: Config) {
+  constructor(protected config: Config, protected channel: OutputChannel) {
   }
 
   public abstract init(): Promise<void>
@@ -23,6 +23,7 @@ export default abstract class BaseProvider {
     for (let p of excludes) {
       if (minimatch(filepath, p, { dot: true })) {
         ignored = true
+        this.info(`File ignored by excludePatterns: ${filepath}`)
         break
       }
     }
@@ -56,5 +57,24 @@ export default abstract class BaseProvider {
     }, [] as string[])
     filetypes.push(...extendFiletypes)
     return distinct(filetypes)
+  }
+
+  private message(kind: string, msg: string, data?: any) {
+    this.channel.appendLine(`[${kind} ${(new Date()).toLocaleTimeString()}] ${msg}`)
+    if (data !== undefined) this.channel.appendLine(JSON.stringify(data, null, 2))
+  }
+
+  protected info(msg: string, data?: any) {
+    this.message('Info', msg, data)
+  }
+
+  protected error(msg: string, data?: any) {
+    this.message('Error', msg, data)
+  }
+
+  protected trace(msg: string, data?: any) {
+    if (this.config.trace) {
+      this.message('Trace', msg, data)
+    }
   }
 }

@@ -49,7 +49,7 @@
             "error",
             "verbose"
           ],
-          "description": "Trace level of snippets channel."
+          "description": "Trace level of snippets channel, used for textmate snippets only."
         },
         "snippets.excludePatterns": {
           "type": "array",
@@ -110,15 +110,10 @@
           "default": true,
           "description": "Enable load snippets from ultisnips folders."
         },
-        "snippets.ultisnips.usePythonx": {
+        "snippets.ultisnips.trace": {
           "type": "boolean",
-          "default": true,
-          "description": "Use :pyx command for python code when possible."
-        },
-        "snippets.ultisnips.pythonVersion": {
-          "type": "number",
-          "default": 3,
-          "description": "Python version used for python code when not using pyx."
+          "default": false,
+          "description": "Trace verbose snippet information."
         },
         "snippets.ultisnips.directories": {
           "type": "array",
@@ -134,6 +129,11 @@
           "type": "boolean",
           "default": true,
           "description": "Load snipmate snippets from snippets directory in runtimepath."
+        },
+        "snippets.snipmate.trace": {
+          "type": "boolean",
+          "default": false,
+          "description": "Trace verbose snippet information."
         },
         "snippets.snipmate.author": {
           "type": "string",

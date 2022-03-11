@@ -14,12 +14,11 @@ export class UltiSnippetsProvider extends BaseProvider {
   private fileItems: FileItem[] = []
   private parser: UltiSnipsParser
   constructor(
-    private channel: OutputChannel,
-    private trace: string,
+    channel: OutputChannel,
     protected config: UltiSnipsConfig,
     private context: ExtensionContext
   ) {
-    super(config)
+    super(config, channel)
     workspace.onDidSaveTextDocument(async doc => {
       let uri = Uri.parse(doc.uri)
       if (uri.scheme != 'file' || !doc.uri.endsWith('.snippets')) return
@@ -45,19 +44,19 @@ export class UltiSnippetsProvider extends BaseProvider {
 
   public async init(): Promise<void> {
     let { nvim, env } = workspace
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Using ultisnips directories: ${this.directories.join(' ')}`)
+    this.info(`Using ultisnips directories:`, this.directories)
     try {
       await nvim.call('pyxeval', ['1'])
     } catch (e) {
-      throw new Error(`Error on execute :pyx command, ultisnips feature of coc-snippets requires pyx support on (neo)vim.`)
+      throw new Error(`Error on execute :pyx command, ultisnips feature of coc-snippets requires pyx support on vim.`)
     }
-    this.parser = new UltiSnipsParser(this.channel, this.trace)
+    this.parser = new UltiSnipsParser(this.channel, this.config.trace)
     this.fileItems = await this.loadAllFilItems(env.runtimepath)
     workspace.onDidRuntimePathChange(async e => {
       let subFolders = await this.getSubFolders()
       const newItems: FileItem[] = []
       for (const dir of e) {
-        let res = await this.getSnippetsFromPlugin(dir, subFolders)
+        let res = await this.getFilesFromDirectory(dir, subFolders)
         if (res?.length) newItems.push(...res)
       }
       if (newItems.length) {
@@ -126,17 +125,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     let { filepath, directory, filetype } = fileItem
     let idx = this.snippetFiles.findIndex(o => sameFile(o.filepath, filepath))
     if (idx !== -1) return
-    if (this.isIgnored(filepath)) {
-      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${filepath}`)
-      this.snippetFiles.push({
-        extendFiletypes: [],
-        directory,
-        filepath,
-        filetype,
-        snippets: []
-      })
-      return
-    }
+    if (this.isIgnored(filepath)) return
     idx = this.fileItems.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.fileItems.splice(idx, 1)
     let { snippets, pythonCode, extendFiletypes, clearsnippets } = await this.parser.parseUltisnipsFile(filetype, filepath)
@@ -164,7 +153,7 @@ export class UltiSnippetsProvider extends BaseProvider {
         return this.loadSnippetsFromFile(item)
       }))
     }
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${snippets.length} UltiSnip snippets from: ${filepath}`)
+    this.info(`Loaded ${snippets.length} UltiSnip snippets from: ${filepath}`)
     if (pythonCode) pythonCodes.set(filepath, pythonCode)
   }
 
@@ -315,7 +304,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     let subFolders = await this.getSubFolders()
     let rtps = runtimepath.split(',')
     for (let rtp of rtps) {
-      let items = await this.getSnippetsFromPlugin(rtp, subFolders)
+      let items = await this.getFilesFromDirectory(rtp, subFolders)
       res.push(...items)
     }
     return res
@@ -334,7 +323,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     return directories
   }
 
-  private async getSnippetsFromPlugin(directory: string, subFolders: string[]): Promise<FileItem[]> {
+  private async getFilesFromDirectory(directory: string, subFolders: string[]): Promise<FileItem[]> {
     let res: FileItem[] = []
     for (let folder of subFolders) {
       let items = await this.getSnippetFileItems(path.join(directory, folder))
@@ -343,6 +332,9 @@ export class UltiSnippetsProvider extends BaseProvider {
     return res
   }
 
+  /**
+   * Get files in directory.
+   */
   private async getSnippetFileItems(directory: string): Promise<FileItem[]> {
     let res: FileItem[] = []
     let stat = await statAsync(directory)
@@ -379,11 +371,10 @@ export class UltiSnippetsProvider extends BaseProvider {
       let tmpfile = path.join(os.tmpdir(), `coc.nvim-${process.pid}`, `coc-ultisnips-${uid()}.py`)
       let code = addPythonTryCatch(pythonCode)
       fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
-      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Execute python code in: ${tmpfile}`)
+      this.info(`Execute python code in: ${tmpfile}`)
       await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${tmpfile}')`)
     } catch (e) {
-      this.channel.appendLine(`Error on execute python script:`)
-      this.channel.append(e.message)
+      this.error(`Error on execute python script ${e.stack}:`, pythonCode)
       window.showMessage(`Error on execute python script: ${e.message}`, 'error')
     }
   }

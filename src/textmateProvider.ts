@@ -34,11 +34,11 @@ export class TextmateProvider extends BaseProvider {
   private definitions: Map<string, SnippetItem[]> = new Map()
 
   constructor(
-    private channel: OutputChannel,
+    channel: OutputChannel,
     protected config: TextmateConfig,
     private subscriptions: Disposable[]
   ) {
-    super(config)
+    super(config, channel)
   }
 
   public async init(): Promise<void> {
@@ -53,7 +53,7 @@ export class TextmateProvider extends BaseProvider {
             this.loadSnippetsFromDefinition(extension.id, items)
           }
         }, e => {
-          this.channel.appendLine(`[Error] ${e.message}`)
+          this.error(`Error on load textmate snippets: ${e.message}`, e.stack)
         })
       }, null, this.subscriptions)
       extensions.onDidUnloadExtension(id => {
@@ -100,7 +100,7 @@ export class TextmateProvider extends BaseProvider {
   private async loadByLanguageId(languageId: string): Promise<void> {
     if (this.loadedLanguageIds.has(languageId)) return
     let filetypes = this.getFiletypes(languageId)
-    this.channel.appendLine(`Load textmate snippets from filetypes: ${filetypes.join(', ')}`)
+    this.info(`Load textmate snippets from filetypes: ${filetypes.join(', ')}`)
     for (let languageId of filetypes) {
       if (this.loadedLanguageIds.has(languageId)) continue
       this.loadedLanguageIds.add(languageId)
@@ -227,15 +227,12 @@ export class TextmateProvider extends BaseProvider {
 
   private async loadSnippetsFromFile(snippetFilePath: string, languageIds: string[] | undefined, extensionId: string): Promise<void> {
     if (this.isLoaded(snippetFilePath)) return
-    if (this.isIgnored(snippetFilePath)) {
-      this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] file ignored by excludePatterns: ${snippetFilePath}`)
-      return
-    }
+    if (this.isIgnored(snippetFilePath)) return
     let contents: string
     try {
       contents = await fs.promises.readFile(snippetFilePath, 'utf8')
     } catch (e) {
-      this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on load "${snippetFilePath}": ${e.message}`)
+      this.error(`Error on readFile "${snippetFilePath}": ${e.message}`)
       return
     }
     this.loadSnippetsFromText(snippetFilePath, extensionId, languageIds, contents)
@@ -258,9 +255,7 @@ export class TextmateProvider extends BaseProvider {
       let lines = contents.split(/\r?\n/)
       defaulLanguageId = languageIdFromComments(lines)
       let snippetObject = parse(contents, errors, { allowTrailingComma: true }) as KeyToSnippet
-      if (errors.length) {
-        this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] parser error of ${filepath}: ${JSON.stringify(errors, null, 2)}`)
-      }
+      if (errors.length) this.error(`Parse error of ${filepath}`, errors)
       if (snippetObject) {
         for (let key of Object.keys(snippetObject)) {
           let p = '"' + key + '"'
@@ -270,7 +265,7 @@ export class TextmateProvider extends BaseProvider {
         }
       }
     } catch (ex) {
-      this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] ${ex.stack}`)
+      this.error(`Error on parse "${filepath}": ${ex.message}`, ex.stack)
       snippets = []
     }
     this.loadedFiles.add(filepath)
@@ -299,6 +294,7 @@ export class TextmateProvider extends BaseProvider {
       })
     })
     this.loadedSnippets.push(...normalizedSnippets)
-    this.channel.appendLine(`[Info ${(new Date()).toLocaleTimeString()}] Loaded ${normalizedSnippets.length} textmate snippets from ${filepath}`)
+    this.info(`Loaded ${normalizedSnippets.length} textmate snippets from ${filepath}`)
+    this.trace('Loaded snippets:', normalizedSnippets)
   }
 }

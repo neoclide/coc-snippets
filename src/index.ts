@@ -130,7 +130,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (c.directories.indexOf(snippetsDir) == -1) {
       c.directories.push(snippetsDir)
     }
-    let provider = new UltiSnippetsProvider(channel, trace, c, context)
+    let provider = new UltiSnippetsProvider(channel, c, context)
     manager.regist(provider, 'ultisnips')
   }
 
@@ -140,6 +140,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       snippetsRoots: configuration.get<string[]>('textmateSnippetsRoots', []),
       projectSnippets: configuration.get<boolean>('loadVSCodeProjectSnippets', true),
       extends: merge.recursive(true, {}, filetypeExtends),
+      trace: trace == 'verbose',
       excludes
     }
     let provider = new TextmateProvider(channel, config, subscriptions)
@@ -150,6 +151,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let config = {
       author: configuration.get<string>('snipmate.author', ''),
       extends: merge.recursive(true, {}, filetypeExtends),
+      trace: configuration.get<boolean>('snipmate.trace', false),
       excludes
     }
     let provider = new SnipmateProvider(channel, config, subscriptions)

@@ -8,10 +8,15 @@ import readline from 'readline'
 import { Snippet, TriggerKind, UltiSnipsFile } from './types'
 import { convertRegex, getRegexText, getTriggerText, headTail } from './util'
 
+function fixFiletype(filetype: string): string {
+  if (filetype === 'javascript_react') return 'javascriptreact'
+  return filetype
+}
+
 export default class UltiSnipsParser {
   constructor(
     private channel?: OutputChannel,
-    private trace = 'error') {
+    private trace = false) {
   }
 
   public parseUltisnipsFile(filetype: string, filepath: string): Promise<Partial<UltiSnipsFile>> {
@@ -42,6 +47,7 @@ export default class UltiSnipsParser {
           case 'extends':
             let fts = tail.trim().split(/,\s+/)
             for (let ft of fts) {
+              ft = fixFiletype(ft)
               if (extendFiletypes.indexOf(ft) == -1) {
                 extendFiletypes.push(ft)
               }
@@ -98,6 +104,7 @@ export default class UltiSnipsParser {
             body,
             priority
           }
+          this.debug(`Loaded snippet: ${JSON.stringify(snippet, null, 2)}`)
           snippets.push(snippet)
         } catch (e) {
           this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1} ${e.message}`)
@@ -124,7 +131,7 @@ export default class UltiSnipsParser {
   }
 
   private debug(str: string): void {
-    if (!this.channel || this.trace == 'error') return
+    if (!this.channel || !this.trace) return
     this.channel.appendLine(`[Debug ${(new Date()).toLocaleTimeString()}] ${str}`)
   }
 }
