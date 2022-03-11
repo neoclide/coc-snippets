@@ -27,6 +27,10 @@
       {
         "title": "Edit snippets files of current document filetype.",
         "command": "snippets.openSnippetFiles"
+      },
+      {
+        "title": "Open output channel of snippets.",
+        "command": "snippets.openOutput"
       }
     ],
     "configuration": {

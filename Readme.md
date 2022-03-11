@@ -167,6 +167,7 @@ some regex patterns can't be supported by javascript, including
 - Use `:CocList snippets` to open snippets list.
 - Use `:CocCommand snippets.editSnippets` to edit user snippet of current filetype.
 - Use `:CocCommand snippets.openSnippetFiles` to open snippet files of current filetype.
+- Use `:CocCommand snippets.openOutput` to open output channel of snippets.
 
 ## F.A.Q
 

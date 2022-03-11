@@ -246,6 +246,10 @@ export async function activate(context: ExtensionContext): Promise<API> {
     }
   }))
 
+  subscriptions.push(commands.registerCommand('snippets.openOutput', () => {
+    void window.showOutputChannel('snippets', false)
+  }))
+
   subscriptions.push(commands.registerCommand('snippets.openSnippetFiles', async () => {
     let buf = await nvim.buffer
     let doc = workspace.getDocument(buf.id)
