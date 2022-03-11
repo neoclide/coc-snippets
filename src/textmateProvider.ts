@@ -1,4 +1,4 @@
-import { Disposable, Document, Uri, Extension, extensions, OutputChannel, Position, Range, workspace } from 'coc.nvim'
+import { Disposable, Document, Extension, extensions, OutputChannel, Position, Range, Uri, workspace } from 'coc.nvim'
 import fs from 'fs'
 import { parse, ParseError } from 'jsonc-parser'
 import path from 'path'
@@ -183,13 +183,17 @@ export class TextmateProvider extends BaseProvider {
       const extensionId = extension.id
       for (let item of snippets) {
         let p = path.join(extension.extensionPath, item.path)
-        if (fs.existsSync(p)) {
-          let languages = typeof item.language == 'string' ? [item.language] : item.language
-          arr.push({
-            languageIds: languages,
-            filepath: p
+        let exists = arr.find(o => o.filepath == p)
+        let languages: string[] = Array.isArray(item.language) ? item.language : [item.language]
+        if (exists) {
+          languages.forEach(s => {
+            if (!exists.languageIds.includes(s)) {
+              exists.languageIds.push(s)
+            }
           })
+          continue
         }
+        if (fs.existsSync(p)) arr.push({ languageIds: languages, filepath: p })
       }
       if (snippets && snippets.length) {
         this.definitions.set(extensionId, arr)
@@ -226,8 +230,7 @@ export class TextmateProvider extends BaseProvider {
   }
 
   private async loadSnippetsFromFile(snippetFilePath: string, languageIds: string[] | undefined, extensionId: string): Promise<void> {
-    if (this.isLoaded(snippetFilePath)) return
-    if (this.isIgnored(snippetFilePath)) return
+    if (this.isLoaded(snippetFilePath) || this.isIgnored(snippetFilePath)) return
     let contents: string
     try {
       contents = await fs.promises.readFile(snippetFilePath, 'utf8')
@@ -249,11 +252,12 @@ export class TextmateProvider extends BaseProvider {
 
   private loadSnippetsFromText(filepath: string, extensionId: string, ids: string[] | undefined, contents: string): void {
     let snippets: ISnippetPluginContribution[] = []
-    let defaulLanguageId: string
+    let commentLanguageId: string
+    let isGlobal = isGlobalSnippet(filepath)
     try {
       let errors: ParseError[] = []
       let lines = contents.split(/\r?\n/)
-      defaulLanguageId = languageIdFromComments(lines)
+      if (isGlobal) commentLanguageId = languageIdFromComments(lines)
       let snippetObject = parse(contents, errors, { allowTrailingComma: true }) as KeyToSnippet
       if (errors.length) this.error(`Parse error of ${filepath}`, errors)
       if (snippetObject) {
@@ -272,10 +276,14 @@ export class TextmateProvider extends BaseProvider {
     const normalizedSnippets: Snippet[] = []
     snippets.forEach((snip: ISnippetPluginContribution) => {
       if (!snip.prefix) return
-      let languageIds = snip.scope ? snip.scope.split(',') : undefined
-      if (!languageIds && defaulLanguageId) languageIds = [defaulLanguageId]
-      if (!languageIds && ids) languageIds = ids
-      if (!languageIds) languageIds = ['all']
+      let languageIds: string[]
+      if (ids && ids.length > 0) {
+        languageIds = ids
+      } else if (isGlobal) {
+        languageIds = snip.scope ? snip.scope.split(',') : undefined
+        if (!languageIds && commentLanguageId) languageIds = [commentLanguageId]
+      }
+      if (!languageIds && isGlobal) languageIds = ['all']
       let prefixs = Array.isArray(snip.prefix) ? snip.prefix : [snip.prefix]
       prefixs.forEach(prefix => {
         for (let filetype of languageIds) {
@@ -294,7 +302,11 @@ export class TextmateProvider extends BaseProvider {
       })
     })
     this.loadedSnippets.push(...normalizedSnippets)
-    this.info(`Loaded ${normalizedSnippets.length} textmate snippets from ${filepath}`)
+    this.info(`Loaded ${normalizedSnippets.length} textmate snippets from ${filepath}`, ids)
     this.trace('Loaded snippets:', normalizedSnippets)
   }
+}
+
+function isGlobalSnippet(filepath: string): boolean {
+  return filepath.endsWith('.code-snippets')
 }
