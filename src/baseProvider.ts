@@ -60,12 +60,13 @@ export default abstract class BaseProvider {
   }
 
   private message(kind: string, msg: string, data?: any) {
-    this.channel.appendLine(`[${kind} ${(new Date()).toLocaleTimeString()}] ${msg}`)
+    let str = (new Date()).toISOString().replace(/^.*T/, '').replace(/Z$/, '')
+    this.channel.appendLine(`[${kind} - ${str}] ${msg}`)
     if (data !== undefined) this.channel.appendLine(JSON.stringify(data, null, 2))
   }
 
   protected info(msg: string, data?: any) {
-    this.message('Info', msg, data)
+    this.message('Info ', msg, data)
   }
 
   protected error(msg: string, data?: any) {

@@ -256,3 +256,14 @@ export function languageIdFromComments(lines: string[]): string | undefined {
   }
   return undefined
 }
+
+
+export function omit<T>(obj: T, properties: string[]): T {
+  let o = {}
+  for (let key of Object.keys(obj)) {
+    if (!properties.includes(key)) {
+      o[key] = obj[key]
+    }
+  }
+  return o as T
+}
