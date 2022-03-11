@@ -35,27 +35,27 @@ checkout [Ultisnips features](#ultisnips-features).
 Ultisnips provider need pythonx support on (neo)vim, to check the feature exists,
 try:
 
-  :echo has('pythonx')
+    :echo has('pythonx')
 
 On neovim, run command:
 
-  :checkhealth
+    :checkhealth
 
 and make sure you have Python 3 provider for neovim installed.
 
 On vim8, run command:
 
-  :pyx print(1)
+    :pyx print(1)
 
-in your vim, if it throws, it means your vim may not compiled with python
-support or the python dynamic lib required by vim is missing(or broken).
+in your vim, if it throws, it means your vim is not compiled with python support
+or the python dynamic lib required by vim is missing(or broken).
 
 **Note:** some python code may require python feature that not supported by the
 python interpreter used by vim, error will throw on that case.
 
-Error will be shown when `pythonx` with (neo)vim can't work, fix pythonx support
-or disable ultisnips support by add `"snippets.ultisnips.enable": false` in your
-configuration file.
+Error will be shown when `pythonx` with (neo)vim can't work, fix `pythonx`
+support or disable ultisnips support by add `"snippets.ultisnips.enable": false`
+in your configuration file.
 
 ## Install
 
