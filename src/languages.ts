@@ -134,7 +134,7 @@ export default class LanguageProvider implements CompletionItemProvider {
     // tslint:disable-next-line: deprecation
     let text = item.insertText || item.textEdit.newText
     // tslint:disable-next-line: deprecation
-    let snip = await Promise.resolve(snippetManager.resolveSnippet(text, true))
+    let snip = await Promise.resolve(snippetManager.resolveSnippet(text))
     item.documentation = {
       kind: 'markdown',
       value: markdownBlock(snip.toString(), 'snippets')
