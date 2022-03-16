@@ -75,6 +75,9 @@ export interface Snippet {
   readonly context?: string
   readonly autoTrigger?: boolean
   readonly originRegex?: string
+  preExpand?: string
+  postExpand?: string
+  postJump?: string
   extensionId?: string
   provider?: string
 }

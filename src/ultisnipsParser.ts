@@ -6,11 +6,17 @@ import { OutputChannel } from 'coc.nvim'
 import fs from 'fs'
 import readline from 'readline'
 import { Snippet, TriggerKind, UltiSnipsFile } from './types'
-import { convertRegex, getRegexText, getTriggerText, headTail } from './util'
+import { convertRegex, getRegexText, getTriggerText, headTail, trimQuote } from './util'
 
 function fixFiletype(filetype: string): string {
   if (filetype === 'javascript_react') return 'javascriptreact'
   return filetype
+}
+
+const actionMap = {
+  'pre_expand': 'preExpand',
+  'post_expand': 'postExpand',
+  'post_jump': 'postJump'
 }
 
 export default class UltiSnipsParser {
@@ -24,6 +30,7 @@ export default class UltiSnipsParser {
       input: fs.createReadStream(filepath, 'utf8'),
       crlfDelay: Infinity
     })
+    let actions: string[] = []
     let pycodes: string[] = []
     let snippets: Snippet[] = []
     let block: string
@@ -52,6 +59,11 @@ export default class UltiSnipsParser {
                 extendFiletypes.push(ft)
               }
             }
+            break
+          case 'pre_expand':
+          case 'post_expand':
+          case 'post_jump':
+            actions.push(line)
             break
           case 'clearsnippets':
             clearsnippets = priority
@@ -102,6 +114,11 @@ export default class UltiSnipsParser {
             regex,
             body,
             priority
+          }
+          while (actions.length) {
+            const line = actions.pop()
+            const [head, tail] = headTail(line)
+            snippet[actionMap[head]] = trimQuote(tail)
           }
           this.debug(`Loaded snippet`, snippet)
           snippets.push(snippet)
