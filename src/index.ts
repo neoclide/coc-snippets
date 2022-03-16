@@ -10,7 +10,7 @@ import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
 import { SnippetEditWithSource, UltiSnippetOption, UltiSnipsConfig } from './types'
 import { UltiSnippetsProvider } from './ultisnipsProvider'
-import { documentation, waitDocument } from './util'
+import { documentation, sameFile, waitDocument } from './util'
 
 interface API {
   expandable: () => Promise<boolean>
@@ -127,7 +127,9 @@ export async function activate(context: ExtensionContext): Promise<API> {
       extends: merge.recursive(true, {}, filetypeExtends)
     } as UltiSnipsConfig)
     c.directories = c.directories ? c.directories.slice() : []
-    if (c.directories.indexOf(snippetsDir) == -1) {
+    if (Array.isArray(c.directories)
+      && snippetsDir
+      && c.directories.findIndex(dir => sameFile(dir, snippetsDir)) == -1) {
       c.directories.push(snippetsDir)
     }
     let provider = new UltiSnippetsProvider(channel, c, context)
