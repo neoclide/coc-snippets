@@ -88,7 +88,6 @@ export default class UltiSnipsParser {
             regex = new RegExp(pattern.endsWith('$') ? pattern : pattern + '$')
             // get the real text
             trigger = getRegexText(trigger)
-            option = option + 'i'
           }
           let snippet: Snippet = {
             originRegex,
@@ -104,7 +103,7 @@ export default class UltiSnipsParser {
             body,
             priority
           }
-          this.debug(`Loaded snippet: ${JSON.stringify(snippet, null, 2)}`)
+          this.debug(`Loaded snippet`, snippet)
           snippets.push(snippet)
         } catch (e) {
           this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1} ${e.message}`)
@@ -130,18 +129,14 @@ export default class UltiSnipsParser {
     this.channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] ${str}`)
   }
 
-  private debug(str: string): void {
+  private debug(str: string, data: any): void {
     if (!this.channel || !this.trace) return
-    this.channel.appendLine(`[Debug ${(new Date()).toLocaleTimeString()}] ${str}`)
+    this.channel.appendLine(`[Debug ${(new Date()).toLocaleTimeString()}] ${str}: ${JSON.stringify(data, null, 2)}`)
   }
 }
 
-function decode(str: string): string {
-  return str.replace(/\\`/g, '`').replace(/\\{/g, '{')
-}
-
 function getTriggerKind(option: string): TriggerKind {
-  if (option.indexOf('i') !== -1) {
+  if (option.indexOf('i') !== -1 || option === 'r') {
     return TriggerKind.InWord
   }
   if (option.indexOf('w') !== -1) {
