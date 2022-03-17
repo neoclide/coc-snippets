@@ -21,11 +21,11 @@
   "contributes": {
     "commands": [
       {
-        "title": "Edit user snippets file of current document filetype.",
+        "title": "Edit user's ultisnips snippets of current document filetype.",
         "command": "snippets.editSnippets"
       },
       {
-        "title": "Edit snippets files of current document filetype.",
+        "title": "Choose and open a snippet file that used by current document.",
         "command": "snippets.openSnippetFiles"
       },
       {

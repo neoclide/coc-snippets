@@ -16,6 +16,38 @@ interface API {
   expandable: () => Promise<boolean>
 }
 
+async function editSnippets(text?: string): Promise<void> {
+  const configuration = workspace.getConfiguration('snippets')
+  const snippetsDir = await getSnippetsDirectory(configuration)
+  let { nvim } = workspace
+  let buf = await nvim.buffer
+  let doc = workspace.getDocument(buf.id)
+  if (!doc) {
+    window.showMessage('Document not found', 'error')
+    return
+  }
+  let filetype = doc.filetype ? doc.filetype : 'all'
+  filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
+  let file = path.join(snippetsDir, `${filetype}.snippets`)
+  if (!fs.existsSync(file)) {
+    await util.promisify(fs.writeFile)(file, documentation, 'utf8')
+  }
+  let uri = Uri.file(file).toString()
+  await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
+  if (text) {
+    await nvim.command('normal! G')
+    await nvim.command('normal! 2o')
+    let position = await window.getCursorPosition()
+    let indent = text.match(/^\s*/)[0]
+    text = text.split(/\r?\n/).map(s => s.startsWith(indent) ? s.slice(indent.length) : s).join('\n')
+    let escaped = text.replace(/([$}\]])/g, '\\$1')
+    // tslint:disable-next-line: no-invalid-template-strings
+    let snippet = 'snippet ${1:Tab_trigger} "${2:Description}" ${3:b}\n' + escaped + '\nendsnippet'
+    let edit = TextEdit.insert(position, snippet)
+    await commands.executeCommand('editor.action.insertSnippet', edit, false)
+  }
+}
+
 /*
  * Get user snippets directory.
  */
@@ -111,7 +143,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const configuration = workspace.getConfiguration('snippets')
   const filetypeExtends = configuration.get<any>('extends', {})
   const trace = configuration.get<string>('trace', 'error')
-  const snippetsDir = await getSnippetsDirectory(configuration)
   // let mru = workspace.createMru('snippets-mru')
   const channel = window.createOutputChannel('snippets')
   const manager = new ProviderManager(channel, subscriptions)
@@ -121,6 +152,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   if (!Array.isArray(excludes)) excludes = []
   excludes = excludes.map(p => workspace.expand(p))
   if (configuration.get<boolean>('ultisnips.enable', true)) {
+    const snippetsDir = await getSnippetsDirectory(configuration)
     let config = configuration.get<any>('ultisnips', {})
     let c = merge.recursive(true, config, {
       excludes,
@@ -134,6 +166,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
     }
     let provider = new UltiSnippetsProvider(channel, c, context)
     manager.regist(provider, 'ultisnips')
+
+    subscriptions.push(commands.registerCommand('snippets.editSnippets', editSnippets))
   }
 
   if (configuration.loadFromExtensions || configuration.textmateSnippetsRoots?.length > 0) {
@@ -218,35 +252,6 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let text = doc.textDocument.getText(range)
     if (text) await commands.executeCommand('snippets.editSnippets', text)
   }, { sync: false }))
-
-  subscriptions.push(commands.registerCommand('snippets.editSnippets', async (text?: string) => {
-    let buf = await nvim.buffer
-    let doc = workspace.getDocument(buf.id)
-    if (!doc) {
-      window.showMessage('Document not found', 'error')
-      return
-    }
-    let filetype = doc.filetype ? doc.filetype : 'all'
-    filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
-    let file = path.join(snippetsDir, `${filetype}.snippets`)
-    if (!fs.existsSync(file)) {
-      await util.promisify(fs.writeFile)(file, documentation, 'utf8')
-    }
-    let uri = Uri.file(file).toString()
-    await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
-    if (text) {
-      await nvim.command('normal! G')
-      await nvim.command('normal! 2o')
-      let position = await window.getCursorPosition()
-      let indent = text.match(/^\s*/)[0]
-      text = text.split(/\r?\n/).map(s => s.startsWith(indent) ? s.slice(indent.length) : s).join('\n')
-      let escaped = text.replace(/([$}\]])/g, '\\$1')
-      // tslint:disable-next-line: no-invalid-template-strings
-      let snippet = 'snippet ${1:Tab_trigger} "${2:Description}" ${3:b}\n' + escaped + '\nendsnippet'
-      let edit = TextEdit.insert(position, snippet)
-      await commands.executeCommand('editor.action.insertSnippet', edit, false)
-    }
-  }))
 
   subscriptions.push(commands.registerCommand('snippets.openOutput', () => {
     void window.showOutputChannel('snippets', false)
