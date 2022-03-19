@@ -165,7 +165,7 @@ some regex patterns can't be supported by javascript, including
 
 ## Commands
 
-- Use `:CocList snippets` to open snippets list.
+- Use `:CocList snippets` to open snippets list used by current buffer.
 - Use `:CocCommand snippets.openSnippetFiles` to choose and open a snippet file
   that used by current document.
 - Use `:CocCommand snippets.editSnippets` to edit user's ultisnips snippets of
@@ -187,6 +187,12 @@ snippet can be failed to load.
 **Q:** Where to get snippets?
 
 **A:** One solution is install [honza/vim-snippets](https://github.com/honza/vim-snippets) which is widely used.
+To create snippets yourself:
+
+- For Ultisnips, create `${filetype}.snippets` in `"snippets.ultisnips.directories"`
+- For snipmate snippets, create `${filetype}.snippets` in `snippets` folder
+  under your vim's `runtimepath`.
+- For VSCode snippets, create `${filetype}.json` in your `"snippets.textmateSnippetsRoots"`.
 
 **Q:** Get error message `ModuleNotFoundError: No module named 'vimsnippets'`
 
