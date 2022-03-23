@@ -135,6 +135,7 @@ export class TextmateProvider extends BaseProvider {
 
   public async getSnippetFiles(filetype: string): Promise<string[]> {
     let filetypes = this.getFiletypes(filetype)
+    filetypes.push('all')
     let filepaths: string[] = []
     for (let def of this.loadedSnippets) {
       if (filepaths.includes(def.filepath)) continue

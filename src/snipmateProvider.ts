@@ -257,7 +257,8 @@ export class SnipmateProvider extends BaseProvider {
 
   public async getSnippets(filetype: string): Promise<Snippet[]> {
     let filetypes: string[] = this.getFiletypes(filetype)
-    let snippetFiles = this.snippetFiles.filter(o => o.filetype == '_' || filetypes.indexOf(o.filetype) !== -1)
+    filetypes.push('_')
+    let snippetFiles = this.snippetFiles.filter(o => filetypes.includes(o.filetype))
     let result: Snippet[] = []
     snippetFiles.sort((a, b) => {
       if (a.filetype == b.filetype) return 1

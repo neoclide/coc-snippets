@@ -242,6 +242,7 @@ export class UltiSnippetsProvider extends BaseProvider {
 
   public async getSnippetFiles(filetype: string): Promise<string[]> {
     let filetypes = this.getFiletypes(filetype)
+    filetypes.push('all')
     let res: string[] = []
     for (let s of this.snippetFiles) {
       if (filetypes.includes(s.filetype)) {
