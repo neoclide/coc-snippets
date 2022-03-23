@@ -34,20 +34,25 @@ checkout [Ultisnips features](#ultisnips-features).
 
 Ultisnips provider needs pythonx support on (neo)vim, to check the feature exists,
 try:
-    ```vim
-    :echo has('pythonx')
-    ```
+
+```vim
+:echo has('pythonx')
+```
+
 On neovim, run command:
 
-    ```vim
-    :checkhealth
-    ```
+```vim
+:checkhealth
+```
+
 and make sure you have Python 3 provider for neovim installed.
 
 On vim8, run command:
-    ```vim
-    :pyx print(1)
-    ```
+
+```vim
+:pyx print(1)
+```
+
 in your vim, if it throws, it means your vim is not compiled with python support
 or the python dynamic lib required by vim is missing(or broken).
 
