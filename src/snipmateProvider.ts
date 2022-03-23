@@ -7,13 +7,21 @@ import fs from 'fs'
 import path from 'path'
 import readline from 'readline'
 import BaseProvider from './baseProvider'
-import Parser from './parser'
 import { FileItem, SnipmateConfig, SnipmateFile, Snippet, SnippetEdit, TriggerKind } from './types'
 import { readdirAsync, sameFile, statAsync } from './util'
 
 interface SnippetResult {
   extends: string[]
   snippets: Snippet[]
+}
+
+function convertBody(body: string): string {
+  return body.replace(/`(.*?)(?<!\\)`/g, (_, p1) => {
+    if (p1.startsWith('Filename(')) {
+      p1 = p1.replace(/^Filename/, 'vim_snippets#Filename')
+    }
+    return '`!v ' + p1 + '`'
+  })
 }
 
 export class SnipmateProvider extends BaseProvider {
@@ -98,49 +106,6 @@ export class SnipmateProvider extends BaseProvider {
   }
 
   /**
-   * Resolve snippet body to inserted text.
-   *
-   * @public
-   * @param {Snippet} snippet
-   * @param {Range} _range
-   * @param {string} _line
-   * @returns {Promise<string>}
-   */
-  public async resolveSnippetBody(body: string): Promise<string> {
-    let parser = new Parser(body)
-    let resolved = ''
-    let { nvim } = workspace
-    while (!parser.eof()) {
-      if (parser.curr == '`') {
-        let idx = parser.nextIndex('`', true, false)
-        if (idx == -1) {
-          resolved = resolved + parser.eatTo(parser.len)
-          break
-        }
-        let code = parser.eatTo(idx + 1)
-        code = code.slice(1, -1)
-        if (code.startsWith('Filename')) {
-          resolved = resolved + await nvim.call('expand', '%:p:t')
-        } else if (!code.startsWith('!')) {
-          resolved = '`!v ' + code + '`'
-        } else {
-          resolved = '`' + code + '`'
-        }
-        continue
-      }
-      parser.iterate(ch => {
-        if (ch == '`') {
-          return false
-        } else {
-          resolved = resolved + ch
-        }
-        return true
-      })
-    }
-    return resolved
-  }
-
-  /**
    * Parse snippets from snippets file.
    */
   public parseSnippetsFile(filetype: string, filepath: string): Promise<SnippetResult> {
@@ -165,11 +130,12 @@ export class SnipmateProvider extends BaseProvider {
       if (line.startsWith('snippet')) {
         line = line.replace(/\s*$/, '')
         if (lines.length && prefix) {
+          let body = lines.join('\n').replace(/\s+$/, '')
           res.push({
             filepath,
             filetype,
             lnum: lnum - lines.length - 1,
-            body: lines.join('\n').replace(/\s+$/, ''),
+            body: convertBody(body),
             prefix,
             description,
             triggerKind: TriggerKind.SpaceBefore,
@@ -198,11 +164,12 @@ export class SnipmateProvider extends BaseProvider {
     return new Promise(resolve => {
       rl.on('close', async () => {
         if (lines.length) {
+          let body = lines.join('\n').replace(/\s+$/, '')
           res.push({
             filepath,
             lnum: lnum - lines.length - 1,
             filetype,
-            body: lines.join('\n'),
+            body: convertBody(body),
             prefix,
             description,
             triggerKind: TriggerKind.SpaceBefore
@@ -230,13 +197,12 @@ export class SnipmateProvider extends BaseProvider {
     for (let s of snippets) {
       let character = position.character - s.prefix.length
       let range = Range.create(position.line, character, position.line, position.character)
-      let newText = await this.resolveSnippetBody(s.body)
       edits.push({
         prefix: s.prefix,
         description: s.description,
         location: s.filepath,
         range,
-        newText,
+        newText: s.body,
         priority: -1
       })
     }
