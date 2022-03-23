@@ -3,7 +3,7 @@ import fs from 'fs'
 import merge from 'merge'
 import path from 'path'
 import util from 'util'
-import LanguageProvider from './languages'
+import { registerLanguageProvider } from './languages'
 import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'
@@ -145,6 +145,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const trace = configuration.get<string>('trace', 'error')
   // let mru = workspace.createMru('snippets-mru')
   const channel = window.createOutputChannel('snippets')
+  subscriptions.push(channel)
   const manager = new ProviderManager(channel, subscriptions)
 
   enableSnippetsFiletype(subscriptions)
@@ -296,16 +297,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }, { silent: true, sync: true, cancel: true }))
 
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', snippetSelect, { silent: true, sync: false, cancel: true }))
-
-  let languageProvider = new LanguageProvider(channel, trace)
-  subscriptions.push(languages.registerCompletionItemProvider(
-    'snippets-source',
-    configuration.get('shortcut', 'S'),
-    ['snippets'],
-    languageProvider,
-    ['$'],
-    configuration.get<number>('priority', 90)))
-  subscriptions.push(channel)
+  registerLanguageProvider(subscriptions, channel)
   subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager)))
 
   return {

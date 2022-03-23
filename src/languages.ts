@@ -9,7 +9,7 @@ codesMap.set(4, 'invalid code interpolation, #! not supported.')
 
 const validOptions = ['b', 'i', 'w', 'r', 'e', 'A']
 
-export default class LanguageProvider implements CompletionItemProvider {
+export class LanguageProvider implements CompletionItemProvider {
   public disposables: Disposable[] = []
   private collection: DiagnosticCollection
   constructor(private channel: OutputChannel, private trace = 'error') {
@@ -141,4 +141,17 @@ export default class LanguageProvider implements CompletionItemProvider {
     }
     return item
   }
+}
+
+export function registerLanguageProvider(subscriptions: Disposable[], channel: OutputChannel) {
+  const configuration = workspace.getConfiguration('snippets')
+  const trace = configuration.get<string>('trace', 'error')
+  let languageProvider = new LanguageProvider(channel, trace)
+  subscriptions.push(languages.registerCompletionItemProvider(
+    'snippets-source',
+    configuration.get('shortcut', 'S'),
+    ['snippets'],
+    languageProvider,
+    ['$'],
+    configuration.get<number>('priority', 90)))
 }
