@@ -32,21 +32,22 @@ checkout [Ultisnips features](#ultisnips-features).
 
 ## Python support
 
-Ultisnips provider need pythonx support on (neo)vim, to check the feature exists,
+Ultisnips provider needs pythonx support on (neo)vim, to check the feature exists,
 try:
-
+    ```vim
     :echo has('pythonx')
-
+    ```
 On neovim, run command:
 
+    ```vim
     :checkhealth
-
+    ```
 and make sure you have Python 3 provider for neovim installed.
 
 On vim8, run command:
-
+    ```vim
     :pyx print(1)
-
+    ```
 in your vim, if it throws, it means your vim is not compiled with python support
 or the python dynamic lib required by vim is missing(or broken).
 
@@ -132,6 +133,36 @@ Some ultisnips features are **not** supported:
 some regex patterns can't be supported by javascript, including
 `(?x)` `(?s)` `\Z` `(?(id/name)yes-pattern|no-pattern)`.
 
+## Functions
+
+- `coc#expandable()` return `1` when can do snippet expand.
+- `coc#jumpable()` return `1` when snippet activated and can jump to next placeholder.
+- `coc#expandableOrJumpable()` return `1` when can do snippet expand or can jump
+  to next placeholder.
+
+## Key-mappings
+
+**Note** you can't use `noremap` with `<Plug>` key-mappings.
+
+- `<Plug>(coc-convert-snippet)` Create new snippet with current selected text,
+  visual mode only.
+- `<Plug>(coc-snippets-expand)` Expand snippet with current inserted text,
+  insert mode only.
+- `<Plug>(coc-snippets-expand-jump)` Expand snippet or jump to next placeholder
+  of current snippet when possible, insert mode only.
+- `<Plug>(coc-snippets-select)` Remove selected text and save to
+  `g:coc_selected_text` which will replace `$VISUAL` on next snippet expand.
+
+## Commands
+
+- Use `:CocList snippets` to open snippets list used by current buffer.
+- Use `:CocCommand snippets.openSnippetFiles` to choose and open a snippet file
+  that used by current document.
+- Use `:CocCommand snippets.editSnippets` to edit user's ultisnips snippets of
+  current document filetype.
+- Use `:CocCommand snippets.openOutput` to open output channel of snippets.
+
+
 ## Options
 
 - `snippets.priority`: priority of snippets source, default `90`.
@@ -162,15 +193,6 @@ some regex patterns can't be supported by javascript, including
 - `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
 - `snippets.snipmate.author`: author name used for `g:snips_author`
 - `snippets.snipmate.trace`: Trace verbose snippet information, default `false`.
-
-## Commands
-
-- Use `:CocList snippets` to open snippets list used by current buffer.
-- Use `:CocCommand snippets.openSnippetFiles` to choose and open a snippet file
-  that used by current document.
-- Use `:CocCommand snippets.editSnippets` to edit user's ultisnips snippets of
-  current document filetype.
-- Use `:CocCommand snippets.openOutput` to open output channel of snippets.
 
 ## F.A.Q
 
