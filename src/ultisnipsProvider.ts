@@ -182,7 +182,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
-    let snippets = await this.getSnippets(document.filetype)
+    let snippets = this.getSnippets(document.filetype)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
     if (!line || line[line.length - 1] == ' ') return []
@@ -252,7 +252,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     return res
   }
 
-  public async getSnippets(filetype: string): Promise<Snippet[]> {
+  public getSnippets(filetype: string): Snippet[] {
     let filetypes = this.getFiletypes(filetype)
     filetypes.push('all')
     let snippetFiles = this.snippetFiles.filter(o => filetypes.indexOf(o.filetype) !== -1)

@@ -8,7 +8,7 @@ export default abstract class BaseProvider {
   }
 
   public abstract init(): Promise<void>
-  public abstract getSnippets(filetype: string): Promise<Snippet[]>
+  public abstract getSnippets(filetype: string): Snippet[]
   public abstract getSnippetFiles(filetype: string): Promise<string[]>
   public abstract getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]>
   public resolveSnippetBody?(snippet: string): Promise<string>

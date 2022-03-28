@@ -21,7 +21,7 @@ export default class SnippetsList extends BasicList {
     let buf = await window.buffer
     let doc = workspace.getDocument(buf.id)
     if (!doc) return []
-    let snippets = await this.manager.getSnippets(doc.filetype)
+    let snippets = this.manager.getSnippets(doc.filetype)
     let res: ListItem[] = []
     for (let snip of snippets) {
       let pos: Position = Position.create(snip.lnum, 0)

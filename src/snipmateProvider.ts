@@ -183,7 +183,7 @@ export class SnipmateProvider extends BaseProvider {
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger: boolean): Promise<SnippetEdit[]> {
     if (autoTrigger) return []
-    let snippets = await this.getSnippets(document.filetype)
+    let snippets = this.getSnippets(document.filetype)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
     if (!line || line[line.length - 1] == ' ') return []
@@ -221,7 +221,7 @@ export class SnipmateProvider extends BaseProvider {
     return res
   }
 
-  public async getSnippets(filetype: string): Promise<Snippet[]> {
+  public getSnippets(filetype: string): Snippet[] {
     let filetypes: string[] = this.getFiletypes(filetype)
     filetypes.push('_')
     let snippetFiles = this.snippetFiles.filter(o => filetypes.includes(o.filetype))

@@ -171,7 +171,7 @@ export class TextmateProvider extends BaseProvider {
     return edits
   }
 
-  public async getSnippets(filetype: string): Promise<Snippet[]> {
+  public getSnippets(filetype: string): Snippet[] {
     let res: Snippet[] = []
     let filetypes: string[] = this.getFiletypes(filetype)
     filetypes.push('all')

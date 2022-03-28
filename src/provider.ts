@@ -36,13 +36,13 @@ export class ProviderManager implements CompletionItemProvider {
     })
   }
 
-  public async getSnippets(filetype: string): Promise<Snippet[]> {
+  public getSnippets(filetype: string): Snippet[] {
     let names = Array.from(this.providers.keys())
     let list: Snippet[] = []
     for (let name of names) {
       let provider = this.providers.get(name)
       try {
-        let snippets = await provider.getSnippets(filetype)
+        let snippets = provider.getSnippets(filetype)
         snippets.map(s => s.provider = name)
         list.push(...snippets)
       } catch (e) {
@@ -116,31 +116,17 @@ export class ProviderManager implements CompletionItemProvider {
     context: VimCompletionContext): Promise<CompletionItem[]> {
     let doc = workspace.getDocument(document.uri)
     if (!doc) return []
-    let snippets = await this.getSnippets(doc.filetype)
+    let snippets = this.getSnippets(doc.filetype)
     let currline = doc.getline(position.line, true)
-    let { input, col } = context.option
-    let character = characterIndex(currline, col)
+    let { input, col, line } = context.option
+    let character = characterIndex(line, col)
     let before_content = currline.slice(0, character)
     let res: CompletionItem[] = []
-    let contextPrefixes: string[] = []
     for (let snip of snippets) {
-      let contentBehind = before_content
-      if (contextPrefixes.indexOf(snip.prefix) !== -1) continue
-      if (snip.regex != null && snip.prefix == '') continue
-      if (snip.context) {
-        let provider = this.providers.get(snip.provider)
-        let valid: boolean
-        try {
-          valid = await provider.checkContext(snip.context)
-        } catch (e) {
-          this.appendError(`checkContext of ${snip.provider}`, e)
-          valid = false
-        }
-        if (!valid) continue
-        contextPrefixes.push(snip.prefix)
-      }
-      let head = this.getPrefixHead(doc, snip.prefix)
+      if (snip.context || snip.prefix === '') continue
       if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
+      let contentBehind = before_content
+      let head = this.getPrefixHead(doc, snip.prefix)
       let ultisnip = snip.provider == 'ultisnips' || snip.provider == 'snipmate'
       let item: CompletionItem = {
         label: snip.prefix,
