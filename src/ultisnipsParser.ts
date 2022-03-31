@@ -97,7 +97,8 @@ export default class UltiSnipsParser {
           if (option.indexOf('r') !== -1) {
             originRegex = trigger
             let pattern = convertRegex(trigger)
-            regex = new RegExp(pattern.endsWith('$') ? pattern : pattern + '$')
+            if (pattern.endsWith('$')) pattern = pattern.slice(0, -1)
+            regex = new RegExp(`(?:${pattern})$`)
             // get the real text
             trigger = getRegexText(trigger)
           }
