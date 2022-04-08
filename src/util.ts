@@ -209,11 +209,7 @@ export async function waitDocument(doc: Document, changedtick: number): Promise<
     let disposable = doc.onDocumentChange(() => {
       clearTimeout(timeout)
       disposable.dispose()
-      if (doc.changedtick == changedtick) {
-        resolve(true)
-      } else {
-        resolve(false)
-      }
+      resolve(doc.changedtick == changedtick)
     })
   })
 }

@@ -77,10 +77,10 @@ export class ProviderManager implements CompletionItemProvider {
     return files
   }
 
-  public async getTriggerSnippets(bufnr: number, autoTrigger = false): Promise<SnippetEditWithSource[]> {
+  public async getTriggerSnippets(bufnr: number, autoTrigger = false, position?: Position): Promise<SnippetEditWithSource[]> {
     let doc = workspace.getDocument(bufnr)
     if (!doc) return []
-    let position = await window.getCursorPosition()
+    if (!position) position = await window.getCursorPosition()
     let names = Array.from(this.providers.keys())
     let list: SnippetEditWithSource[] = []
     for (let name of names) {

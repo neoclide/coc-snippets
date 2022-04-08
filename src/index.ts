@@ -202,7 +202,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
       if (!doc || doc.isCommandLine || !doc.attached) return
       let res = await waitDocument(doc, changedtick)
       if (!res) return
-      let edits = await manager.getTriggerSnippets(bufnr, true)
+      let position = Position.create(info.lnum - 1, info.pre.length)
+      let edits = await manager.getTriggerSnippets(bufnr, true, position)
       if (edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippets found on auto trigger: ${JSON.stringify(edits, null, 2)}`)
