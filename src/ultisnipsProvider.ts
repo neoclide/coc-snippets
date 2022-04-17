@@ -185,7 +185,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     let snippets = this.getSnippets(document.filetype)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
-    if (!line || line[line.length - 1] == ' ') return []
+    if (line.length == 0) return []
     snippets = snippets.filter(s => {
       let { prefix, regex } = s
       if (autoTrigger && !s.autoTrigger) return false
