@@ -123,6 +123,7 @@ export class ProviderManager implements CompletionItemProvider {
     let before_content = currline.slice(0, character)
     let res: CompletionItem[] = []
     for (let snip of snippets) {
+      // Avoid context during completion.
       if (snip.context || snip.prefix === '') continue
       if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
       let contentBehind = before_content

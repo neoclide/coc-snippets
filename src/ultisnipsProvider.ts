@@ -191,8 +191,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       if (autoTrigger && !s.autoTrigger) return false
       if (regex) {
         let ms = line.match(regex)
-        if (!ms) return false
-        prefix = ms[0]
+        return ms != null
       }
       if (!line.endsWith(prefix)) return false
       if (s.triggerKind == TriggerKind.InWord) return true
@@ -208,15 +207,15 @@ export class UltiSnippetsProvider extends BaseProvider {
       return 0
     })
     let edits: SnippetEdit[] = []
-    let contextPrefixes: string[] = []
+    let hasContext = false
     for (let s of snippets) {
       let character: number
       if (s.context) {
         let valid = await this.checkContext(s.context)
         if (!valid) continue
-        contextPrefixes.push(s.context)
-      } else if (contextPrefixes.indexOf(s.prefix) !== -1) {
-        continue
+        hasContext = true
+      } else if (hasContext) {
+        break
       }
       if (s.regex == null) {
         character = position.character - s.prefix.length
@@ -235,7 +234,6 @@ export class UltiSnippetsProvider extends BaseProvider {
         regex: s.originRegex,
         context: s.context,
       })
-      if (s.context) break
     }
     return edits
   }
