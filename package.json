@@ -89,7 +89,7 @@
         "snippets.userSnippetsDirectory": {
           "type": "string",
           "default": "",
-          "description": "Directory that contains custom user ultisnips snippets, use ultisnips in extension root by default."
+          "description": "Directory that contains custom user ultisnips snippets, use ultisnips in extension root of coc.nvim by default."
         },
         "snippets.shortcut": {
           "type": "string",
