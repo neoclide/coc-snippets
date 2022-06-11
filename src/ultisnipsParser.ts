@@ -90,8 +90,8 @@ export default class UltiSnipsParser {
         try {
           let body = preLines.join('\n')
           let ms = first.match(/^(.+?)(?:\s+(?:"(.*?)")?(?:\s+"(.*?)")?(?:\s+(\w+))?)?\s*$/)
-          let trigger = getTriggerText(ms[1])
           let option = ms[4] || ''
+          let trigger = getTriggerText(ms[1], option.includes('r'))
           let regex: RegExp = null
           let originRegex: string
           if (option.indexOf('r') !== -1) {

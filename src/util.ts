@@ -187,9 +187,9 @@ export function getRegexText(prefix: string): string {
   return content
 }
 
-export function getTriggerText(text: string): string {
-  if (!text || /\w/.test(text[0]) || text.length <= 2) return text
-  if (text[0] == text[text.length - 1] && (text.includes(' ') || text[0] == '/')) return text.slice(1, -1)
+export function getTriggerText(text: string, regex: boolean): string {
+  if (!text || /\w/.test(text[0]) || text.length <= 2) return text ?? ''
+  if (text[0] == text[text.length - 1] && (regex || text.includes(' ') || text[0] == '/')) return text.slice(1, -1)
   return text
 }
 
