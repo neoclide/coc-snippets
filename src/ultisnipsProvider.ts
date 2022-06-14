@@ -187,17 +187,13 @@ export class UltiSnippetsProvider extends BaseProvider {
     line = line.slice(0, position.character)
     if (line.length == 0) return []
     snippets = snippets.filter(s => {
-      let { prefix, regex } = s
       if (autoTrigger && !s.autoTrigger) return false
-      if (regex) {
-        let ms = line.match(regex)
-        return ms != null
-      }
-      if (!line.endsWith(prefix)) return false
+      let match = getMatched(s, line)
+      if (match == null) return false
       if (s.triggerKind == TriggerKind.InWord) return true
-      let pre = line.slice(0, line.length - prefix.length)
+      let pre = line.slice(0, line.length - match.length)
       if (s.triggerKind == TriggerKind.LineBegin) return pre.trim() == ''
-      if (s.triggerKind == TriggerKind.SpaceBefore) return pre.length == 0 || /\s/.test(pre[pre.length - 1])
+      if (s.triggerKind == TriggerKind.SpaceBefore) return pre.length == 0 || /\s$/.test(pre)
       if (s.triggerKind == TriggerKind.WordBoundary) return pre.length == 0 || !document.isWord(pre[pre.length - 1])
       return false
     })
@@ -401,4 +397,15 @@ function addPythonTryCatch(code: string): string {
   lines.push('except Exception as e:')
   lines.push(`    vim.vars['errmsg'] = traceback.format_exc()`)
   return lines.join('\n')
+}
+
+function getMatched(snippet: Snippet, line: string): string | undefined {
+  let { prefix, regex } = snippet
+  if (regex) {
+    let ms = line.match(regex)
+    if (!ms) return undefined
+    return ms[0]
+  }
+  if (!line.endsWith(prefix)) return undefined
+  return prefix
 }
