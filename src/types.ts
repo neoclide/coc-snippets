@@ -43,6 +43,11 @@ export interface TextmateConfig extends Config {
   projectSnippets: boolean
 }
 
+export interface MassCodeConfig extends Config {
+  port: number
+  host: string
+}
+
 export interface UltiSnipsFile {
   directory: string
   filetype: string

@@ -145,6 +145,22 @@ export async function activate(context: ExtensionContext): Promise<API> {
     manager.regist(provider, 'snipmate')
   }
 
+  if (configuration.get<boolean>('massCode.enable', true)) {
+    let config = {
+      host: configuration.get<string>('massCode.host', 'localhost'),
+      port: configuration.get<number>('massCode.port', 3033),
+      extends: merge.recursive(true, {}, filetypeExtends),
+      trace: configuration.get<boolean>('snipmate.trace', false),
+      excludes
+    }
+
+    let provider = new MassCodeProvider(channel, config)
+
+    manager.regist(provider, 'massCode')
+
+    subscriptions.push(commands.registerCommand('snippets.editSnippets', provider.createSnippet.bind(provider)))
+  }
+
   if (configuration.get<boolean>('autoTrigger', true)) {
     events.on('TextInsert', async (bufnr, info) => {
       let changedtick = info.changedtick
