@@ -1,71 +1,21 @@
-import { commands, Disposable, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
+import { commands, Disposable, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, window, workspace } from 'coc.nvim'
 import fs from 'fs'
 import merge from 'merge'
 import path from 'path'
-import util from 'util'
 import { registerLanguageProvider } from './languages'
 import SnippetsList from './list/snippet'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
+import { MassCodeProvider } from './massCodeProvider'
 import { SnippetEditWithSource, UltiSnippetOption, UltiSnipsConfig } from './types'
-import { UltiSnippetsProvider } from './ultisnipsProvider'
-import { documentation, sameFile, waitDocument } from './util'
+import { UltiSnippetsProvider, getSnippetsDirectory } from './ultisnipsProvider'
+import { sameFile, waitDocument } from './util'
 
 interface API {
   expandable: () => Promise<boolean>
 }
 
-async function editSnippets(text?: string): Promise<void> {
-  const configuration = workspace.getConfiguration('snippets')
-  const snippetsDir = await getSnippetsDirectory(configuration)
-  let { nvim } = workspace
-  let buf = await nvim.buffer
-  let doc = workspace.getDocument(buf.id)
-  if (!doc) {
-    window.showMessage('Document not found', 'error')
-    return
-  }
-  let filetype = doc.filetype ? doc.filetype : 'all'
-  filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
-  let file = path.join(snippetsDir, `${filetype}.snippets`)
-  if (!fs.existsSync(file)) {
-    await util.promisify(fs.writeFile)(file, documentation, 'utf8')
-  }
-  let uri = Uri.file(file).toString()
-  await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
-  if (text) {
-    await nvim.command('normal! G')
-    await nvim.command('normal! 2o')
-    let position = await window.getCursorPosition()
-    let indent = text.match(/^\s*/)[0]
-    text = text.split(/\r?\n/).map(s => s.startsWith(indent) ? s.slice(indent.length) : s).join('\n')
-    let escaped = text.replace(/([$}\]])/g, '\\$1')
-    // tslint:disable-next-line: no-invalid-template-strings
-    let snippet = 'snippet ${1:Tab_trigger} "${2:Description}" ${3:b}\n' + escaped + '\nendsnippet'
-    let edit = TextEdit.insert(position, snippet)
-    await commands.executeCommand('editor.action.insertSnippet', edit, false)
-  }
-}
-
-/*
- * Get user snippets directory.
- */
-async function getSnippetsDirectory(configuration: WorkspaceConfiguration): Promise<string> {
-  let snippetsDir = configuration.get<string>('userSnippetsDirectory')
-  if (snippetsDir) {
-    snippetsDir = workspace.expand(snippetsDir)
-    if (!path.isAbsolute(snippetsDir)) {
-      window.showMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`, 'warning')
-      snippetsDir = null
-    }
-  }
-  if (!snippetsDir) snippetsDir = path.join(path.dirname(workspace.env.extensionRoot), 'ultisnips')
-  if (!fs.existsSync(snippetsDir)) {
-    await fs.promises.mkdir(snippetsDir)
-  }
-  return snippetsDir
-}
 
 async function insertSnippetEdit(edit: SnippetEditWithSource) {
   let ultisnips = edit.source == 'ultisnips' || edit.source == 'snipmate'
@@ -168,7 +118,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let provider = new UltiSnippetsProvider(channel, c, context)
     manager.regist(provider, 'ultisnips')
 
-    subscriptions.push(commands.registerCommand('snippets.editSnippets', editSnippets))
+    subscriptions.push(commands.registerCommand('snippets.editSnippets', provider.editSnippets))
   }
 
   if (configuration.loadFromExtensions || configuration.textmateSnippetsRoots?.length > 0) {
