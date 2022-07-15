@@ -13,6 +13,8 @@ It's capable of:
 - Load VSCode snippets from coc extensions.
 - Load VSCode snippets from custom directories.
 - Load UltiSnips snippets from configured folder.
+- Load massCode snippets from running massCode application.
+- Create massCode snippets through the snippets.editSnippets command.
 - Provide snippets as completion items.
 - Provide expand and expandOrJump keymaps for snippet.
 - Provide snippets list for edit snippet.
