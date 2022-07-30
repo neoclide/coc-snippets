@@ -1,11 +1,12 @@
-import { Document, ExtensionContext, OutputChannel, Position, Range, Uri, window, workspace } from 'coc.nvim'
+import { commands, Document, ExtensionContext, OutputChannel, Position, Range, Uri, window, workspace, TextEdit, WorkspaceConfiguration } from 'coc.nvim'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import util from 'util'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
-import { distinct, readdirAsync, sameFile, statAsync, uid } from './util'
+import { distinct, documentation, readdirAsync, sameFile, statAsync, uid } from './util'
 
 const pythonCodes: Map<string, string> = new Map()
 
@@ -318,6 +319,38 @@ export class UltiSnippetsProvider extends BaseProvider {
     return directories
   }
 
+  public async editSnippets(text?: string): Promise<void> {
+    const configuration = workspace.getConfiguration('snippets')
+    const snippetsDir = await getSnippetsDirectory(configuration)
+    let { nvim } = workspace
+    let buf = await nvim.buffer
+    let doc = workspace.getDocument(buf.id)
+    if (!doc) {
+      window.showMessage('Document not found', 'error')
+      return
+    }
+    let filetype = doc.filetype ? doc.filetype : 'all'
+    filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
+    let file = path.join(snippetsDir, `${filetype}.snippets`)
+    if (!fs.existsSync(file)) {
+      await util.promisify(fs.writeFile)(file, documentation, 'utf8')
+    }
+    let uri = Uri.file(file).toString()
+    await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
+    if (text) {
+      await nvim.command('normal! G')
+      await nvim.command('normal! 2o')
+      let position = await window.getCursorPosition()
+      let indent = text.match(/^\s*/)[0]
+      text = text.split(/\r?\n/).map(s => s.startsWith(indent) ? s.slice(indent.length) : s).join('\n')
+      let escaped = text.replace(/([$}\]])/g, '\\$1')
+      // tslint:disable-next-line: no-invalid-template-strings
+      let snippet = 'snippet ${1:Tab_trigger} "${2:Description}" ${3:b}\n' + escaped + '\nendsnippet'
+      let edit = TextEdit.insert(position, snippet)
+      await commands.executeCommand('editor.action.insertSnippet', edit, false)
+    }
+  }
+
   private async getFilesFromDirectory(directory: string, subFolders: string[]): Promise<FileItem[]> {
     let res: FileItem[] = []
     for (let folder of subFolders) {
@@ -408,4 +441,23 @@ function getMatched(snippet: Snippet, line: string): string | undefined {
   }
   if (!line.endsWith(prefix)) return undefined
   return prefix
+}
+
+/*
+ * Get user snippets directory.
+ */
+export async function getSnippetsDirectory(configuration: WorkspaceConfiguration): Promise<string> {
+  let snippetsDir = configuration.get<string>('userSnippetsDirectory')
+  if (snippetsDir) {
+    snippetsDir = workspace.expand(snippetsDir)
+    if (!path.isAbsolute(snippetsDir)) {
+      window.showMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`, 'warning')
+      snippetsDir = null
+    }
+  }
+  if (!snippetsDir) snippetsDir = path.join(path.dirname(workspace.env.extensionRoot), 'ultisnips')
+  if (!fs.existsSync(snippetsDir)) {
+    await fs.promises.mkdir(snippetsDir)
+  }
+  return snippetsDir
 }
