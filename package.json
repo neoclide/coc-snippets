@@ -31,6 +31,10 @@
       {
         "title": "Open output channel of snippets.",
         "command": "snippets.openOutput"
+      },
+      {
+        "title": "Create MassCode snippet for current filetype.",
+        "command": "snippets.editMassCodeSnippets"
       }
     ],
     "configuration": {
@@ -128,6 +132,26 @@
           "items": {
             "type": "string"
           }
+        },
+        "snippets.massCode.enable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable load snippets from MassCode."
+        },
+        "snippets.massCode.host": {
+          "type": "string",
+          "default": "localhost",
+          "description": "Http host of MassCode."
+        },
+        "snippets.massCode.port": {
+          "type": "number",
+          "default": 3033,
+          "description": "Http port of MassCode."
+        },
+        "snippets.massCode.trace": {
+          "type": "boolean",
+          "default": false,
+          "description": "Trace verbose snippet information."
         },
         "snippets.snipmate.enable": {
           "type": "boolean",

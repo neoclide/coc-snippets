@@ -1,5 +1,4 @@
 import { commands, Disposable, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, window, workspace } from 'coc.nvim'
-import fs from 'fs'
 import merge from 'merge'
 import path from 'path'
 import { registerLanguageProvider } from './languages'
@@ -145,12 +144,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
     manager.regist(provider, 'snipmate')
   }
 
-  if (configuration.get<boolean>('massCode.enable', true)) {
+  if (configuration.get<boolean>('massCode.enable', false)) {
     let config = {
       host: configuration.get<string>('massCode.host', 'localhost'),
       port: configuration.get<number>('massCode.port', 3033),
       extends: merge.recursive(true, {}, filetypeExtends),
-      trace: configuration.get<boolean>('snipmate.trace', false),
+      trace: configuration.get<boolean>('massCode.trace', false),
       excludes
     }
 
@@ -158,7 +157,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
 
     manager.regist(provider, 'massCode')
 
-    subscriptions.push(commands.registerCommand('snippets.editSnippets', provider.createSnippet.bind(provider)))
+    subscriptions.push(commands.registerCommand('snippets.editMassCodeSnippets', provider.createSnippet.bind(provider)))
   }
 
   if (configuration.get<boolean>('autoTrigger', true)) {

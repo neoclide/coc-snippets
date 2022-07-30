@@ -13,8 +13,8 @@ It's capable of:
 - Load VSCode snippets from coc extensions.
 - Load VSCode snippets from custom directories.
 - Load UltiSnips snippets from configured folder.
-- Load massCode snippets from running massCode application.
-- Create massCode snippets through the snippets.editSnippets command.
+- Load massCode snippets from running massCode application (disabled by default).
+- Create massCode snippets through the `snippets.editMassCodeSnippets` command.
 - Provide snippets as completion items.
 - Provide expand and expandOrJump keymaps for snippet.
 - Provide snippets list for edit snippet.
@@ -169,7 +169,6 @@ some regex patterns can't be supported by javascript, including
   current document filetype.
 - Use `:CocCommand snippets.openOutput` to open output channel of snippets.
 
-
 ## Options
 
 - `snippets.priority`: priority of snippets source, default `90`.
@@ -197,6 +196,10 @@ some regex patterns can't be supported by javascript, including
 - `snippets.ultisnips.trace`: Trace verbose snippet information, default `false`.
 - `snippets.ultisnips.directories`: directories that searched for snippet files,
   could be subfolder in every \$runtimepath or absolute paths, default: `["UltiSnips"]`
+- `snippets.massCode.enable`: Enable load snippets from MassCode. default: `false`
+- `snippets.massCode.host`: Http host of MassCode. default: `"localhost"`
+- `snippets.massCode.port`: Http port of MassCode. default: `3033`
+- `snippets.massCode.trace`: Trace verbose snippet information. default: `false`
 - `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
 - `snippets.snipmate.author`: author name used for `g:snips_author`
 - `snippets.snipmate.trace`: Trace verbose snippet information, default `false`.
