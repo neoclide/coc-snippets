@@ -99,22 +99,18 @@ Make `<tab>` used for trigger completion, completion confirm, snippet expand and
 
 ```vim
 inoremap <silent><expr> <TAB>
-      \ pumvisible() ? coc#_select_confirm() :
+      \ coc#pum#visible() ? coc#_select_confirm() :
       \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
-      \ <SID>check_back_space() ? "\<TAB>" :
+      \ CheckBackSpace() ? "\<TAB>" :
       \ coc#refresh()
 
-function! s:check_back_space() abort
+function! CheckBackSpace() abort
   let col = col('.') - 1
   return !col || getline('.')[col - 1]  =~# '\s'
 endfunction
 
 let g:coc_snippet_next = '<tab>'
 ```
-
-**Note:** `coc#_select_confirm()` helps select first complete item when there's
-no complete item selected, neovim 0.4 or latest vim8 required for this function
-work as expected.
 
 ## Ultisnips features
 
