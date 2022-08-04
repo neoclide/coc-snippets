@@ -14,6 +14,8 @@ export enum TriggerKind {
 export interface UltiSnippetOption {
   regex?: string
   context?: string
+  range?: Range
+  line?: string
 }
 
 export interface VimCompletionContext extends CompletionContext {

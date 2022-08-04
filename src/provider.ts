@@ -118,9 +118,10 @@ export class ProviderManager implements CompletionItemProvider {
     if (!doc) return []
     let snippets = this.getSnippets(doc.filetype)
     let currline = doc.getline(position.line, true)
-    let { input, col, line } = context.option
+    let { input, col, line, colnr } = context.option
     let character = characterIndex(line, col)
     let before_content = currline.slice(0, character)
+    let after = line.slice(characterIndex(line, colnr - 1))
     let res: CompletionItem[] = []
     for (let snip of snippets) {
       // Avoid context during completion.
@@ -142,9 +143,13 @@ export class ProviderManager implements CompletionItemProvider {
         filepath: `${path.basename(snip.filepath)}:${snip.lnum}`
       }
       if (ultisnip) {
+        // range line
+        // before_content snip.prefix
         item.data.ultisnip = {
           context: snip.context,
-          regex: snip.originRegex
+          regex: snip.originRegex,
+          range: Range.create(position.line, character, position.line, character + snip.prefix.length),
+          line: before_content + snip.prefix + after
         }
       }
       if (snip.regex) {
