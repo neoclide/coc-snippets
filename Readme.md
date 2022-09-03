@@ -186,8 +186,8 @@ some regex patterns can't be supported by javascript, including
 - `snippets.autoTrigger`: enable auto trigger for auto trigger ultisnips snippets, default `true`.
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
 - `snippets.loadFromExtensions`: load snippets from coc.nvim extensions, default: `true`.
-- `snippets.loadVSCodeProjectSnippets`: Load code snippets in folder ${workspaceFolder}/.vscode, default: `true`.
-- `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load.
+- `snippets.loadVSCodeProjectSnippets`: Load code snippets in folder `${workspaceFolder}/.vscode`, default: `true`.
+- `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load, default: `[]`.
 - `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
 - `snippets.ultisnips.trace`: Trace verbose snippet information, default `false`.
 - `snippets.ultisnips.directories`: directories that searched for snippet files,

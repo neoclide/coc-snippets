@@ -233,9 +233,17 @@ export class TextmateProvider extends BaseProvider {
     return arr
   }
 
-  private async loadDefinitionFromRoot(root: string): Promise<void> {
-    root = workspace.expand(root)
-    if (!fs.existsSync(root)) return
+  private async loadDefinitionFromRoot(confiPath: string): Promise<void> {
+    let root = workspace.expand(confiPath)
+    if (!fs.existsSync(root)) {
+      this.error(`${confiPath} not found on disk.`)
+      return
+    }
+    let stat = fs.statSync(root)
+    if (!stat.isDirectory()) {
+      this.error(`${confiPath} not a valid directory.`)
+      return
+    }
     let files = await fs.promises.readdir(root, 'utf8')
     files = files.filter(f => f.endsWith('.json') || f.endsWith('.code-snippets'))
     let items: SnippetItem[] = []
