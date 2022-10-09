@@ -46,6 +46,10 @@ On neovim, run command:
 ```vim
 :checkhealth
 ```
+If it is not installed, run:
+```shell
+pip install pynvim
+```
 
 and make sure you have Python 3 provider for neovim installed.
 
