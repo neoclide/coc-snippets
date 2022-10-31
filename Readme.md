@@ -97,14 +97,17 @@ xmap <leader>x  <Plug>(coc-convert-snippet)
 
 Make `<tab>` used for trigger completion, completion confirm, snippet expand and jump like VSCode.
 
+**Note** from coc.nvim 0.0.82, functions starts with `coc#pum` should be used for
+custom completion of coc.nvim.
+
 ```vim
 inoremap <silent><expr> <TAB>
       \ coc#pum#visible() ? coc#_select_confirm() :
       \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
-      \ CheckBackSpace() ? "\<TAB>" :
+      \ CheckBackspace() ? "\<TAB>" :
       \ coc#refresh()
 
-function! CheckBackSpace() abort
+function! CheckBackspace() abort
   let col = col('.') - 1
   return !col || getline('.')[col - 1]  =~# '\s'
 endfunction
