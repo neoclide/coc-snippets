@@ -106,6 +106,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let config = configuration.get<any>('ultisnips', {})
     let c = merge.recursive(true, config, {
       excludes,
+      pythonPrompt: configuration.get<boolean>('ultisnips.pythonPrompt', true),
       extends: merge.recursive(true, {}, filetypeExtends)
     } as UltiSnipsConfig)
     c.directories = c.directories ? c.directories.slice() : []

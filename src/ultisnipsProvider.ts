@@ -14,6 +14,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   private snippetFiles: UltiSnipsFile[] = []
   private fileItems: FileItem[] = []
   private parser: UltiSnipsParser
+  private pythonSupport = true
   constructor(
     channel: OutputChannel,
     protected config: UltiSnipsConfig,
@@ -43,13 +44,26 @@ export class UltiSnippetsProvider extends BaseProvider {
     return dirs.map(dir => workspace.expand(dir))
   }
 
+  private async showPrompt(): Promise<void> {
+    let name = workspace.isVim ? `python` : `provider-python`
+    await window.showWarningMessage(`Ultisnips feature of coc-snippets requires python support on vim, check out :h ${name}`, {
+      title: 'Understand, do\'not show again',
+      isCloseAffordance: true
+    })
+    let config = workspace.getConfiguration('snippets.ultisnips', null)
+    config.update('pythonPrompt', false, true)
+  }
+
   public async init(): Promise<void> {
     let { nvim, env } = workspace
     this.info(`Using ultisnips directories:`, this.directories)
     try {
       await nvim.call('pyxeval', ['1'])
     } catch (e) {
-      throw new Error(`Error on execute :pyx command, ultisnips feature of coc-snippets requires pyx support on vim.`)
+      this.pythonSupport = false
+      if (this.config.pythonPrompt) {
+        void this.showPrompt()
+      }
     }
     this.parser = new UltiSnipsParser(this.channel, this.config.trace)
     this.fileItems = await this.loadAllFilItems(env.runtimepath)
@@ -130,6 +144,10 @@ export class UltiSnippetsProvider extends BaseProvider {
     idx = this.fileItems.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.fileItems.splice(idx, 1)
     let { snippets, pythonCode, extendFiletypes, clearsnippets } = await this.parser.parseUltisnipsFile(filetype, filepath)
+    if (!this.pythonSupport) {
+      // filter snippet with python
+      snippets = snippets.filter(s => s.regex == null && s.context == null && s.body.indexOf('`!p') === -1)
+    }
     this.snippetFiles.push({
       extendFiletypes,
       clearsnippets,

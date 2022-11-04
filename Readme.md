@@ -61,9 +61,9 @@ or the python dynamic lib required by vim is missing(or broken).
 **Note:** some python code may require python feature that not supported by the
 python interpreter used by vim, error will throw on that case.
 
-Error will be shown when `pythonx` with (neo)vim can't work, fix `pythonx`
+~Error will be shown when `pythonx` with (neo)vim can't work, fix `pythonx`
 support or disable ultisnips support by add `"snippets.ultisnips.enable": false`
-in your configuration file.
+in your configuration file.~
 
 ## Install
 

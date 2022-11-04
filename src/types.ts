@@ -30,6 +30,7 @@ export interface Config {
 
 export interface UltiSnipsConfig extends Config {
   enable: boolean
+  pythonPrompt: boolean
   usePythonx: boolean
   pythonVersion: number
   directories: string[]

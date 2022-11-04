@@ -118,6 +118,11 @@
           "default": true,
           "description": "Enable load snippets from ultisnips folders."
         },
+        "snippets.ultisnips.pythonPrompt": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show prompt for user when python not supported on vim."
+        },
         "snippets.ultisnips.trace": {
           "type": "boolean",
           "default": false,
