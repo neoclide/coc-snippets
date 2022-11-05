@@ -80,8 +80,10 @@ export class UltiSnippetsProvider extends BaseProvider {
         if (items.length) await this.loadFromItems(items)
       }
     }, null, this.context.subscriptions)
-    let filepath = this.context.asAbsolutePath('python/ultisnips.py')
-    await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${filepath}')`)
+    if (this.pythonSupport) {
+      let filepath = this.context.asAbsolutePath('python/ultisnips.py')
+      await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${filepath}')`)
+    }
     const items = this.getValidItems(this.fileItems)
     if (items.length) await this.loadFromItems(items)
     workspace.onDidOpenTextDocument(async e => {
@@ -177,6 +179,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   public async checkContext(context: string): Promise<any> {
+    if (!this.pythonSupport) return false
     let pyCodes: string[] = [
       'import re, os, vim, string, random',
       'if "snip" in globals():',
@@ -411,10 +414,9 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   private async executePythonCode(pythonCode: string): Promise<void> {
+    if (!this.pythonSupport) return
     try {
-      let dir = path.join(os.tmpdir(), `coc.nvim-${process.pid}`)
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir)
-      let tmpfile = path.join(os.tmpdir(), `coc.nvim-${process.pid}`, `coc-ultisnips-${uid()}.py`)
+      let tmpfile = path.join(os.tmpdir(), `coc-ultisnips-${uid()}.py`)
       let code = addPythonTryCatch(pythonCode)
       fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
       this.info(`Execute python code in: ${tmpfile}`)
