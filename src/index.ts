@@ -3,12 +3,12 @@ import merge from 'merge'
 import path from 'path'
 import { registerLanguageProvider } from './languages'
 import SnippetsList from './list/snippet'
+import { MassCodeProvider } from './massCodeProvider'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
-import { MassCodeProvider } from './massCodeProvider'
 import { SnippetEditWithSource, UltiSnippetOption, UltiSnipsConfig } from './types'
-import { UltiSnippetsProvider, getSnippetsDirectory } from './ultisnipsProvider'
+import { getSnippetsDirectory, UltiSnippetsProvider } from './ultisnipsProvider'
 import { sameFile, waitDocument } from './util'
 
 interface API {
@@ -266,7 +266,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }, { silent: true, sync: true, cancel: true }))
 
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', snippetSelect, { silent: true, sync: false, cancel: true }))
-  registerLanguageProvider(subscriptions, channel)
+  registerLanguageProvider(subscriptions, channel, configuration)
   subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager)))
 
   return {

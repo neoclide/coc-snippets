@@ -1,4 +1,4 @@
-import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, InsertTextFormat, languages, OutputChannel, Position, ProviderResult, Range, snippetManager, TextDocument, workspace } from 'coc.nvim'
+import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, InsertTextFormat, languages, OutputChannel, Position, ProviderResult, Range, snippetManager, TextDocument, workspace, WorkspaceConfiguration } from 'coc.nvim'
 import { convertRegex, headTail, markdownBlock } from './util'
 
 const codesMap: Map<number, string> = new Map()
@@ -143,9 +143,8 @@ export class LanguageProvider implements CompletionItemProvider {
   }
 }
 
-export function registerLanguageProvider(subscriptions: Disposable[], channel: OutputChannel) {
-  const configuration = workspace.getConfiguration('snippets')
-  const trace = configuration.get<string>('trace', 'error')
+export function registerLanguageProvider(subscriptions: Disposable[], channel: OutputChannel, configuration: WorkspaceConfiguration) {
+  let trace = configuration.get<string>('trace', 'error')
   let languageProvider = new LanguageProvider(channel, trace)
   subscriptions.push(languages.registerCompletionItemProvider(
     'snippets-source',
