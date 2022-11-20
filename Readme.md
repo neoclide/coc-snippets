@@ -10,8 +10,9 @@ It's capable of:
 
 - Load UltiSnips snippets.
 - Load snipmate snippets.
-- Load VSCode snippets from coc extensions.
+- Load VSCode snippets from coc.nvim extensions.
 - Load VSCode snippets from custom directories.
+- Load VSCode snippets from `${workspaceFolder}/.vscode`.
 - Load UltiSnips snippets from configured folder.
 - Load massCode snippets from running massCode application (disabled by default).
 - Create massCode snippets through the `snippets.editMassCodeSnippets` command.

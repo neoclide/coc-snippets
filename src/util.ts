@@ -8,7 +8,8 @@ import os from 'os'
 import fs from 'fs'
 import { ReplaceItem } from './types'
 import crypto from 'crypto'
-import { Document } from 'coc.nvim'
+import { promisify } from 'util'
+import { Document, Uri } from 'coc.nvim'
 
 const caseInsensitive = os.platform() == 'win32' || os.platform() == 'darwin'
 const BASE64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'
@@ -262,4 +263,8 @@ export function omit<T>(obj: T, properties: string[]): T {
     }
   }
   return o as T
+}
+
+export function normalizeFilePath(filepath: string) {
+  return Uri.file(path.resolve(path.normalize(filepath))).fsPath
 }

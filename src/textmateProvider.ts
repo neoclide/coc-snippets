@@ -4,7 +4,7 @@ import { parse, ParseError } from 'jsonc-parser'
 import path from 'path'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TextmateConfig, TriggerKind } from './types'
-import { languageIdFromComments, omit, sameFile } from './util'
+import { languageIdFromComments, normalizeFilePath, omit, sameFile, statAsync } from './util'
 
 export interface ISnippetPluginContribution {
   lnum: number
@@ -50,6 +50,7 @@ export class TextmateProvider extends BaseProvider {
   private loadedSnippets: SnippetDef[] = []
   private loadedLanguageIds: Set<string> = new Set()
   private definitions: Map<string, SnippetItem[]> = new Map()
+  private loadedRoots: Set<string> = new Set()
 
   constructor(
     channel: OutputChannel,
@@ -233,20 +234,19 @@ export class TextmateProvider extends BaseProvider {
     return arr
   }
 
-  private async loadDefinitionFromRoot(confiPath: string): Promise<void> {
-    let root = workspace.expand(confiPath)
-    if (!fs.existsSync(root)) {
-      this.error(`${confiPath} not found on disk.`)
+  private async loadDefinitionFromRoot(configPath: string): Promise<void> {
+    let root = workspace.expand(configPath)
+    let stat = await statAsync(root)
+    if (!stat || !stat.isDirectory()) {
+      this.error(`${configPath} not a valid directory.`)
       return
     }
-    let stat = fs.statSync(root)
-    if (!stat.isDirectory()) {
-      this.error(`${confiPath} not a valid directory.`)
-      return
-    }
+    root = normalizeFilePath(root)
+    if (this.loadedRoots.has(root)) return
+    this.loadedRoots.add(root)
     let files = await fs.promises.readdir(root, 'utf8')
     files = files.filter(f => f.endsWith('.json') || f.endsWith('.code-snippets'))
-    let items: SnippetItem[] = []
+    let items: SnippetItem[] = this.definitions.get('') ?? []
     for (let file of files) {
       let filepath = path.join(root, file)
       if (file.endsWith('.code-snippets')) {
