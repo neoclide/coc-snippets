@@ -206,9 +206,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
     if (edits.length == 1) {
       await insertSnippetEdit(edits[0])
     } else {
-      let idx = await window.showQuickpick(edits.map(e => e.description || e.prefix), 'choose snippet:')
-      if (idx == -1) return
-      await insertSnippetEdit(edits[idx])
+      setTimeout(async () => {
+        let idx = await window.showMenuPicker(edits.map(e => e.description || e.prefix), { title: 'choose snippet' })
+        if (idx == -1) return
+        await insertSnippetEdit(edits[idx])
+      }, 10)
+      return true
     }
     return true
   }
