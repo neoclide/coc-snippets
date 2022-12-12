@@ -46,8 +46,8 @@ export class UltiSnippetsProvider extends BaseProvider {
 
   private async showPrompt(): Promise<void> {
     let name = workspace.isVim ? `python` : `provider-python`
-    await window.showWarningMessage(`Ultisnips feature of coc-snippets requires python support on vim, check out :h ${name}`, {
-      title: 'Understand, do\'not show again',
+    await window.showWarningMessage(`The Ultisnips feature of coc-snippets requires Python support on Vim, see :h ${name}`, {
+      title: 'I understand, don\'t show this message again',
       isCloseAffordance: true
     })
     let config = workspace.getConfiguration('snippets.ultisnips', null)
