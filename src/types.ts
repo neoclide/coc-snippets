@@ -83,6 +83,8 @@ export interface Snippet {
   readonly context?: string
   readonly autoTrigger?: boolean
   readonly originRegex?: string
+  // none word prefix of prefix
+  readonly special?: string
   preExpand?: string
   postExpand?: string
   postJump?: string

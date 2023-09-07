@@ -112,12 +112,14 @@ export default class UltiSnipsParser {
             triggers.push(trigger)
           }
           for (let prefix of triggers) {
+            let ms = prefix.match(/^\W+/)
             let snippet: Snippet = {
               originRegex,
               context: parsedContext ? parsedContext : (option.includes('e') ? ms[3] : undefined),
               filepath,
               filetype,
               prefix: prefix,
+              special: ms == null ? undefined : ms[0],
               autoTrigger: option.indexOf('A') !== -1,
               lnum: lnum - preLines.length - 2,
               triggerKind: getTriggerKind(option),

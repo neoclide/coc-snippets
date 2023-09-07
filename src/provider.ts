@@ -123,19 +123,28 @@ export class ProviderManager implements CompletionItemProvider {
     let before_content = currline.slice(0, character)
     let after = line.slice(characterIndex(line, colnr - 1))
     let res: CompletionItem[] = []
+    let noneWords = before_content.endsWith(' ') ? '' : before_content.match(/\W*$/)[0]
     for (let snip of snippets) {
       // Avoid context during completion.
       if (snip.context || snip.prefix === '') continue
       if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
-      let contentBehind = before_content
+      let contentBefore = before_content
       let head = this.getPrefixHead(doc, snip.prefix)
       let ultisnip = snip.provider == 'ultisnips' || snip.provider == 'snipmate'
+      let startCharacter = character
       let item: CompletionItem = {
         label: snip.prefix,
         kind: CompletionItemKind.Snippet,
         filterText: snip.prefix,
         detail: snip.description,
         insertTextFormat: InsertTextFormat.Snippet
+      }
+      // check common begin for special characters
+      if (noneWords && snip.special && noneWords.endsWith(snip.special)) {
+        let len = snip.special.length
+        item.filterText = item.filterText.slice(0, -len)
+        startCharacter = character - len
+        contentBefore = contentBefore.slice(0, -len)
       }
       item.data = {
         snip,
@@ -148,7 +157,7 @@ export class ProviderManager implements CompletionItemProvider {
         item.data.ultisnip = {
           context: snip.context,
           regex: snip.originRegex,
-          range: Range.create(position.line, character, position.line, character + snip.prefix.length),
+          range: Range.create(position.line, startCharacter, position.line, character + snip.prefix.length),
           line: before_content + snip.prefix + after
         }
       }
@@ -158,33 +167,33 @@ export class ProviderManager implements CompletionItemProvider {
         let ms = content.match(snip.regex)
         if (!ms) continue
       } else if (head && before_content.endsWith(head)) {
-        contentBehind = before_content.slice(0, - head.length)
+        contentBefore = before_content.slice(0, - head.length)
         Object.assign(item, {
           textEdit: {
-            range: Range.create({ line: position.line, character: character - head.length }, position),
+            range: Range.create({ line: position.line, character: startCharacter - head.length }, position),
             newText: snip.prefix
           }
         })
       } else if (input.length == 0) {
         let { prefix } = snip
-        contentBehind = before_content.slice(0, - prefix.length)
+        contentBefore = before_content.slice(0, - prefix.length)
         Object.assign(item, {
           preselect: true,
           textEdit: {
-            range: Range.create({ line: position.line, character: character - prefix.length }, position),
+            range: Range.create({ line: position.line, character: startCharacter - prefix.length }, position),
             newText: snip.prefix
           }
         })
       }
-      if (snip.triggerKind == TriggerKind.LineBegin && contentBehind.trim().length) continue
+      if (snip.triggerKind == TriggerKind.LineBegin && contentBefore.trim().length) continue
       if (snip.triggerKind == TriggerKind.SpaceBefore) {
-        if (contentBehind.length && !/\s/.test(contentBehind[contentBehind.length - 1])) {
+        if (contentBefore.length && !/\s/.test(contentBefore[contentBefore.length - 1])) {
           continue
         }
       }
       if (!item.textEdit) {
         item.textEdit = {
-          range: Range.create({ line: position.line, character }, position),
+          range: Range.create({ line: position.line, character: startCharacter }, position),
           newText: snip.prefix
         }
       }
