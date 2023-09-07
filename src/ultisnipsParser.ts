@@ -123,7 +123,7 @@ export default class UltiSnipsParser {
               autoTrigger: option.indexOf('A') !== -1,
               lnum: lnum - preLines.length - 2,
               triggerKind: getTriggerKind(option),
-              description: ms[2] || '',
+              description: ms == null ? '' : ms[2],
               regex,
               body,
               priority
