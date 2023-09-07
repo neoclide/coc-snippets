@@ -94,35 +94,46 @@ export default class UltiSnipsParser {
           let trigger = getTriggerText(ms[1], option.includes('r'))
           let regex: RegExp = null
           let originRegex: string
+          let triggers: string[] = []
           if (option.indexOf('r') !== -1) {
             originRegex = trigger
             let pattern = convertRegex(trigger)
             if (pattern.endsWith('$')) pattern = pattern.slice(0, -1)
             regex = new RegExp(`(?:${pattern})$`)
             // get the real text
-            trigger = getRegexText(trigger)
+            let parsed = getRegexText(trigger)
+            if (!parsed.includes('|')) {
+              triggers.push(trigger)
+            } else {
+              // parse to words
+              triggers = parsed.split(/\|/)
+            }
+          } else {
+            triggers.push(trigger)
           }
-          let snippet: Snippet = {
-            originRegex,
-            context: parsedContext ? parsedContext : (option.includes('e') ? ms[3] : undefined),
-            filepath,
-            filetype,
-            prefix: trigger,
-            autoTrigger: option.indexOf('A') !== -1,
-            lnum: lnum - preLines.length - 2,
-            triggerKind: getTriggerKind(option),
-            description: ms[2] || '',
-            regex,
-            body,
-            priority
+          for (let prefix of triggers) {
+            let snippet: Snippet = {
+              originRegex,
+              context: parsedContext ? parsedContext : (option.includes('e') ? ms[3] : undefined),
+              filepath,
+              filetype,
+              prefix: prefix,
+              autoTrigger: option.indexOf('A') !== -1,
+              lnum: lnum - preLines.length - 2,
+              triggerKind: getTriggerKind(option),
+              description: ms[2] || '',
+              regex,
+              body,
+              priority
+            }
+            while (actions.length) {
+              const line = actions.pop()
+              const [head, tail] = headTail(line)
+              snippet[actionMap[head]] = trimQuote(tail)
+            }
+            this.debug(`Loaded snippet`, snippet)
+            snippets.push(snippet)
           }
-          while (actions.length) {
-            const line = actions.pop()
-            const [head, tail] = headTail(line)
-            snippet[actionMap[head]] = trimQuote(tail)
-          }
-          this.debug(`Loaded snippet`, snippet)
-          snippets.push(snippet)
         } catch (e) {
           this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1} ${e.message}`)
         } finally {

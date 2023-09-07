@@ -1,4 +1,4 @@
-import { commands, Document, ExtensionContext, OutputChannel, Position, Range, Uri, window, workspace, TextEdit, WorkspaceConfiguration } from 'coc.nvim'
+import { commands, Document, ExtensionContext, OutputChannel, Position, Range, TextEdit, Uri, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'

@@ -183,7 +183,8 @@ export function convertRegex(str: string): string {
 export function getRegexText(prefix: string): string {
   if (prefix.startsWith('^')) prefix = prefix.slice(1)
   if (prefix.endsWith('$')) prefix = prefix.slice(0, -1)
-  let content = prefix.replace(/\(.*\)\??/g, '')
+  // keep word inside ()?
+  let content = prefix.replace(/\((\w+)\)\?/g, '$1').replace(/\(.*\)\??/g, '')
   content = content.replace(/\\/g, '')
   return content
 }
