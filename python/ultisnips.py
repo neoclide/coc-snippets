@@ -154,6 +154,17 @@ class SnippetUtil(object):
         """Clears the indentation."""
         self.indent = self._initial_indent
 
+    def expand_anon(
+        self, value, trigger="", description="", options="", context=None, actions=None
+    ):
+        pos = vim.eval('coc#cursor#position()')
+        line = int(pos[0])
+        character = int(pos[1])
+        code = 'coc#rpc#notify("snippetInsert", [{"start":{"line":%d,"character":%d},"end":{"line":%d,"character":%d}}, "%s"])' % (line, character - len(trigger), line, character, re.sub(r'"', r'\\\'', value))
+        vim.eval(code)
+        return True
+
+
     # Utility methods
     @property
     def fn(self):  # pylint:disable=no-self-use,invalid-name
