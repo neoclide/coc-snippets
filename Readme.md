@@ -135,6 +135,7 @@ Some ultisnips features are **not** supported:
 - [x] Support loading snipmate snippets.
 - [x] Replacement String, (:h UltiSnips-replacement-string), requires latest coc.nvim.
 - [x] Update python code block after change of placeholder.
+- [ ] `snip.expand_anon()` should work.
 - [ ] Execute shell code with custom shabang (will not support).
 - [ ] Option `m`, empty line in snippet not have indentation with coc.nvim.
 - [ ] Reformat snippet options, including `t`, `s`.
