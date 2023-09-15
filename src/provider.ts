@@ -170,7 +170,7 @@ export class ProviderManager implements CompletionItemProvider {
         contentBefore = before_content.slice(0, - head.length)
         Object.assign(item, {
           textEdit: {
-            range: Range.create({ line: position.line, character: startCharacter - head.length }, position),
+            range: Range.create({ line: position.line, character: startCharacter }, position),
             newText: snip.prefix
           }
         })
