@@ -103,7 +103,7 @@ export default class UltiSnipsParser {
             // get the real text
             let parsed = getRegexText(trigger)
             if (!parsed.includes('|')) {
-              triggers.push(trigger)
+              triggers.push(parsed)
             } else {
               // parse to words
               triggers = parsed.split(/\|/)
