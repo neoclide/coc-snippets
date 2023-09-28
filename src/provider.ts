@@ -127,7 +127,7 @@ export class ProviderManager implements CompletionItemProvider {
     for (let snip of snippets) {
       // Avoid context during completion.
       if (snip.context || snip.prefix === '') continue
-      if (input.length == 0 && !before_content.endsWith(snip.prefix)) continue
+      if (input.length == 0 && (!snip.special || !before_content.endsWith(snip.special))) continue
       let contentBefore = before_content
       let head = this.getPrefixHead(doc, snip.prefix)
       let ultisnip = snip.provider == 'ultisnips' || snip.provider == 'snipmate'
@@ -140,11 +140,15 @@ export class ProviderManager implements CompletionItemProvider {
         insertTextFormat: InsertTextFormat.Snippet
       }
       // check common begin for special characters
-      if (noneWords && snip.special && noneWords.endsWith(snip.special)) {
-        let len = snip.special.length
-        item.filterText = item.filterText.slice(0, -len)
-        startCharacter = character - len
-        contentBefore = contentBefore.slice(0, -len)
+      if (noneWords && snip.special) {
+        if (noneWords.endsWith(snip.special)) {
+          let len = snip.special.length
+          item.filterText = item.filterText.slice(len)
+          startCharacter = character - len
+          contentBefore = contentBefore.slice(0, -len)
+        } else {
+          continue
+        }
       }
       item.data = {
         snip,
@@ -175,12 +179,12 @@ export class ProviderManager implements CompletionItemProvider {
           }
         })
       } else if (input.length == 0) {
-        let { prefix } = snip
-        contentBefore = before_content.slice(0, - prefix.length)
+        // let { special } = snip
+        // contentBefore = before_content.slice(0, - special.length)
         Object.assign(item, {
           preselect: true,
           textEdit: {
-            range: Range.create({ line: position.line, character: startCharacter - prefix.length }, position),
+            range: Range.create({ line: position.line, character: startCharacter }, position),
             newText: snip.prefix
           }
         })
