@@ -124,11 +124,27 @@ export class ProviderManager implements CompletionItemProvider {
     let after = line.slice(characterIndex(line, colnr - 1))
     let res: CompletionItem[] = []
     let noneWords = before_content.endsWith(' ') ? '' : before_content.match(/\W*$/)[0]
+    let contextPrefixes: string[] = []
+    const configuration = workspace.getConfiguration('snippets')
+    const execContext = configuration.get<boolean>('execContext', false)
     for (let snip of snippets) {
-      // Avoid context during completion.
-      if (snip.context || snip.prefix === '') continue
+      if (!execContext && snip.context) continue
+      if (snip.prefix === '') continue
       if (input.length == 0 && (!snip.special || !before_content.endsWith(snip.special))) continue
+      if (contextPrefixes.indexOf(snip.prefix) !== -1) continue
       let contentBefore = before_content
+      if (snip.context) {
+        let provider = this.providers.get(snip.provider)
+        let valid: boolean
+        try {
+          valid = await provider.checkContext(snip.context)
+        } catch (e) {
+          this.appendError(`checkContext of ${snip.provider}`, e)
+          valid = false
+        }
+        if (!valid) continue
+        contextPrefixes.push(snip.prefix)
+      }
       let head = this.getPrefixHead(doc, snip.prefix)
       let ultisnip = snip.provider == 'ultisnips' || snip.provider == 'snipmate'
       let startCharacter = character
