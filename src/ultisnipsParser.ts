@@ -90,6 +90,7 @@ export default class UltiSnipsParser {
         try {
           let body = preLines.join('\n')
           let ms = first.match(/^(.+?)(?:\s+(?:"(.*?)")?(?:\s+"(.*?)")?(?:\s+(\w+))?)?\s*$/)
+          let description = ms[2] || '';
           let option = ms[4] || ''
           let trigger = getTriggerText(ms[1], option.includes('r'))
           let regex: RegExp = null
@@ -123,7 +124,7 @@ export default class UltiSnipsParser {
               autoTrigger: option.indexOf('A') !== -1,
               lnum: lnum - preLines.length - 2,
               triggerKind: getTriggerKind(option),
-              description: ms == null ? '' : ms[2],
+              description,
               regex,
               body,
               priority
