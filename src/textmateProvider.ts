@@ -63,12 +63,19 @@ export class TextmateProvider extends BaseProvider {
   public async init(): Promise<void> {
     if (this.config.loadFromExtensions) {
       for (let extension of extensions.all) {
-        await this.loadSnippetDefinition(extension)
+        this.loadSnippetDefinition(extension).then(items => {
+          if (items?.length) {
+            items = items.filter(o => o.languageIds.includes('all') || o.languageIds.some(id => workspace.languageIds.has(id)))
+            this.loadSnippetsFromDefinition(extension.id, items)
+          }
+        }, e => {
+          this.error(`Error on load textmate snippets: ${e.message}`, e.stack)
+        })
       }
       extensions.onDidLoadExtension(extension => {
         this.loadSnippetDefinition(extension).then(items => {
           if (items?.length) {
-            items = items.filter(o => o.languageIds.some(id => workspace.languageIds.has(id)))
+            items = items.filter(o => o.languageIds.includes('all') || o.languageIds.some(id => workspace.languageIds.has(id)))
             this.loadSnippetsFromDefinition(extension.id, items)
           }
         }, e => {
@@ -151,7 +158,7 @@ export class TextmateProvider extends BaseProvider {
     if (autoTrigger) return []
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
-    let snippets = await this.getSnippets(document.filetype)
+    let snippets = this.getSnippets(document.filetype)
     if (!snippets || !snippets.length) return []
     let edits: SnippetEdit[] = []
     for (let snip of snippets) {
