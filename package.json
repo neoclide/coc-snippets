@@ -3,6 +3,10 @@
   "version": "3.1.10",
   "description": "Snippets extension for coc.nvim",
   "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neoclide/coc-snippets.git"
+  },
   "publisher": "chemzqm",
   "keywords": [
     "coc.nvim",
