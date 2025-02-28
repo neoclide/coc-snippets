@@ -59,7 +59,7 @@ async function snippetSelect(): Promise<void> {
   let { nvim } = workspace
   let mode = await nvim.call('visualmode')
   if (['v', 'V'].indexOf(mode) == -1) {
-    window.showMessage(`visual mode ${mode} not supported`, 'warning')
+    window.showWarningMessage(`visual mode ${mode} not supported`)
     return
   }
   await nvim.command('normal! `<')
@@ -175,7 +175,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
       if (edits.length == 0) return
       if (edits.length > 1) {
         channel.appendLine(`Multiple snippets found on auto trigger: ${JSON.stringify(edits, null, 2)}`)
-        window.showMessage('Multiple snippets found on auto trigger', 'warning')
+        window.showWarningMessage('Multiple snippets found on auto trigger')
         await commands.executeCommand('workspace.showOutput', 'snippets')
       }
       await insertSnippetEdit(edits[0])
@@ -234,17 +234,17 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let buf = await nvim.buffer
     let doc = workspace.getDocument(buf.id)
     if (!doc) {
-      window.showMessage('Document not found', 'error')
+      window.showErrorMessage('Document not found')
       return
     }
     let files = await manager.getSnippetFiles(doc.filetype)
     if (!files.length) {
-      window.showMessage('No related snippet file found', 'warning')
+      window.showWarningMessage('No related snippet file found')
       return
     }
-    let idx = await window.showQuickpick(files, 'choose snippet file:')
-    if (idx == -1) return
-    let uri = Uri.file(files[idx]).toString()
+    let file = await window.showQuickPick(files, { title: 'choose snippet file:' })
+    if (!file) return
+    let uri = Uri.file(file).toString()
     await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
   }))
 

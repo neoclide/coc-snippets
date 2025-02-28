@@ -340,18 +340,22 @@ export class UltiSnippetsProvider extends BaseProvider {
     return directories
   }
 
+  private async getFiletype(): Promise<string> {
+    let buf = await workspace.nvim.buffer
+    if (buf) {
+      let doc = workspace.getDocument(buf.id)
+      if (doc) return doc.filetype
+    }
+    return null
+  }
+
   public async editSnippets(text?: string): Promise<void> {
     const configuration = workspace.getConfiguration('snippets')
+    let filetype = await this.getFiletype()
+    filetype = filetype ?? 'all'
+    filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
     const snippetsDir = await getSnippetsDirectory(configuration)
     let { nvim } = workspace
-    let buf = await nvim.buffer
-    let doc = workspace.getDocument(buf.id)
-    if (!doc) {
-      window.showMessage('Document not found', 'error')
-      return
-    }
-    let filetype = doc.filetype ? doc.filetype : 'all'
-    filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
     let file = path.join(snippetsDir, `${filetype}.snippets`)
     if (!fs.existsSync(file)) {
       await util.promisify(fs.writeFile)(file, documentation, 'utf8')
@@ -423,7 +427,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${tmpfile}')`)
     } catch (e) {
       this.error(`Error on execute python script ${e.stack}:`, pythonCode)
-      window.showMessage(`Error on execute python script: ${e.message}`, 'error')
+      window.showErrorMessage(`Error on execute python script: ${e.message}`)
     }
   }
 }
@@ -471,13 +475,13 @@ export async function getSnippetsDirectory(configuration: WorkspaceConfiguration
   if (snippetsDir) {
     snippetsDir = workspace.expand(snippetsDir)
     if (!path.isAbsolute(snippetsDir)) {
-      window.showMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`, 'warning')
+      window.showWarningMessage(`snippets.userSnippetsDirectory => ${snippetsDir} should be absolute path`)
       snippetsDir = null
     }
   }
   if (!snippetsDir) snippetsDir = path.join(path.dirname(workspace.env.extensionRoot), 'ultisnips')
   if (!fs.existsSync(snippetsDir)) {
-    await fs.promises.mkdir(snippetsDir)
+    await fs.promises.mkdir(snippetsDir, { recursive: true })
   }
   return snippetsDir
 }

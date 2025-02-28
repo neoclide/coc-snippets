@@ -141,7 +141,7 @@ export class MassCodeProvider extends BaseProvider {
     const onEnd: OnEnd = (resolve, reject, body) => {
       try {
         resolve(JSON.parse(Buffer.concat(body).toString()))
-      } catch(e) {
+      } catch (e) {
         reject(e)
       }
     }
@@ -190,8 +190,7 @@ export class MassCodeProvider extends BaseProvider {
     })
 
     if (this.mapItems().some(item => item.prefix === name && filetypes.includes(item.filetype))) {
-      window.showMessage(`Snippet with name ${name} for this filetype already exists`)
-
+      window.showWarningMessage(`Snippet with name ${name} for this filetype already exists`)
       return Promise.resolve()
     }
 
@@ -204,7 +203,7 @@ export class MassCodeProvider extends BaseProvider {
     const onEnd: OnEnd = (resolve, reject, body) => {
       try {
         resolve(body)
-      } catch(e) {
+      } catch (e) {
         reject(e)
       }
     }
@@ -237,7 +236,7 @@ export class MassCodeProvider extends BaseProvider {
 }
 
 async function promisifyHttpRequest<T = any>(config: HttpConfig, onEnd: OnEnd, body?: string): Promise<T> {
-  const options = {...config}
+  const options = { ...config }
 
   if (options.method === 'POST' && body.length) {
     options.headers = {
@@ -261,7 +260,7 @@ async function promisifyHttpRequest<T = any>(config: HttpConfig, onEnd: OnEnd, b
     })
     req.on('error', function(err: HttpError) {
       if (err.code === 'ECONNREFUSED') {
-        window.showMessage('massCode is not running')
+        window.showErrorMessage('massCode is not running')
       } else {
         reject(err)
       }

@@ -116,6 +116,7 @@ export class ProviderManager implements CompletionItemProvider {
     context: VimCompletionContext): Promise<CompletionItem[]> {
     let doc = workspace.getDocument(document.uri)
     if (!doc) return []
+    let bufnr = doc.bufnr
     let snippets = this.getSnippets(doc.filetype)
     let currline = doc.getline(position.line, true)
     let { input, col, line, colnr } = context.option
@@ -151,6 +152,7 @@ export class ProviderManager implements CompletionItemProvider {
         }
       }
       item.data = {
+        bufnr,
         snip,
         provider: snip.provider,
         filepath: `${path.basename(snip.filepath)}:${snip.lnum}`
@@ -209,7 +211,7 @@ export class ProviderManager implements CompletionItemProvider {
   public async resolveCompletionItem(item: CompletionItem): Promise<CompletionItem> {
     let provider = this.providers.get(item.data.provider)
     if (provider) {
-      let doc = workspace.getDocument(workspace.bufnr)
+      let doc = workspace.getDocument(item.data.bufnr)
       let filetype = doc ? doc.filetype : undefined
       let insertSnippet = item.data.snip.body
       if (snippetManager && insertSnippet) {
