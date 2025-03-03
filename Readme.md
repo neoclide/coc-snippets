@@ -193,6 +193,7 @@ some regex patterns can't be supported by javascript, including
 - `snippets.userSnippetsDirectory`, Directory that contains custom user ultisnips snippets, use ultisnips in extension root by default.
 - `snippets.shortcut`, shortcut in completion menu, default `S`.
 - `snippets.autoTrigger`: enable auto trigger for auto trigger ultisnips snippets, default `true`.
+- `snippets.execContext`: execute a snippet's `context` (if it exists) to check if the snippet should be shown in completion menu, default `false` (i.e., snippets with a `context` are never shown in completion menu)
 - `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
 - `snippets.loadFromExtensions`: load snippets from coc.nvim extensions, default: `true`.
 - `snippets.loadVSCodeProjectSnippets`: Load code snippets in folder `${workspaceFolder}/.vscode`, default: `true`.
