@@ -46,7 +46,7 @@ function enableSnippetsFiletype(subscriptions: Disposable[]) {
   const rtp = workspace.env.runtimepath
   let paths = rtp.split(',')
   let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
-  if (idx === -1) {
+  if (idx === -1 && !workspace.env.isCygwin) {
     let directory = path.resolve(__dirname, '..')
     nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets', true)
     nvim.command(`execute 'noa set rtp+='.fnameescape('${directory.replace(/'/g, "''")}')`, true)

@@ -82,7 +82,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     }, null, this.context.subscriptions)
     if (this.pythonSupport) {
       let filepath = this.context.asAbsolutePath('python/ultisnips.py')
-      await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${filepath}')`)
+      await workspace.nvim.call('coc#util#open_file', ['pyxfile', filepath])
     }
     const items = this.getValidItems(this.fileItems)
     if (items.length) await this.loadFromItems(items)
@@ -424,7 +424,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       let code = addPythonTryCatch(pythonCode)
       fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
       this.info(`Execute python code in: ${tmpfile}`)
-      await workspace.nvim.command(`exe 'pyxfile '.fnameescape('${tmpfile}')`)
+      await workspace.nvim.call('coc#util#open_file', ['pyxfile', tmpfile])
     } catch (e) {
       this.error(`Error on execute python script ${e.stack}:`, pythonCode)
       window.showErrorMessage(`Error on execute python script: ${e.message}`)
