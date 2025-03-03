@@ -138,7 +138,7 @@ export class SnipmateProvider extends BaseProvider {
             body: convertBody(body),
             prefix,
             description,
-            triggerKind: TriggerKind.SpaceBefore,
+            triggerKind: TriggerKind.WordBoundary,
             provider: 'snipmate'
           })
           lines = []
@@ -172,7 +172,7 @@ export class SnipmateProvider extends BaseProvider {
             body: convertBody(body),
             prefix,
             description,
-            triggerKind: TriggerKind.SpaceBefore
+            triggerKind: TriggerKind.WordBoundary
           })
         }
         this.trace('snipmate snippets', res)
@@ -186,12 +186,12 @@ export class SnipmateProvider extends BaseProvider {
     let snippets = this.getSnippets(document.filetype)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
-    if (!line || line[line.length - 1] == ' ') return []
+    if (!line) return []
     snippets = snippets.filter(s => {
       let { prefix } = s
       if (!line.endsWith(prefix)) return false
       let pre = line.slice(0, line.length - prefix.length)
-      return pre.length == 0 || /\s/.test(pre[pre.length - 1])
+      return pre.length == 0 || !document.isWord(pre[pre.length - 1])
     })
     let edits: SnippetEdit[] = []
     for (let s of snippets) {
