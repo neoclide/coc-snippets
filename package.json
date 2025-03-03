@@ -206,7 +206,7 @@
     "@types/pify": "^5.0.1",
     "@types/uuid": "^8.3.4",
     "coc.nvim": "^0.0.83-next.14",
-    "esbuild": "^0.14.27",
+    "esbuild": "^0.25.0",
     "jest": "^27.5.1",
     "jsonc-parser": "^3.0.0",
     "merge": "^2.1.1",
