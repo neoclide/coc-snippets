@@ -212,6 +212,10 @@ some regex patterns can't be supported by javascript, including
 
 ## F.A.Q
 
+**Q:** How to trigger snippets completion when type special characters?
+
+**A:** Use configuration like: `"snippets.triggerCharacters": ["'"]`.
+
 **Q:** How to check if a snippet successfully loaded?
 
 **A:** Use command `:CocCommand workspace.showOutput snippets`
