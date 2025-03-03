@@ -1,3 +1,8 @@
+# 3.2
+
+- Add execContext-option to enable context-execution for completion.
+- Fix filepath on vim built with win32unix.
+
 # 3.0.6
 
 - Avoid check and show context snippets in pum.
