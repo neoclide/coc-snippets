@@ -118,7 +118,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
     let provider = new UltiSnippetsProvider(channel, c, context)
     manager.regist(provider, 'ultisnips')
 
-    subscriptions.push(commands.registerCommand('snippets.editSnippets', provider.editSnippets))
+    subscriptions.push(commands.registerCommand('snippets.editSnippets', provider.editSnippets.bind(provider)))
   }
 
   if (configuration.loadFromExtensions || configuration.textmateSnippetsRoots?.length > 0) {
