@@ -1,4 +1,4 @@
-import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, OutputChannel, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
+import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, LinesTextDocument, OutputChannel, Position, Range, snippetManager, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
 import path from 'path'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEditWithSource, TriggerKind, VimCompletionContext } from './types'
@@ -8,7 +8,8 @@ export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
   constructor(
     private channel: OutputChannel,
-    private subscriptions: Disposable[]
+    private subscriptions: Disposable[],
+    private configuration: WorkspaceConfiguration
   ) {
     this.subscriptions.push(Disposable.create(() => {
       this.providers.clear()
@@ -128,13 +129,23 @@ export class ProviderManager implements CompletionItemProvider {
     }
   }
 
-  public async provideCompletionItems(
-    document,
-    position: Position,
-    _token: CancellationToken,
-    context: VimCompletionContext): Promise<CompletionItem[]> {
+  private checkSyntax(syntax: string): boolean {
+    let syntaxes = this.configuration.inspect<string[]>('disableSyntaxes').globalValue ?? []
+    if (syntaxes.length == 0) return true
+    try {
+      for (let str of syntaxes) {
+        let r = new RegExp(str, 'i')
+        if (r.test(syntax)) return false
+      }
+    } catch (e) {
+      // ignore
+    }
+    return true
+  }
+
+  public async provideCompletionItems(document: LinesTextDocument, position: Position, _token: CancellationToken, context: VimCompletionContext): Promise<CompletionItem[]> {
     let doc = workspace.getDocument(document.uri)
-    if (!doc) return []
+    if (!doc || !this.checkSyntax(context.option.synname)) return []
     let bufnr = doc.bufnr
     let filetype = getSnippetFiletype(doc)
     let snippets = this.getSnippets(filetype)
@@ -146,8 +157,7 @@ export class ProviderManager implements CompletionItemProvider {
     let res: CompletionItem[] = []
     let noneWords = before_content.endsWith(' ') ? '' : before_content.match(/\W*$/)[0]
     let contextPrefixes: string[] = []
-    const configuration = workspace.getConfiguration('snippets')
-    const execContext = configuration.get<boolean>('execContext', false)
+    const execContext = this.configuration.inspect('execContext').globalValue ?? false
     for (let snip of snippets) {
       if (!execContext && snip.context) continue
       if (snip.prefix === '') continue

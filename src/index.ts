@@ -89,13 +89,13 @@ async function snippetSelect(): Promise<void> {
 export async function activate(context: ExtensionContext): Promise<API> {
   let { subscriptions } = context
   const { nvim } = workspace
-  const configuration = workspace.getConfiguration('snippets')
+  const configuration = workspace.getConfiguration('snippets', null)
   const filetypeExtends = configuration.get<any>('extends', {})
   const trace = configuration.get<string>('trace', 'error')
   // let mru = workspace.createMru('snippets-mru')
   const channel = window.createOutputChannel('snippets')
   subscriptions.push(channel)
-  const manager = new ProviderManager(channel, subscriptions)
+  const manager = new ProviderManager(channel, subscriptions, configuration)
 
   enableSnippetsFiletype(subscriptions)
   subscriptions.push(commands.registerCommand('snippets.addFiletypes', async (...args: string[]) => {
@@ -202,7 +202,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
       'snippets',
       configuration.get('shortcut', 'S'),
       null,
-      manager, configuration.get<string[]>('triggerCharacters', []),
+      manager,
+      configuration.get<string[]>('triggerCharacters', []),
       configuration.get<number>('priority', 90))
     subscriptions.push(disposable)
   }

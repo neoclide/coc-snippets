@@ -1,6 +1,6 @@
 {
   "name": "coc-snippets",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "Snippets extension for coc.nvim",
   "main": "lib/index.js",
   "repository": {
@@ -51,11 +51,13 @@
         "snippets.priority": {
           "type": "number",
           "default": 90,
+          "scope": "application",
           "description": "Completion source priority of snippets."
         },
         "snippets.editSnippetsCommand": {
           "type": "string",
           "default": "",
+          "scope": "application",
           "description": "Open command used for snippets.editSnippets command, use coc.preferences.jumpCommand by default."
         },
         "snippets.trace": {
@@ -65,6 +67,7 @@
             "error",
             "verbose"
           ],
+          "scope": "application",
           "description": "Trace level of snippets channel, used for textmate snippets only."
         },
         "snippets.excludePatterns": {
@@ -78,11 +81,13 @@
         "snippets.loadFromExtensions": {
           "type": "boolean",
           "default": true,
+          "scope": "application",
           "description": "Enable load snippets from extensions."
         },
         "snippets.textmateSnippetsRoots": {
           "type": "array",
           "default": [],
+          "scope": "application",
           "description": "List of directories that contains textmate/VSCode snippets to load.",
           "items": {
             "type": "string"
@@ -91,40 +96,54 @@
         "snippets.loadVSCodeProjectSnippets": {
           "type": "boolean",
           "default": true,
+          "scope": "application",
           "description": "Load code snippets in folder ${workspaceFolder}/.vscode"
         },
         "snippets.extends": {
           "type": "object",
           "default": {},
+          "scope": "application",
           "description": "Configure filetypes to inherit with, ex: {\"cpp\": [\"c\"], \"javascriptreact\": [\"javascript\"]}"
         },
         "snippets.userSnippetsDirectory": {
           "type": "string",
           "default": "",
+          "scope": "application",
           "description": "Directory that contains custom user ultisnips snippets, use ultisnips in extension root of coc.nvim by default."
         },
         "snippets.shortcut": {
           "type": "string",
           "default": "S",
+          "scope": "application",
           "description": "Shortcut in completion menu."
         },
         "snippets.triggerCharacters": {
           "type": "array",
           "default": [],
+          "scope": "application",
           "description": "Trigger characters for trigger snippets completion.",
           "items": {
             "type": "string"
           }
         },
-        "snippets.autoTrigger": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable trigger auto trigger snippet after type character."
+        "snippets.disableSyntaxes": {
+          "type": "array",
+          "default": [],
+          "description": "Disable snippets completion when syntax name matches one of disabled syntaxes.",
+          "scope": "application",
+          "items": {
+            "type": "string"
+          }
         },
         "snippets.execContext": {
           "type": "boolean",
           "default": false,
           "description": "Execute a snippet's context (if it exists) to check if the snippet should be shown in completion menu"
+        },
+        "snippets.autoTrigger": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable trigger auto trigger snippet after type character."
         },
         "snippets.ultisnips.enable": {
           "type": "boolean",

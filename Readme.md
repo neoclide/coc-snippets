@@ -178,40 +178,32 @@ some regex patterns can't be supported by javascript, including
 
 ## Options
 
-- `snippets.priority`: priority of snippets source, default `90`.
-- `snippets.editSnippetsCommand`: Open command used for snippets.editSnippets command, use coc.preferences.jumpCommand by default.
-- `snippets.trace`: Trace level of snippets channel.
-- `snippets.excludePatterns`: List of filepath patterns to exclude, `$HOME` and other environment variables are expanded.
-- `snippets.extends`: extends filetype's snippets with other filetypes, example:
-
-  ```json
-  {
-    "cpp": ["c"],
-    "javascriptreact": ["javascript"],
-    "typescript": ["javascript"]
-  }
-  ```
-
-- `snippets.userSnippetsDirectory`, Directory that contains custom user ultisnips snippets, use ultisnips in extension root by default.
-- `snippets.shortcut`, shortcut in completion menu, default `S`.
-- `snippets.autoTrigger`: enable auto trigger for auto trigger ultisnips snippets, default `true`.
-- `snippets.execContext`: execute a snippet's `context` (if it exists) to check if the snippet should be shown in completion menu, default `false` (i.e., snippets with a `context` are never shown in completion menu)
-- `snippets.triggerCharacters`: trigger characters for completion, default `[]`.
-- `snippets.loadFromExtensions`: load snippets from coc.nvim extensions, default: `true`.
-- `snippets.loadVSCodeProjectSnippets`: Load code snippets in folder `${workspaceFolder}/.vscode`, default: `true`.
-- `snippets.textmateSnippetsRoots`: absolute directories that contains textmate/VSCode snippets to load, default: `[]`.
-- `snippets.ultisnips.enable`: enable load UltiSnips snippets, default `true`.
-- `snippets.ultisnips.trace`: Trace verbose snippet information, default `false`.
-- `snippets.ultisnips.directories`: directories that searched for snippet files,
-  could be subfolder in every \$runtimepath or absolute paths, default: `["UltiSnips"]`
-- `snippets.massCode.enable`: Enable load snippets from MassCode. default: `false`
-- `snippets.massCode.host`: Http host of MassCode. default: `"localhost"`
-- `snippets.massCode.port`: Http port of MassCode. default: `3033`
-- `snippets.massCode.trace`: Trace verbose snippet information. default: `false`
-- `snippets.snipmate.enable`: enable load snipmate snippets, default `true`.
-- `snippets.snipmate.author`: author name used for `g:snips_author`
-- `snippets.snipmate.trace`: Trace verbose snippet information, default `false`.
-
+- `snippets.priority`: Completion source priority of snippets.  Default: `90`
+- `snippets.editSnippetsCommand`: Open command used for snippets.editSnippets command, use coc.preferences.jumpCommand by default.  Default: `""`
+- `snippets.trace`: Trace level of snippets channel, used for textmate snippets only.  Default: `"error"`
+    Valid options: ["error","verbose"]
+- `snippets.excludePatterns`: List of minimatch patterns for filepath to exclude, support expand homedir and environment variables.  Default: `[]`
+- `snippets.loadFromExtensions`: Enable load snippets from extensions.  Default: `true`
+- `snippets.textmateSnippetsRoots`: List of directories that contains textmate/VSCode snippets to load.  Default: `[]`
+- `snippets.loadVSCodeProjectSnippets`: Load code snippets in folder ${workspaceFolder}/.vscode  Default: `true`
+- `snippets.extends`: Configure filetypes to inherit with, ex: {"cpp": ["c"], "javascriptreact": ["javascript"]}  Default: `{}`
+- `snippets.userSnippetsDirectory`: Directory that contains custom user ultisnips snippets, use ultisnips in extension root of coc.nvim by default.  Default: `""`
+- `snippets.shortcut`: Shortcut in completion menu.  Default: `"S"`
+- `snippets.triggerCharacters`: Trigger characters for trigger snippets completion.  Default: `[]`
+- `snippets.disableSyntaxes`: Disable snippets completion when syntax name matches one of disabled syntaxes.  Default: `[]`
+- `snippets.execContext`: Execute a snippet's context (if it exists) to check if the snippet should be shown in completion menu  Default: `false`
+- `snippets.autoTrigger`: Enable trigger auto trigger snippet after type character.  Default: `true`
+- `snippets.ultisnips.enable`: Enable load snippets from ultisnips folders.  Default: `true`
+- `snippets.ultisnips.pythonPrompt`: Show prompt for user when python not supported on vim.  Default: `true`
+- `snippets.ultisnips.trace`: Trace verbose snippet information.  Default: `false`
+- `snippets.ultisnips.directories`: Directories that searched for ultisnips snippet files, could be directory as subfolder in $runtimepath or absolute paths.  Default: `["UltiSnips"]`
+- `snippets.massCode.enable`: Enable load snippets from MassCode.  Default: `false`
+- `snippets.massCode.host`: Http host of MassCode.  Default: `"localhost"`
+- `snippets.massCode.port`: Http port of MassCode.  Default: `3033`
+- `snippets.massCode.trace`: Trace verbose snippet information.  Default: `false`
+- `snippets.snipmate.enable`: Load snipmate snippets from snippets directory in runtimepath.  Default: `true`
+- `snippets.snipmate.trace`: Trace verbose snippet information.  Default: `false`
+- `snippets.snipmate.author`: Author name used for g:snips_author  Default: `""`
 ## F.A.Q
 
 **Q:** How to add snippet filetypes on buffer create?

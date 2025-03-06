@@ -1,3 +1,7 @@
+# 3.3.1
+
+- Add configuration `snippets.disableSyntaxes`.
+
 # 3.3.0
 
 - Add command `snippets.addFiletypes` for add additional snippets filetypes.
