@@ -80,10 +80,9 @@ export class MassCodeProvider extends BaseProvider {
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
     if (autoTrigger) return []
-
     const line = document.getline(position.line)
     if (line.length == 0) return []
-    const snippets = this.getSnippets(document.filetype).filter(s => {
+    const snippets = this.getDocumentSnippets(document).filter(s => {
       if (autoTrigger && !s.autoTrigger) return false
       let match = getMatched(s, line)
       if (match == null) return false

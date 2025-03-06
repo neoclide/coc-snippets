@@ -11,6 +11,7 @@ import { distinct, documentation, readdirAsync, sameFile, statAsync, uid } from 
 const pythonCodes: Map<string, string> = new Map()
 
 export class UltiSnippetsProvider extends BaseProvider {
+  private loadedLanguageIds: Set<string> = new Set()
   private snippetFiles: UltiSnipsFile[] = []
   private fileItems: FileItem[] = []
   private parser: UltiSnipsParser
@@ -66,7 +67,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       }
     }
     this.parser = new UltiSnipsParser(this.channel, this.config.trace)
-    this.fileItems = await this.loadAllFilItems(env.runtimepath)
+    this.fileItems = await this.loadAllFileItems(env.runtimepath)
     workspace.onDidRuntimePathChange(async e => {
       let subFolders = await this.getSubFolders()
       const newItems: FileItem[] = []
@@ -84,23 +85,17 @@ export class UltiSnippetsProvider extends BaseProvider {
       let filepath = this.context.asAbsolutePath('python/ultisnips.py')
       await workspace.nvim.call('coc#util#open_file', ['pyxfile', filepath])
     }
-    const items = this.getValidItems(this.fileItems)
-    if (items.length) await this.loadFromItems(items)
-    workspace.onDidOpenTextDocument(async e => {
-      let doc = workspace.getDocument(e.bufnr)
-      if (doc) await this.loadByFiletype(doc.filetype)
-    }, null, this.context.subscriptions)
   }
 
-  private async loadByFiletype(filetype: string): Promise<void> {
-    let items = this.getFileItems(filetype)
-    if (items.length) await this.loadFromItems(items)
-  }
-
-  private getFileItems(filetype: string): FileItem[] {
+  public async loadSnippetsByFiletype(filetype: string): Promise<void> {
     let filetypes = this.getFiletypes(filetype)
     filetypes.push('all')
-    return this.fileItems.filter(o => filetypes.includes(o.filetype))
+    filetypes = filetypes.filter(filetype => !this.loadedLanguageIds.has(filetype))
+    if (filetypes.length > 0) {
+      filetypes.forEach(filetype => this.loadedLanguageIds.add(filetype))
+      let items = this.fileItems.filter(o => filetypes.includes(o.filetype))
+      if (items.length) await this.loadFromItems(items)
+    }
   }
 
   private get allFiletypes(): string[] {
@@ -123,18 +118,17 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   private async loadFromItems(items: FileItem[]): Promise<void> {
-    if (items.length) {
-      await Promise.all(items.map(item => {
-        return this.loadSnippetsFromFile(item)
-      }))
-      let pythonCode = ''
-      for (let [file, code] of pythonCodes.entries()) {
-        if (code) pythonCode += `# ${file}\n` + code + '\n'
-      }
-      if (pythonCode) {
-        pythonCodes.clear()
-        await this.executePythonCode(pythonCode)
-      }
+    if (!items.length) return
+    await Promise.all(items.map(item => {
+      return this.loadSnippetsFromFile(item)
+    }))
+    let pythonCode = ''
+    for (let [file, code] of pythonCodes.entries()) {
+      if (code) pythonCode += `# ${file}\n` + code + '\n'
+    }
+    if (pythonCode) {
+      pythonCodes.clear()
+      await this.executePythonCode(pythonCode)
     }
   }
 
@@ -204,7 +198,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger?: boolean): Promise<SnippetEdit[]> {
-    let snippets = this.getSnippets(document.filetype)
+    let snippets = this.getDocumentSnippets(document)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
     if (line.length == 0) return []
@@ -309,7 +303,7 @@ export class UltiSnippetsProvider extends BaseProvider {
     return result
   }
 
-  public async loadAllFilItems(runtimepath: string): Promise<FileItem[]> {
+  public async loadAllFileItems(runtimepath: string): Promise<FileItem[]> {
     let { directories } = this
     let res: FileItem[] = []
     for (let directory of directories) {

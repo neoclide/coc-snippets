@@ -39,6 +39,10 @@
       {
         "title": "Create MassCode snippet for current filetype.",
         "command": "snippets.editMassCodeSnippets"
+      },
+      {
+        "title": "Add additional snippet filetypes to current buffer.",
+        "command": "snippets.addFiletypes"
       }
     ],
     "configuration": {

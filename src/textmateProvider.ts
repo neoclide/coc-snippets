@@ -92,12 +92,6 @@ export class TextmateProvider extends BaseProvider {
     for (let dir of paths ?? []) {
       await this.loadDefinitionFromRoot(dir)
     }
-    for (let languageId of workspace.languageIds) {
-      await this.loadByLanguageId(languageId)
-    }
-    workspace.onDidOpenTextDocument(e => {
-      this.loadByLanguageId(e.languageId)
-    }, null, this.subscriptions)
 
     if (this.config.projectSnippets) {
       workspace.workspaceFolders.forEach(folder => {
@@ -121,10 +115,10 @@ export class TextmateProvider extends BaseProvider {
 
   private async loadFromWorkspace(fsPath: string): Promise<void> {
     let root = path.join(fsPath, '.vscode')
-    await this.loadDefinitionFromRoot(root)
+    await this.loadDefinitionFromRoot(root, false)
   }
 
-  private async loadByLanguageId(languageId: string): Promise<void> {
+  public async loadSnippetsByFiletype(languageId: string): Promise<void> {
     if (this.loadedLanguageIds.has(languageId)) return
     let filetypes = this.getFiletypes(languageId)
     this.info(`Loading textmate snippets from filetypes: ${filetypes.join(', ')}`)
@@ -139,7 +133,6 @@ export class TextmateProvider extends BaseProvider {
       }
     }
   }
-
 
   public async getSnippetFiles(filetype: string): Promise<string[]> {
     let filetypes = this.getFiletypes(filetype)
@@ -158,7 +151,7 @@ export class TextmateProvider extends BaseProvider {
     if (autoTrigger) return []
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
-    let snippets = this.getSnippets(document.filetype)
+    let snippets = this.getDocumentSnippets(document)
     if (!snippets || !snippets.length) return []
     let edits: SnippetEdit[] = []
     for (let snip of snippets) {
@@ -241,11 +234,11 @@ export class TextmateProvider extends BaseProvider {
     return arr
   }
 
-  private async loadDefinitionFromRoot(configPath: string): Promise<void> {
+  private async loadDefinitionFromRoot(configPath: string, showWarningMessage = true): Promise<void> {
     let root = workspace.expand(configPath)
     let stat = await statAsync(root)
     if (!stat || !stat.isDirectory()) {
-      this.error(`${configPath} not a valid directory.`)
+      if (showWarningMessage) this.warn(`${configPath} not a valid directory.`)
       return
     }
     root = normalizeFilePath(root)

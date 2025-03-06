@@ -1,4 +1,4 @@
-import { commands, Disposable, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, TextEdit, Uri, window, workspace } from 'coc.nvim'
+import { commands, Disposable, events, Document, ExtensionContext, languages, listManager, Position, Range, snippetManager, Uri, window, workspace } from 'coc.nvim'
 import merge from 'merge'
 import path from 'path'
 import { registerLanguageProvider } from './languages'
@@ -7,25 +7,23 @@ import { MassCodeProvider } from './massCodeProvider'
 import { ProviderManager } from './provider'
 import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
-import { SnippetEditWithSource, UltiSnippetOption, UltiSnipsConfig } from './types'
+import { UltiSnipsConfig } from './types'
 import { getSnippetsDirectory, UltiSnippetsProvider } from './ultisnipsProvider'
-import { sameFile, waitDocument } from './util'
+import { addFiletypes, getAdditionalFiletype, getSnippetFiletype, insertSnippetEdit, sameFile, waitDocument } from './util'
 
 interface API {
   expandable: () => Promise<boolean>
 }
 
-
-async function insertSnippetEdit(edit: SnippetEditWithSource) {
-  let ultisnips = edit.source == 'ultisnips' || edit.source == 'snipmate'
-  let option: UltiSnippetOption
-  if (ultisnips) {
-    option = {
-      regex: edit.regex,
-      context: edit.context
-    }
+function checkBufferVariable(doc: Document): void {
+  let filetypes = doc.getVar('snippets_filetypes', undefined) as string[]
+  if (!Array.isArray(filetypes)) filetypes = undefined
+  if (!filetypes) {
+    let arr = getAdditionalFiletype(doc.bufnr)
+    if (arr) doc.buffer.setVar('coc_snippets_filetypes', arr, true)
+  } else if (filetypes.length > 0) {
+    addFiletypes(doc.bufnr, filetypes)
   }
-  await commands.executeCommand('editor.action.insertSnippet', TextEdit.replace(edit.range, edit.newText), option)
 }
 
 function enableSnippetsFiletype(subscriptions: Disposable[]) {
@@ -34,15 +32,17 @@ function enableSnippetsFiletype(subscriptions: Disposable[]) {
     if (doc.uri.endsWith('.snippets')) {
       doc.buffer.setOption('filetype', 'snippets', true)
     }
+    checkBufferVariable(doc)
   })
   workspace.onDidOpenTextDocument(async document => {
     if (document.uri.endsWith('.snippets')) {
       let doc = workspace.getDocument(document.uri)
-      if (!doc) return
-      let { buffer } = doc
-      await buffer.setOption('filetype', 'snippets')
+      let buf = nvim.createBuffer(doc.bufnr)
+      buf.setOption('filetype', 'snippets', true)
     }
+    checkBufferVariable(workspace.getDocument(document.bufnr))
   }, null, subscriptions)
+
   const rtp = workspace.env.runtimepath
   let paths = rtp.split(',')
   let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
@@ -98,6 +98,20 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const manager = new ProviderManager(channel, subscriptions)
 
   enableSnippetsFiletype(subscriptions)
+  subscriptions.push(commands.registerCommand('snippets.addFiletypes', async (...args: string[]) => {
+    if (args.length === 0) {
+      let res = await window.requestInput('Filetype to add', '', { position: 'center' })
+      if (res == '') return
+      args = res.split('.')
+    }
+    let filetypes = args.join('.').split('.')
+    let buf = await nvim.buffer
+    addFiletypes(buf.id, filetypes)
+    let curr = getAdditionalFiletype(buf.id)
+    buf.setVar('coc_snippets_filetypes', curr, true)
+    manager.loadSnippetsByFiletype(filetypes.join('.'))
+  }))
+
   let excludes = configuration.get<string[]>('excludePatterns', [])
   if (!Array.isArray(excludes)) excludes = []
   excludes = excludes.map(p => workspace.expand(p))
@@ -153,11 +167,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
       trace: configuration.get<boolean>('massCode.trace', false),
       excludes
     }
-
     let provider = new MassCodeProvider(channel, config)
-
     manager.regist(provider, 'massCode')
-
     subscriptions.push(commands.registerCommand('snippets.editMassCodeSnippets', provider.createSnippet.bind(provider)))
   }
 
@@ -237,7 +248,8 @@ export async function activate(context: ExtensionContext): Promise<API> {
       window.showErrorMessage('Document not found')
       return
     }
-    let files = await manager.getSnippetFiles(doc.filetype)
+    let filetype = getSnippetFiletype(doc)
+    let files = await manager.getSnippetFiles(filetype)
     if (!files.length) {
       window.showWarningMessage('No related snippet file found')
       return

@@ -173,6 +173,8 @@ some regex patterns can't be supported by javascript, including
 - Use `:CocCommand snippets.editSnippets` to edit user's ultisnips snippets of
   current document filetype.
 - Use `:CocCommand snippets.openOutput` to open output channel of snippets.
+- Use `:CocCommand snippets.addFiletypes` to add additional filetypes of current
+  buffer.
 
 ## Options
 
@@ -211,6 +213,10 @@ some regex patterns can't be supported by javascript, including
 - `snippets.snipmate.trace`: Trace verbose snippet information, default `false`.
 
 ## F.A.Q
+
+**Q:** How to add snippet filetypes on buffer create?
+
+**A:** Use autocmd like: `autocmd BufRead *.md let b:coc_snippets_filetypes = ['tex']`
 
 **Q:** How to trigger snippets completion when type special characters?
 

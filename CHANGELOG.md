@@ -1,4 +1,9 @@
-# 3.2
+# 3.3.0
+
+- Add command `snippets.addFiletypes` for add additional snippets filetypes.
+- Support variable `b:coc_snippets_filetypes` on buffer create.
+
+# 3.2.0
 
 - Add execContext-option to enable context-execution for completion.
 - Fix filepath on vim built with win32unix.

@@ -1,7 +1,7 @@
 import { Document, OutputChannel, Position } from 'coc.nvim'
 import minimatch from 'minimatch'
 import { Config, Snippet, SnippetEdit } from './types'
-import { distinct } from './util'
+import { distinct, getSnippetFiletype } from './util'
 
 export default abstract class BaseProvider {
   constructor(protected config: Config, protected channel: OutputChannel) {
@@ -15,6 +15,15 @@ export default abstract class BaseProvider {
 
   public async checkContext(_context: string): Promise<any> {
     return true
+  }
+
+  // load new snippets by filetype
+  public async loadSnippetsByFiletype(_filetype: string): Promise<void> {
+  }
+
+  protected getDocumentSnippets(doc: Document): Snippet[] {
+    let filetype = getSnippetFiletype(doc)
+    return this.getSnippets(filetype)
   }
 
   protected isIgnored(filepath: string): boolean {
@@ -67,6 +76,11 @@ export default abstract class BaseProvider {
 
   protected info(msg: string, data?: any) {
     this.message('Info ', msg, data)
+  }
+
+
+  protected warn(msg: string, data?: any) {
+    this.message('Warn ', msg, data)
   }
 
   protected error(msg: string, data?: any) {

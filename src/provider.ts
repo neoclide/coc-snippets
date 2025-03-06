@@ -1,16 +1,16 @@
 import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, OutputChannel, Position, Range, snippetManager, window, workspace } from 'coc.nvim'
 import path from 'path'
 import BaseProvider from './baseProvider'
-import { Snippet, SnippetEditWithSource, VimCompletionContext, TriggerKind } from './types'
-import { characterIndex, markdownBlock } from './util'
+import { Snippet, SnippetEditWithSource, TriggerKind, VimCompletionContext } from './types'
+import { characterIndex, getSnippetFiletype, markdownBlock } from './util'
 
 export class ProviderManager implements CompletionItemProvider {
   private providers: Map<string, BaseProvider> = new Map()
   constructor(
     private channel: OutputChannel,
-    subscriptions: Disposable[]
+    private subscriptions: Disposable[]
   ) {
-    subscriptions.push(Disposable.create(() => {
+    this.subscriptions.push(Disposable.create(() => {
       this.providers.clear()
     }))
   }
@@ -28,12 +28,31 @@ export class ProviderManager implements CompletionItemProvider {
 
   public async init(): Promise<void> {
     let providers = Array.from(this.providers.values())
-    await Promise.all(providers.map(provider => {
-      return provider.init()
-    })).catch(e => {
+    await Promise.allSettled(providers.map(provider => provider.init().catch(e => {
       workspace.nvim.echoError(e)
-      this.appendError('init', e)
+      this.appendError('Error on provider init:', e)
+    })))
+
+    let promises: Promise<void>[] = []
+    workspace.documents.forEach(doc => {
+      let filetype = getSnippetFiletype(doc)
+      promises.push(this.loadSnippetsByFiletype(filetype))
     })
+    workspace.onDidOpenTextDocument(async doc => {
+      let filetype = getSnippetFiletype({ bufnr: doc.bufnr, filetype: doc.languageId })
+      await this.loadSnippetsByFiletype(filetype)
+    }, null, this.subscriptions)
+    await Promise.allSettled(promises)
+  }
+
+  public async loadSnippetsByFiletype(filetype: string): Promise<void> {
+    let promises: Promise<void>[] = []
+    for (let [name, provider] of this.providers.entries()) {
+      promises.push(provider.loadSnippetsByFiletype(filetype).catch(e => {
+        this.appendError(`Error on load "${name}" snippets:`, e)
+      }))
+    }
+    await Promise.allSettled(promises)
   }
 
   public getSnippets(filetype: string): Snippet[] {
@@ -117,7 +136,8 @@ export class ProviderManager implements CompletionItemProvider {
     let doc = workspace.getDocument(document.uri)
     if (!doc) return []
     let bufnr = doc.bufnr
-    let snippets = this.getSnippets(doc.filetype)
+    let filetype = getSnippetFiletype(doc)
+    let snippets = this.getSnippets(filetype)
     let currline = doc.getline(position.line, true)
     let { input, col, line, colnr } = context.option
     let character = characterIndex(line, col)

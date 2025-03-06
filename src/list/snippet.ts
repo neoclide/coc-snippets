@@ -5,12 +5,13 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 import { BasicList, ListContext, ListItem, Location, Mru, Position, Range, Uri, workspace } from 'coc.nvim'
 import os from 'os'
 import { ProviderManager } from '../provider'
+import { getSnippetFiletype } from '../util'
 
 export default class SnippetsList extends BasicList {
   public readonly name = 'snippets'
   public readonly description = 'snippets list'
   constructor(nvim: any, private manager: ProviderManager) {
-    super(nvim)
+    super()
     this.addLocationActions()
   }
 
@@ -21,7 +22,8 @@ export default class SnippetsList extends BasicList {
     let buf = await window.buffer
     let doc = workspace.getDocument(buf.id)
     if (!doc) return []
-    let snippets = this.manager.getSnippets(doc.filetype)
+    let filetype = getSnippetFiletype(doc)
+    let snippets = this.manager.getSnippets(filetype)
     let res: ListItem[] = []
     for (let snip of snippets) {
       let pos: Position = Position.create(snip.lnum, 0)

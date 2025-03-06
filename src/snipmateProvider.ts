@@ -27,6 +27,7 @@ function convertBody(body: string): string {
 export class SnipmateProvider extends BaseProvider {
   private fileItems: FileItem[] = []
   private snippetFiles: SnipmateFile[] = []
+  private loadedLanguageIds: Set<string> = new Set()
   constructor(
     channel: OutputChannel,
     protected config: SnipmateConfig,
@@ -50,7 +51,7 @@ export class SnipmateProvider extends BaseProvider {
   public async init(): Promise<void> {
     let { nvim } = workspace
     let author = await nvim.getVar('snips_author')
-    if (!author) await nvim.setVar('snips_author', this.config.author)
+    if (!author) nvim.setVar('snips_author', this.config.author, true)
     this.fileItems = await this.loadAllSnippetFiles()
     workspace.onDidRuntimePathChange(async e => {
       for (let rtp of e) {
@@ -65,18 +66,14 @@ export class SnipmateProvider extends BaseProvider {
         }
       }
     }, null, this.subscriptions)
-    for (let filetype of workspace.filetypes) {
-      await this.loadByFiletype(filetype)
-    }
-    workspace.onDidOpenTextDocument(async e => {
-      let doc = workspace.getDocument(e.bufnr)
-      await this.loadByFiletype(doc.filetype)
-    }, null, this.subscriptions)
   }
 
-  private async loadByFiletype(filetype: string): Promise<void> {
+  public async loadSnippetsByFiletype(filetype: string): Promise<void> {
     let filetypes = filetype ? this.getFiletypes(filetype) : []
     filetypes.push('_')
+    filetypes = filetypes.filter(filetype => !this.loadedLanguageIds.has(filetype))
+    if (filetypes.length == 0) return
+    filetypes.forEach(filetype => this.loadedLanguageIds.add(filetype))
     for (let item of this.fileItems) {
       if (!filetypes.includes(item.filetype)) continue
       await this.loadSnippetsFromFile(item.filetype, item.filepath)
@@ -90,18 +87,20 @@ export class SnipmateProvider extends BaseProvider {
     if (idx !== -1) this.fileItems.splice(idx, 1)
     if (this.isIgnored(filepath)) return
     let res = await this.parseSnippetsFile(filetype, filepath)
-    this.snippetFiles.push({ filepath, filetype, snippets: res.snippets })
-    this.info(`Loaded ${res.snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
-    if (res.extends.length) {
-      let fts = res.extends
-      let curr = this.config.extends[filetype] || []
-      for (let ft of fts) {
-        await this.loadByFiletype(ft)
-        if (!curr.includes(ft)) {
-          curr.push(ft)
+    if (this.snippetFiles.findIndex(o => sameFile(o.filepath, filepath)) == -1) {
+      this.snippetFiles.push({ filepath, filetype, snippets: res.snippets })
+      this.info(`Loaded ${res.snippets.length} ${filetype} snipmate snippets from: ${filepath}`)
+      if (res.extends.length) {
+        let fts = res.extends
+        let curr = this.config.extends[filetype] || []
+        for (let ft of fts) {
+          await this.loadSnippetsByFiletype(ft)
+          if (!curr.includes(ft)) {
+            curr.push(ft)
+          }
         }
+        this.config.extends[filetype] = curr
       }
-      this.config.extends[filetype] = curr
     }
   }
 
@@ -183,7 +182,7 @@ export class SnipmateProvider extends BaseProvider {
 
   public async getTriggerSnippets(document: Document, position: Position, autoTrigger: boolean): Promise<SnippetEdit[]> {
     if (autoTrigger) return []
-    let snippets = this.getSnippets(document.filetype)
+    let snippets = this.getDocumentSnippets(document)
     let line = document.getline(position.line)
     line = line.slice(0, position.character)
     if (!line) return []

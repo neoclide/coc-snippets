@@ -2,17 +2,46 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import pify from 'pify'
-import path from 'path'
-import os from 'os'
-import fs from 'fs'
-import { ReplaceItem } from './types'
-import crypto from 'crypto'
+import { commands, Document, TextEdit, Uri } from 'coc.nvim'
 import { promisify } from 'util'
-import { Document, Uri } from 'coc.nvim'
+import crypto from 'crypto'
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
+import { ReplaceItem, SnippetEditWithSource, UltiSnippetOption } from './types'
 
 const caseInsensitive = os.platform() == 'win32' || os.platform() == 'darwin'
 const BASE64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'
+const additionalFiletypes: Map<number, string[]> = new Map()
+
+export async function insertSnippetEdit(edit: SnippetEditWithSource) {
+  let ultisnips = edit.source == 'ultisnips' || edit.source == 'snipmate'
+  let option: UltiSnippetOption
+  if (ultisnips) {
+    option = {
+      regex: edit.regex,
+      context: edit.context
+    }
+  }
+  await commands.executeCommand('editor.action.insertSnippet', TextEdit.replace(edit.range, edit.newText), option)
+}
+
+export function addFiletypes(bufnr: number, filetypes: string[]): void {
+  let curr = additionalFiletypes.get(bufnr) ?? []
+  filetypes.forEach(filetype => {
+    if (filetype && !curr.includes(filetype)) curr.push(filetype)
+  })
+  additionalFiletypes.set(bufnr, curr)
+}
+
+export function getAdditionalFiletype(bufnr: number): string[] {
+  return additionalFiletypes.get(bufnr) ?? []
+}
+
+export function getSnippetFiletype(doc: { bufnr: number, filetype: string }): string {
+  let filetypes = getAdditionalFiletype(doc.bufnr)
+  return [doc.filetype, ...filetypes].join('.')
+}
 
 function tostr(bytes: Uint8Array): string {
   let r: string[] = []
@@ -77,7 +106,7 @@ export function flatten<T>(arr: T[][]): T[] {
 
 export async function statAsync(filepath: string): Promise<fs.Stats> {
   try {
-    return await pify(fs.stat)(filepath)
+    return await promisify(fs.stat)(filepath)
   } catch (e) {
     return null
   }
@@ -85,7 +114,7 @@ export async function statAsync(filepath: string): Promise<fs.Stats> {
 
 export async function readdirAsync(filepath: string): Promise<string[]> {
   try {
-    return await pify(fs.readdir)(filepath)
+    return await promisify(fs.readdir)(filepath)
   } catch (e) {
     return null
   }
