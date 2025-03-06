@@ -1,4 +1,4 @@
-import { commands, Disposable, events, Document, ExtensionContext, languages, listManager, Position, Range, snippetManager, Uri, window, workspace } from 'coc.nvim'
+import { commands, Disposable, Document, events, ExtensionContext, languages, listManager, Position, Range, snippetManager, Uri, window, workspace } from 'coc.nvim'
 import merge from 'merge'
 import path from 'path'
 import { registerLanguageProvider } from './languages'
@@ -28,6 +28,14 @@ function checkBufferVariable(doc: Document): void {
 
 function enableSnippetsFiletype(subscriptions: Disposable[]) {
   let { nvim } = workspace
+  const rtp = workspace.env.runtimepath
+  let paths = rtp.split(',')
+  let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
+  if (idx === -1 && !workspace.env.isCygwin) {
+    let directory = path.resolve(__dirname, '..')
+    nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets', true)
+    nvim.command(`execute 'noa set rtp+='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
+  }
   workspace.documents.forEach(doc => {
     if (doc.uri.endsWith('.snippets')) {
       doc.buffer.setOption('filetype', 'snippets', true)
@@ -42,15 +50,6 @@ function enableSnippetsFiletype(subscriptions: Disposable[]) {
     }
     checkBufferVariable(workspace.getDocument(document.bufnr))
   }, null, subscriptions)
-
-  const rtp = workspace.env.runtimepath
-  let paths = rtp.split(',')
-  let idx = paths.findIndex(s => /^ultisnips$/i.test(path.basename(s)))
-  if (idx === -1 && !workspace.env.isCygwin) {
-    let directory = path.resolve(__dirname, '..')
-    nvim.command('autocmd BufNewFile,BufRead *.snippets setf snippets', true)
-    nvim.command(`execute 'noa set rtp+='.fnameescape('${directory.replace(/'/g, "''")}')`, true)
-  }
 }
 
 async function snippetSelect(): Promise<void> {
@@ -96,8 +95,9 @@ export async function activate(context: ExtensionContext): Promise<API> {
   const channel = window.createOutputChannel('snippets')
   subscriptions.push(channel)
   const manager = new ProviderManager(channel, subscriptions, configuration)
-
-  enableSnippetsFiletype(subscriptions)
+  events.on('ready' as any, () => {
+    enableSnippetsFiletype(subscriptions)
+  }, null, subscriptions)
   subscriptions.push(commands.registerCommand('snippets.addFiletypes', async (...args: string[]) => {
     if (args.length === 0) {
       let res = await window.requestInput('Filetype to add', '', { position: 'center' })
