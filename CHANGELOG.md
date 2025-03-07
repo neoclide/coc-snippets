@@ -1,3 +1,7 @@
+# 3.4.0
+
+- Support all UltiSnips options, including `t` `s` and `m`.
+
 # 3.3.1
 
 - Add configuration `snippets.disableSyntaxes`.
