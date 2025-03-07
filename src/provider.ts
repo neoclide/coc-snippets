@@ -207,7 +207,9 @@ export class ProviderManager implements CompletionItemProvider {
         // range line
         // before_content snip.prefix
         let formatOptions = snip.formatOptions ?? {}
+        let actions = snip.actions ?? {}
         item.data.ultisnip = {
+          actions,
           context: snip.context,
           regex: snip.originRegex,
           range: Range.create(position.line, startCharacter, position.line, character + snip.prefix.length),

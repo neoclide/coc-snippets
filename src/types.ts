@@ -16,6 +16,7 @@ export interface UltiSnippetOption {
   context?: string
   range?: Range
   line?: string
+  actions?: UltiSnipsActions
   /**
    * Do not expand tabs
    */
@@ -85,6 +86,12 @@ export interface UltisnipFormatOption {
   removeWhiteSpace?: boolean
 }
 
+export interface UltiSnipsActions {
+  preExpand?: string
+  postExpand?: string
+  postJump?: string
+}
+
 export interface Snippet {
   // prefix + no regex + no context + same triggerKind
   readonly filepath: string
@@ -104,9 +111,7 @@ export interface Snippet {
   readonly originRegex?: string
   // none word prefix of prefix
   readonly special?: string
-  preExpand?: string
-  postExpand?: string
-  postJump?: string
+  readonly actions?: UltiSnipsActions
   extensionId?: string
   provider?: string
 }
@@ -125,6 +130,7 @@ export interface SnippetEdit {
   priority: number
   regex?: string
   context?: string
+  actions?: UltiSnipsActions
   formatOptions?: UltisnipFormatOption
 }
 

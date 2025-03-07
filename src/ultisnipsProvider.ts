@@ -238,6 +238,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       let range = Range.create(position.line, character, position.line, position.character)
       edits.push({
         range,
+        actions: s.actions,
         newText: s.body,
         prefix: s.prefix,
         description: s.description,

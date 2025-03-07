@@ -278,9 +278,11 @@ class ContextSnippet(object):
         if "coc_selected_text" in vim.vars:
             self.visual_mode = vim.eval("visualmode()")
             self.visual_text = vim.vars["coc_selected_text"]
+            self.visual_content = vim.vars["coc_selected_text"]
         else:
             self.visual_mode = None
             self.visual_text = ""
+            self.visual_content = ""
         if "coc_last_placeholder" in vim.vars:
             p = vim.vars["coc_last_placeholder"]
             start = _Position(p["start"]["line"], p["start"]["col"])

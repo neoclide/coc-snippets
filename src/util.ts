@@ -21,6 +21,7 @@ export async function insertSnippetEdit(edit: SnippetEditWithSource) {
     let formatOptions = edit.formatOptions ?? {}
     option = {
       regex: edit.regex,
+      actions: edit.actions,
       context: edit.context,
       noExpand: formatOptions.noExpand,
       trimTrailingWhitespace: formatOptions.trimTrailingWhitespace,
@@ -150,7 +151,7 @@ export function memorize<R extends (...args: any[]) => Promise<R>>(_target: any,
 }
 
 export function trimQuote(str: string): string {
-  if (str.startsWith('"') || str.startsWith("'")) return str.slice(1, -1)
+  if (/^(["']).*\1$/.test(str)) return str.slice(1, -1)
   return str
 }
 

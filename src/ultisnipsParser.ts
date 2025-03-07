@@ -128,6 +128,7 @@ export default class UltiSnipsParser {
               regex,
               body,
               priority,
+              actions: {},
               formatOptions: {
                 noExpand: option.includes('t'),
                 trimTrailingWhitespace: option.includes('m'),
@@ -137,7 +138,12 @@ export default class UltiSnipsParser {
             while (actions.length) {
               const line = actions.pop()
               const [head, tail] = headTail(line)
-              snippet[actionMap[head]] = trimQuote(tail)
+              let key = actionMap[head]
+              if (key) {
+                snippet.actions[key] = trimQuote(tail)
+              } else {
+                this.error(`Unknown UltiSnips action: ${head}`)
+              }
             }
             this.debug(`Loaded snippet`, snippet)
             snippets.push(snippet)
