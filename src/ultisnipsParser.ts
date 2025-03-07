@@ -127,7 +127,12 @@ export default class UltiSnipsParser {
               description,
               regex,
               body,
-              priority
+              priority,
+              formatOptions: {
+                noExpand: option.includes('t'),
+                trimTrailingWhitespace: option.includes('m'),
+                removeWhiteSpace: option.includes('s')
+              }
             }
             while (actions.length) {
               const line = actions.pop()

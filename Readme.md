@@ -137,8 +137,8 @@ Some ultisnips features are **not** supported:
 - [x] Update python code block after change of placeholder.
 - [x] `snip.expand_anon()` should work.
 - [ ] Execute shell code with custom shabang (will not support).
-- [ ] Option `m`, empty line in snippet not have indentation with coc.nvim.
-- [ ] Reformat snippet options, including `t`, `s`.
+- [x] Option `m`, trim all whitespaces from right side of snippet lines.
+- [x] Reformat snippet options, including `t`, `s`.
 - [ ] All snippet actions including `pre_expand`, `post_expand` and `jump` (can't support).
 
 **Note**: python regex in snippet are converted to javascript regex, however,

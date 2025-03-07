@@ -18,9 +18,13 @@ export async function insertSnippetEdit(edit: SnippetEditWithSource) {
   let ultisnips = edit.source == 'ultisnips' || edit.source == 'snipmate'
   let option: UltiSnippetOption
   if (ultisnips) {
+    let formatOptions = edit.formatOptions ?? {}
     option = {
       regex: edit.regex,
-      context: edit.context
+      context: edit.context,
+      noExpand: formatOptions.noExpand,
+      trimTrailingWhitespace: formatOptions.trimTrailingWhitespace,
+      removeWhiteSpace: formatOptions.removeWhiteSpace
     }
   }
   await commands.executeCommand('editor.action.insertSnippet', TextEdit.replace(edit.range, edit.newText), option)

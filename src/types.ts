@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { Range, CompletionItem, TextEdit, CompletionContext, CompleteOption } from 'coc.nvim'
+import { CompleteOption, CompletionContext, Range } from 'coc.nvim'
 
 export enum TriggerKind {
   SpaceBefore,
@@ -16,6 +16,18 @@ export interface UltiSnippetOption {
   context?: string
   range?: Range
   line?: string
+  /**
+   * Do not expand tabs
+   */
+  noExpand?: boolean
+  /**
+   * Trim all whitespaces from right side of snippet lines.
+   */
+  trimTrailingWhitespace?: boolean
+  /**
+   * Remove whitespace immediately before the cursor at the end of a line before jumping to the next tabstop
+   */
+  removeWhiteSpace?: boolean
 }
 
 export interface VimCompletionContext extends CompletionContext {
@@ -67,6 +79,12 @@ export interface SnipmateFile {
   snippets: Snippet[]
 }
 
+export interface UltisnipFormatOption {
+  noExpand?: boolean
+  trimTrailingWhitespace?: boolean
+  removeWhiteSpace?: boolean
+}
+
 export interface Snippet {
   // prefix + no regex + no context + same triggerKind
   readonly filepath: string
@@ -76,6 +94,7 @@ export interface Snippet {
   readonly description: string
   readonly triggerKind: TriggerKind
   readonly filetype: string
+  readonly formatOptions?: UltisnipFormatOption
   readonly priority?: number
   // prefix is expression
   readonly regex?: RegExp
@@ -106,6 +125,7 @@ export interface SnippetEdit {
   priority: number
   regex?: string
   context?: string
+  formatOptions?: UltisnipFormatOption
 }
 
 export interface SnippetEditWithSource extends SnippetEdit {

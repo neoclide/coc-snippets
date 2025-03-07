@@ -245,6 +245,7 @@ export class UltiSnippetsProvider extends BaseProvider {
         priority: s.priority,
         regex: s.originRegex,
         context: s.context,
+        formatOptions: s.formatOptions
       })
     }
     return edits

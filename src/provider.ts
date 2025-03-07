@@ -206,11 +206,15 @@ export class ProviderManager implements CompletionItemProvider {
       if (ultisnip) {
         // range line
         // before_content snip.prefix
+        let formatOptions = snip.formatOptions ?? {}
         item.data.ultisnip = {
           context: snip.context,
           regex: snip.originRegex,
           range: Range.create(position.line, startCharacter, position.line, character + snip.prefix.length),
-          line: before_content + snip.prefix + after
+          line: before_content + snip.prefix + after,
+          noExpand: formatOptions.noExpand,
+          trimTrailingWhitespace: formatOptions.trimTrailingWhitespace,
+          removeWhiteSpace: formatOptions.removeWhiteSpace
         }
       }
       if (snip.regex) {
