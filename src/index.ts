@@ -261,13 +261,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
     await workspace.jumpTo(uri, null, configuration.get<string>('editSnippetsCommand'))
   }))
 
-  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', async () => {
+  const expand = async () => {
     let bufnr = await nvim.eval('bufnr("%")') as number
     let expanded = await doExpand(bufnr)
     if (!expanded) await fallback()
-  }, { silent: true, sync: true, cancel: true }))
-
-  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', async () => {
+  }
+  const expandJump = async () => {
     let bufnr = await nvim.eval('bufnr("%")') as number
     let expanded = await doExpand(bufnr)
     if (!expanded) {
@@ -279,7 +278,12 @@ export async function activate(context: ExtensionContext): Promise<API> {
       }
       await fallback()
     }
-  }, { silent: true, sync: true, cancel: true }))
+  }
+
+  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand', expand, { silent: true, sync: true, cancel: true }))
+  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-async', expand, { silent: true, sync: false, cancel: true }))
+  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', expandJump, { silent: true, sync: true, cancel: true }))
+  subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump-async', expandJump, { silent: true, sync: false, cancel: true }))
 
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', snippetSelect, { silent: true, sync: false, cancel: true }))
   registerLanguageProvider(subscriptions, channel, configuration)

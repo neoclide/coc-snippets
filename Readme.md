@@ -160,8 +160,12 @@ some regex patterns can't be supported by javascript, including
   visual mode only.
 - `<Plug>(coc-snippets-expand)` Expand snippet with current inserted text,
   insert mode only.
+- `<Plug>(coc-snippets-expand-async)` None block variant of
+`<Plug>(coc-snippets-expand)`.
 - `<Plug>(coc-snippets-expand-jump)` Expand snippet or jump to next placeholder
   of current snippet when possible, insert mode only.
+- `<Plug>(coc-snippets-expand-jump-async)` None block variant of
+`<Plug>(coc-snippets-expand-jump)`.
 - `<Plug>(coc-snippets-select)` Remove selected text and save to
   `g:coc_selected_text` which will replace `$VISUAL` on next snippet expand.
 
