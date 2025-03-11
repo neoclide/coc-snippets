@@ -14,7 +14,7 @@
     "colors"
   ],
   "engines": {
-    "coc": "^0.0.80"
+    "coc": "^0.0.82"
   },
   "scripts": {
     "prepare": "node esbuild.js"

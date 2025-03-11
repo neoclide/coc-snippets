@@ -180,6 +180,8 @@ some regex patterns can't be supported by javascript, including
 - Use `:CocCommand snippets.addFiletypes` to add additional filetypes of current
   buffer.
 
+Use `b:coc_snippets_filetypes` to add additional filetypes on buffer create.
+
 ## Options
 
 - `snippets.priority`: Completion source priority of snippets.  Default: `90`
