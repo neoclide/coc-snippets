@@ -10,7 +10,7 @@ import { getSnippetFiletype } from '../util'
 export default class SnippetsList extends BasicList {
   public readonly name = 'snippets'
   public readonly description = 'snippets list'
-  constructor(nvim: any, private manager: ProviderManager) {
+  constructor(_nvim, private manager: ProviderManager) {
     super()
     this.addLocationActions()
   }

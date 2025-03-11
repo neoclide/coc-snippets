@@ -6,12 +6,11 @@ import util from 'util'
 import BaseProvider from './baseProvider'
 import { FileItem, Snippet, SnippetEdit, TriggerKind, UltiSnipsConfig, UltiSnipsFile } from './types'
 import UltiSnipsParser from './ultisnipsParser'
-import { distinct, documentation, readdirAsync, sameFile, statAsync, uid } from './util'
-
-const pythonCodes: Map<string, string> = new Map()
+import { createMD5, distinct, documentation, filetypeFromBasename, getAdditionalFiletype, getAllAdditionalFiletype, pythonCodes, readdirAsync, sameFile, statAsync } from './util'
 
 export class UltiSnippetsProvider extends BaseProvider {
   private loadedLanguageIds: Set<string> = new Set()
+  private errorFiles: Set<string> = new Set()
   private snippetFiles: UltiSnipsFile[] = []
   private fileItems: FileItem[] = []
   private parser: UltiSnipsParser
@@ -33,9 +32,8 @@ export class UltiSnippetsProvider extends BaseProvider {
         this.snippetFiles.splice(idx, 1)
         await this.loadSnippetsFromFile({ filetype: snippetFile.filetype, filepath, directory: snippetFile.directory })
       } else {
-        // TODO filetype could be wrong
         let filetype = filetypeFromBasename(path.basename(filepath, '.snippets'))
-        await this.loadSnippetsFromFile({ filetype, filepath, directory: path.dirname(filepath) })
+        if (this.allFiletypes.includes(filetype)) await this.loadSnippetsFromFile({ filetype, filepath, directory: path.dirname(filepath) })
       }
     }, null, this.context.subscriptions)
   }
@@ -46,6 +44,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   }
 
   private async showPrompt(): Promise<void> {
+    if (!this.config.pythonPrompt) return
     let name = workspace.isVim ? `python` : `provider-python`
     await window.showWarningMessage(`The Ultisnips feature of coc-snippets requires Python support on Vim, see :h ${name}`, {
       title: 'I understand, don\'t show this message again',
@@ -62,9 +61,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       await nvim.call('pyxeval', ['1'])
     } catch (e) {
       this.pythonSupport = false
-      if (this.config.pythonPrompt) {
-        void this.showPrompt()
-      }
+      void this.showPrompt()
     }
     this.parser = new UltiSnipsParser(this.channel, this.config.trace)
     this.fileItems = await this.loadAllFileItems(env.runtimepath)
@@ -75,10 +72,15 @@ export class UltiSnippetsProvider extends BaseProvider {
         let res = await this.getFilesFromDirectory(dir, subFolders)
         if (res?.length) newItems.push(...res)
       }
-      if (newItems.length) {
-        this.fileItems.push(...newItems)
-        const items = this.getValidItems(newItems)
-        if (items.length) await this.loadFromItems(items)
+      let items = newItems.filter(item => !this.fileItems.find(o => o.filepath === item.filepath))
+      if (items.length) {
+        this.fileItems.push(...items)
+        let { allFiletypes } = this
+        for (let item of items) {
+          if (allFiletypes.includes(item.filetype)) {
+            await this.loadSnippetsFromFile(item)
+          }
+        }
       }
     }, null, this.context.subscriptions)
     if (this.pythonSupport) {
@@ -89,60 +91,41 @@ export class UltiSnippetsProvider extends BaseProvider {
 
   public async loadSnippetsByFiletype(filetype: string): Promise<void> {
     let filetypes = this.getFiletypes(filetype)
-    filetypes.push('all')
+    if (!filetypes.includes('all')) filetypes.push('all')
     filetypes = filetypes.filter(filetype => !this.loadedLanguageIds.has(filetype))
-    if (filetypes.length > 0) {
-      filetypes.forEach(filetype => this.loadedLanguageIds.add(filetype))
-      let items = this.fileItems.filter(o => filetypes.includes(o.filetype))
-      if (items.length) await this.loadFromItems(items)
+    if (filetypes.length == 0) return
+    let sorted = getSortedFiletypes(filetype, filetypes)
+    sorted.forEach(filetype => this.loadedLanguageIds.add(filetype))
+    for (let ft of sorted) {
+      for (let item of this.fileItems) {
+        if (item.filetype === ft) {
+          await this.loadSnippetsFromFile(item)
+        }
+      }
     }
   }
 
   private get allFiletypes(): string[] {
-    let filetypes = Array.from(workspace.filetypes)
-    let res: string[] = []
+    let filetypes = Array.from(workspace.filetypes).concat(getAllAdditionalFiletype())
+    let res: Set<string> = new Set()
     for (let ft of filetypes) {
       let arr = this.getFiletypes(ft)
-      arr.forEach(val => {
-        if (!res.includes(val)) res.push(val)
-      })
+      arr.forEach(val => res.add(val))
     }
-    res.push('all')
-    return res
-  }
-
-  // valid items for current filetypes
-  private getValidItems(fileItems: FileItem[]): FileItem[] {
-    let filetypes = this.allFiletypes
-    return fileItems.filter(o => filetypes.includes(o.filetype))
-  }
-
-  private async loadFromItems(items: FileItem[]): Promise<void> {
-    if (!items.length) return
-    await Promise.all(items.map(item => {
-      return this.loadSnippetsFromFile(item)
-    }))
-    let pythonCode = ''
-    for (let [file, code] of pythonCodes.entries()) {
-      if (code) pythonCode += `# ${file}\n` + code + '\n'
-    }
-    if (pythonCode) {
-      pythonCodes.clear()
-      await this.executePythonCode(pythonCode)
-    }
+    res.add('all')
+    return Array.from(res)
   }
 
   public async loadSnippetsFromFile(fileItem: FileItem): Promise<void> {
     let { filepath, directory, filetype } = fileItem
     let idx = this.snippetFiles.findIndex(o => sameFile(o.filepath, filepath))
-    if (idx !== -1) return
-    if (this.isIgnored(filepath)) return
+    if (idx !== -1 || this.isIgnored(filepath)) return
     idx = this.fileItems.findIndex(o => o.filepath == filepath)
     if (idx !== -1) this.fileItems.splice(idx, 1)
     let { snippets, pythonCode, extendFiletypes, clearsnippets } = await this.parser.parseUltisnipsFile(filetype, filepath)
     if (!this.pythonSupport) {
       // filter snippet with python
-      snippets = snippets.filter(s => s.regex == null && s.context == null && s.body.indexOf('`!p') === -1)
+      snippets = snippets.filter(s => s.regex == null && s.context == null && !s.body.includes('`!p'))
     }
     this.snippetFiles.push({
       extendFiletypes,
@@ -156,20 +139,24 @@ export class UltiSnippetsProvider extends BaseProvider {
       let filetypes = this.config.extends[filetype] || []
       filetypes = filetypes.concat(extendFiletypes)
       this.config.extends[filetype] = distinct(filetypes)
-      let fts: string[] = []
+      let fts: Set<string> = new Set()
       for (let ft of extendFiletypes) {
-        let filetypes = this.getFiletypes(ft)
-        filetypes.forEach(s => {
-          if (!fts.includes(s)) fts.push(s)
-        })
+        this.getFiletypes(ft).forEach(s => fts.add(s))
       }
-      let items = this.fileItems.filter(o => fts.includes(o.filetype))
-      await Promise.all(items.map(item => {
-        return this.loadSnippetsFromFile(item)
-      }))
+      let promises: Promise<void>[] = []
+      this.fileItems.forEach(item => {
+        if (!fts.has(item.filetype)) return
+        promises.push(this.loadSnippetsFromFile(item))
+      })
+      await Promise.allSettled(promises)
     }
     this.info(`Loaded ${snippets.length} UltiSnip snippets from: ${filepath}`)
-    if (pythonCode) pythonCodes.set(filepath, pythonCode)
+    if (pythonCode.trim().length > 0) {
+      pythonCodes.set(filepath, { hash: createMD5(pythonCode), code: pythonCode })
+      this.executePyCodesForFile(filepath).catch(e => {
+        this.error(e.message)
+      })
+    }
   }
 
   public async checkContext(context: string): Promise<any> {
@@ -390,10 +377,10 @@ export class UltiSnippetsProvider extends BaseProvider {
     if (stat && stat.isDirectory()) {
       let files = await readdirAsync(directory)
       if (files.length) {
-        for (let f of files) {
-          let file = path.join(directory, f)
+        for (let filename of files) {
+          let file = path.join(directory, filename)
           if (file.endsWith('.snippets')) {
-            let basename = path.basename(f, '.snippets')
+            let basename = path.basename(filename, '.snippets')
             let filetype = filetypeFromBasename(basename)
             res.push({ filepath: file, directory, filetype })
           } else {
@@ -402,7 +389,7 @@ export class UltiSnippetsProvider extends BaseProvider {
               let files = await readdirAsync(file)
               for (let filename of files) {
                 if (filename.endsWith('.snippets')) {
-                  res.push({ filepath: path.join(file, filename), directory, filetype: f })
+                  res.push({ filepath: path.join(file, filename), directory, filetype: filename })
                 }
               }
             }
@@ -413,26 +400,54 @@ export class UltiSnippetsProvider extends BaseProvider {
     return res
   }
 
-  private async executePythonCode(pythonCode: string): Promise<void> {
-    if (!this.pythonSupport) return
+  public async executePyCodesForFile(filepath: string): Promise<void> {
+    let info = pythonCodes.get(filepath)
+    if (!info) return
+    let { code, hash } = info
+    const tmpfile = path.join(os.tmpdir(), `coc-snippets-${hash}.py`)
     try {
-      let tmpfile = path.join(os.tmpdir(), `coc-ultisnips-${uid()}.py`)
-      let code = addPythonTryCatch(pythonCode)
-      fs.writeFileSync(tmpfile, '# -*- coding: utf-8 -*-\n' + code, 'utf8')
-      this.info(`Execute python code in: ${tmpfile}`)
+      if (this.errorFiles.has(tmpfile)) return
+      if (!fs.existsSync(tmpfile)) {
+        let prefix = [
+          '# -*- coding: utf-8 -*-\n',
+          `# ${filepath}\n`
+        ]
+        fs.writeFileSync(tmpfile, prefix.join('\n') + code, 'utf8')
+      }
+      this.info(`Execute python file ${tmpfile} from: ${filepath}`)
       await workspace.nvim.call('coc#util#open_file', ['pyxfile', tmpfile])
     } catch (e) {
-      this.error(`Error on execute python script ${e.stack}:`, pythonCode)
-      window.showErrorMessage(`Error on execute python script: ${e.message}`)
+      this.errorFiles.add(tmpfile)
+      this.error(`Error on execute python script ${e.stack}:`, code)
+      void window.showErrorMessage(`Error python code from file ${filepath}: ${e.message}`)
+    }
+  }
+
+  public async onFiletypeChange(bufnr: number, filetype: string): Promise<void> {
+    let filetypes = distinct([...getAdditionalFiletype(bufnr), ...this.getFiletypes(filetype)])
+    let sorted = getSortedFiletypes(filetype, filetypes)
+    let files: string[] = []
+    sorted.forEach(ft => {
+      this.snippetFiles.forEach(s => {
+        if (s.filetype === ft) {
+          files.push(s.filepath)
+        }
+      })
+    })
+    for (let file of files) {
+      await this.executePyCodesForFile(file)
     }
   }
 }
 
-function filetypeFromBasename(basename: string): string {
-  if (basename == 'typescript_react') return 'typescriptreact'
-  if (basename == 'javascript_react') return 'javascriptreact'
-  if (basename.includes('_')) return basename.split('_', 2)[0]
-  return basename.split('-', 2)[0]
+// make all first and main filetype last
+function getSortedFiletypes(filetype: string, filetypes: string[]): string[] {
+  let res: string[] = []
+  if (filetypes.includes('all')) res.push('all')
+  let mainFiletype = filetype.split('.')[0]
+  res.push(...filetypes.filter(s => s !== mainFiletype && s !== 'all'))
+  if (mainFiletype.length > 0) res.push(mainFiletype)
+  return res
 }
 
 /**

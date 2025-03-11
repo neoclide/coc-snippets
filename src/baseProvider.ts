@@ -21,6 +21,9 @@ export default abstract class BaseProvider {
   public async loadSnippetsByFiletype(_filetype: string): Promise<void> {
   }
 
+  public async onFiletypeChange(_bufnr: number, _filetype: string): Promise<void> {
+  }
+
   protected getDocumentSnippets(doc: Document): Snippet[] {
     let filetype = getSnippetFiletype(doc)
     return this.getSnippets(filetype)
@@ -71,7 +74,10 @@ export default abstract class BaseProvider {
   private message(kind: string, msg: string, data?: any) {
     let str = (new Date()).toISOString().replace(/^.*T/, '').replace(/Z$/, '')
     this.channel.appendLine(`[${kind} - ${str}] ${msg}`)
-    if (data !== undefined) this.channel.appendLine(JSON.stringify(data, null, 2))
+    if (data !== undefined) {
+      let s = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+      this.channel.appendLine(s)
+    }
   }
 
   protected info(msg: string, data?: any) {

@@ -2,7 +2,7 @@ import { CancellationToken, CompleteOption, CompletionContext, CompletionItem, C
 import { convertRegex, headTail, markdownBlock } from './util'
 
 const codesMap: Map<number, string> = new Map()
-codesMap.set(1, 'invalid snippet line, trigger requried.')
+codesMap.set(1, 'invalid snippet line, trigger required.')
 codesMap.set(2, 'invalid snippet option, option "$1" not supported.')
 codesMap.set(3, 'invalid python expression, $1')
 codesMap.set(4, 'invalid code interpolation, #! not supported.')

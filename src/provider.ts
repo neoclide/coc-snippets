@@ -1,4 +1,4 @@
-import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, LinesTextDocument, OutputChannel, Position, Range, snippetManager, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
+import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider, Disposable, Document, InsertTextFormat, LinesTextDocument, OutputChannel, Position, Range, snippetManager, TextEditor, window, workspace, WorkspaceConfiguration } from 'coc.nvim'
 import path from 'path'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEditWithSource, TriggerKind, VimCompletionContext } from './types'
@@ -39,6 +39,19 @@ export class ProviderManager implements CompletionItemProvider {
       let filetype = getSnippetFiletype(doc)
       promises.push(this.loadSnippetsByFiletype(filetype))
     })
+    let filetype: string | undefined
+    let doc = window.activeTextEditor?.document
+    if (doc) filetype = doc.filetype
+    window.onDidChangeActiveTextEditor(async (e: TextEditor) => {
+      let newFiletype = e.document?.filetype
+      if (newFiletype && newFiletype != filetype) {
+        filetype = newFiletype
+        let bufnr = e.document.bufnr
+        await Promise.allSettled(providers.map(provider => provider.onFiletypeChange(bufnr, filetype).catch(e => {
+          this.appendError('Error on filetype change:', e)
+        })))
+      }
+    }, null, this.subscriptions)
     workspace.onDidOpenTextDocument(async doc => {
       let filetype = getSnippetFiletype({ bufnr: doc.bufnr, filetype: doc.languageId })
       await this.loadSnippetsByFiletype(filetype)

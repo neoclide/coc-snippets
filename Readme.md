@@ -253,20 +253,6 @@ configuration from it.
 
 **A:** Use functions provided by coc.nvim: `coc#expandable()` `coc#jumpable()` and `coc#expandableOrJumpable()`.
 
-**Q:** It doesn't load snippets from [vim-go](https://github.com/fatih/vim-go).
-
-**A:** It uses `g:UltiSnipsSnippetDirectories` which is not supported, you can
-add settings:
-
-```
-snippets.ultisnips.directories: [
-  "UltiSnips",
-  "gosnippets/UltiSnips"
-],
-```
-
-to load it.
-
 **Q:** How could I add custom UltiSnips snippets.
 
 **A:** You can create snippet files in folder: `$VIMCONFIG/coc/ultisnips`, use

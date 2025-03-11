@@ -2,13 +2,20 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { commands, Document, TextEdit, Uri } from 'coc.nvim'
+import { commands, workspace, Document, TextEdit, Uri } from 'coc.nvim'
 import { promisify } from 'util'
 import crypto from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { ReplaceItem, SnippetEditWithSource, UltiSnippetOption } from './types'
+
+export interface CodeInfo {
+  readonly hash: string
+  readonly code: string
+}
+
+export const pythonCodes: Map<string, CodeInfo> = new Map()
 
 const caseInsensitive = os.platform() == 'win32' || os.platform() == 'darwin'
 const BASE64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'
@@ -43,6 +50,15 @@ export function getAdditionalFiletype(bufnr: number): string[] {
   return additionalFiletypes.get(bufnr) ?? []
 }
 
+export function getAllAdditionalFiletype(): string[] {
+  let filetypes: string[] = []
+  workspace.documents.forEach(doc => {
+    let arr = getAdditionalFiletype(doc.bufnr)
+    if (arr.length) filetypes.push(...arr)
+  })
+  return filetypes
+}
+
 export function getSnippetFiletype(doc: { bufnr: number, filetype: string }): string {
   let filetypes = getAdditionalFiletype(doc.bufnr)
   return [doc.filetype, ...filetypes].join('.')
@@ -59,6 +75,10 @@ function tostr(bytes: Uint8Array): string {
 
 export function uid(): string {
   return tostr(crypto.randomBytes(10))
+}
+
+export function createMD5(input: string): string {
+  return crypto.createHash('md5').update(input).digest('hex');
 }
 
 export const documentation = `# A valid snippet should starts with:
@@ -302,4 +322,11 @@ export function omit<T>(obj: T, properties: string[]): T {
 
 export function normalizeFilePath(filepath: string) {
   return Uri.file(path.resolve(path.normalize(filepath))).fsPath
+}
+
+export function filetypeFromBasename(basename: string): string {
+  if (basename == 'typescript_react') return 'typescriptreact'
+  if (basename == 'javascript_react') return 'javascriptreact'
+  if (basename.includes('_')) return basename.split('_', 2)[0]
+  return basename.split('-', 2)[0]
 }

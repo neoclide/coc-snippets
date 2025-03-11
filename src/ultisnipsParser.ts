@@ -81,7 +81,7 @@ export default class UltiSnipsParser {
       }
       if (head == 'endglobal' && block == 'global') {
         block = null
-        pycodes.push(...preLines)
+        pycodes.push(`# ${lnum - preLines.length}`, ...preLines)
         preLines = []
         return
       }

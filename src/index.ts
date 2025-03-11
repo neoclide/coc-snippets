@@ -99,12 +99,13 @@ export async function activate(context: ExtensionContext): Promise<API> {
     enableSnippetsFiletype(subscriptions)
   }, null, subscriptions)
   subscriptions.push(commands.registerCommand('snippets.addFiletypes', async (...args: string[]) => {
-    if (args.length === 0) {
+    let list = args.filter(s => typeof s === 'string')
+    if (list.length === 0) {
       let res = await window.requestInput('Filetype to add', '', { position: 'center' })
       if (res == '') return
-      args = res.split('.')
+      list = res.split('.')
     }
-    let filetypes = args.join('.').split('.')
+    let filetypes = list.join('.').split('.')
     let buf = await nvim.buffer
     addFiletypes(buf.id, filetypes)
     let curr = getAdditionalFiletype(buf.id)
@@ -284,10 +285,10 @@ export async function activate(context: ExtensionContext): Promise<API> {
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-async', expand, { silent: true, sync: false, cancel: true }))
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump', expandJump, { silent: true, sync: true, cancel: true }))
   subscriptions.push(workspace.registerKeymap(['i'], 'snippets-expand-jump-async', expandJump, { silent: true, sync: false, cancel: true }))
-
   subscriptions.push(workspace.registerKeymap(['v'], 'snippets-select', snippetSelect, { silent: true, sync: false, cancel: true }))
+
   registerLanguageProvider(subscriptions, channel, configuration)
-  subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim as any, manager)))
+  subscriptions.push(listManager.registerList(new SnippetsList(workspace.nvim, manager)))
 
   return {
     expandable: async (): Promise<boolean> => {
