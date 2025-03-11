@@ -2,7 +2,7 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { BasicList, ListContext, ListItem, Location, Mru, Position, Range, Uri, workspace } from 'coc.nvim'
+import { BasicList, ListContext, ListItem, Location, Position, Range, Uri, workspace } from 'coc.nvim'
 import os from 'os'
 import { ProviderManager } from '../provider'
 import { getSnippetFiletype } from '../util'

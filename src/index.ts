@@ -61,13 +61,14 @@ async function snippetSelect(): Promise<void> {
     window.showWarningMessage(`visual mode ${mode} not supported`)
     return
   }
-  await nvim.command('normal! `<')
-  let start = await window.getCursorPosition()
-  await nvim.command('normal! `>')
-  let end = await window.getCursorPosition()
-  end = Position.create(end.line, end.character + 1)
-  let range = Range.create(start, end)
+  let range = await window.getSelectedRange(mode)
+  if (mode == 'V' && range.end.character == 0) {
+    let line = range.end.line - 1
+    let character = doc.getline(line).length
+    range.end = Position.create(line, character)
+  }
   let text = doc.textDocument.getText(range)
+  const { start, end } = range
   await nvim.call('feedkeys', ['i', 'in'])
   if (mode == 'v') {
     await doc.applyEdits([{ range, newText: '' }])
