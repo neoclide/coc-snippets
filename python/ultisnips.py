@@ -597,8 +597,8 @@ def coc_UltiSnips_create():
             )
             self._initial_indent = _initial_indent
             self._reset("")
-            self._start = start
-            self._end = end
+            self._start = Position(start[0], start[1])
+            self._end = Position(end[0], end[1])
             self._context = context
 
         def _reset(self, cur):
