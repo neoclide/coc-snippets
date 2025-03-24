@@ -59,8 +59,9 @@ def coc_UltiSnips_create():
             pos = vim.eval('coc#cursor#position()')
         line = int(pos[0])
         character = int(pos[1])
-        code = 'coc#rpc#request("snippetInsert", [{"start":{"line":%d,"character":%d},"end":{"line":%d,"character":%d}}, "%s", v:null, {}])' % (line, character - len(trigger), line, character, re.sub(r'"', r'\\\'', value))
+        code = r'coc#rpc#request("snippetInsert", [{"start":{"line":%d,"character":%d},"end":{"line":%d,"character":%d}}, "%s", v:null, {}])' % (line, character - len(trigger), line, character, re.sub(r'"', r'\\"', value.replace('\\', '\\\\')))
         vim.eval(code)
+        vim.command('redraw')
         return True
 
     if asyncio is not None:
@@ -71,6 +72,8 @@ def coc_UltiSnips_create():
                 cursor.preserve()
 
     def expand_anon(value, trigger="", cursor = None):
+        if len(value) == 0:
+            return
         if not __requesting or asyncio is None:
             _expand_anon(value, trigger)
             if cursor is not None:
@@ -848,3 +851,5 @@ def coc_UltiSnips_create():
 coc_ultisnips_dict = coc_UltiSnips_create()
 SnippetUtil = coc_ultisnips_dict['SnippetUtil']
 ContextSnippet = coc_ultisnips_dict['ContextSnippet']
+
+# vim:set et sw=4 ts=4:
