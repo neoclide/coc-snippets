@@ -1,3 +1,9 @@
+# 3.4.1
+
+- Execute python global scripts with current filetype only, instead of one
+  script for all filetypes.
+- Fix known issues with UltiSnips actions.
+
 # 3.4.0
 
 - Support all UltiSnips options, including `t` `s` and `m`.
