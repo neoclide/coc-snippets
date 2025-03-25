@@ -51,9 +51,8 @@ def coc_UltiSnips_create():
             text += _vim_line_with_eol(el - 1)[: ec + 1]
         return text
 
-    def _expand_anon(value, trigger="", pos = None):
-        if pos is None:
-            pos = vim.eval('coc#cursor#position()')
+    def _expand_anon(value, trigger=""):
+        pos = vim.eval('coc#cursor#position()')
         line = int(pos[0])
         character = int(pos[1])
         args = r'[{"start":{"line":%d,"character":%d},"end":{"line":%d,"character":%d}}, "%s", v:null, {}]' % (line, character - len(trigger), line, character, re.sub(r'"', r'\\"', value.replace('\\', '\\\\')))
@@ -64,7 +63,6 @@ def coc_UltiSnips_create():
             code = r'coc#rpc#request("snippetInsert", %s)' % (args)
             vim.eval(code)
             vim.command('redraw')
-        return True
 
     def expand_anon(value, trigger="", cursor = None):
         if len(value) == 0:
