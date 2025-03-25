@@ -6,7 +6,7 @@ def coc_UltiSnips_create():
     _Placeholder = namedtuple("_Placeholder", ["current_text", "start", "end"])
     _VisualContent = namedtuple("_VisualContent", ["mode", "text"])
     _Position = namedtuple("_Position", ["line", "col"])
-    # is_vim = vim.eval('has("nvim")') == '0'
+    is_vim = vim.eval('has("nvim")') == '0'
 
     def byte2col(line, nbyte):
         """Convert a column into a byteidx suitable for a mark or cursor
@@ -821,11 +821,14 @@ def coc_UltiSnips_create():
                 return {}
             tabstops = {}
             for stop in vimtabstops:
-                index = stop['index']
+                index = int(stop['index'])
                 indexes = stop['range']
-                start = _Position(indexes[0], indexes[1])
-                end =  _Position(indexes[2], indexes[3])
-                tabstops[index] = _Placeholder(stop['text'], start, end)
+                start = _Position(int(indexes[0]), int(indexes[1]))
+                end =  _Position(int(indexes[2]), int(indexes[3]))
+                text = stop['text']
+                if isinstance(text, bytes):
+                    text = text.decode(vim.eval("&encoding"), "replace")
+                tabstops[index] = _Placeholder(text, start, end)
             return tabstops
 
     namespace = {
