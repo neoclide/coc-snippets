@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/neoclide/coc-snippets.git"
+    "url": "git+https://github.com/neoclide/coc-snippets.git"
   },
   "publisher": "chemzqm",
   "keywords": [
