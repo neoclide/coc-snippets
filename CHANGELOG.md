@@ -1,3 +1,7 @@
+# 3.4.2
+
+- Fix python async issue on vim by use vim's timer.
+
 # 3.4.1
 
 - Execute python global scripts with current filetype only, instead of one

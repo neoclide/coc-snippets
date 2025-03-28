@@ -135,11 +135,15 @@ Some ultisnips features are **not** supported:
 - [x] Support loading snipmate snippets.
 - [x] Replacement String, (:h UltiSnips-replacement-string), requires latest coc.nvim.
 - [x] Update python code block after change of placeholder.
-- [x] `snip.expand_anon()` should work.
 - [ ] Execute shell code with custom shabang (will not support).
 - [x] Option `m`, trim all whitespaces from right side of snippet lines.
 - [x] Reformat snippet options, including `t`, `s`.
-- [ ] All snippet actions including `pre_expand`, `post_expand` and `jump` (can't support).
+- [x] All snippet actions including `pre_expand`, `post_expand` and `jump` (can't support).
+- [x] `snip.expand_anon()` and other properties with UltiSnips actions.
+
+**Note**: `snip.expand_anon` expand the snippet in async manner by use timer
+when used with `pre_expand` and `post_expand` action, which means the state is
+lost in your python script (should only happens on some rare cases).
 
 **Note**: python regex in snippet are converted to javascript regex, however,
 some regex patterns can't be supported by javascript, including
