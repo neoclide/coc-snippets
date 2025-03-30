@@ -1,3 +1,8 @@
+# 3.4.3
+
+- Fix snippet file may not loaded.
+- Fix context snippet may not loaded.
+
 # 3.4.2
 
 - Fix python async issue on vim by use vim's timer.
