@@ -120,8 +120,6 @@ export class UltiSnippetsProvider extends BaseProvider {
     let { filepath, directory, filetype } = fileItem
     let idx = this.snippetFiles.findIndex(o => sameFile(o.filepath, filepath))
     if (idx !== -1 || this.isIgnored(filepath)) return
-    idx = this.fileItems.findIndex(o => o.filepath == filepath)
-    if (idx !== -1) this.fileItems.splice(idx, 1)
     let { snippets, pythonCode, extendFiletypes, clearsnippets } = await this.parser.parseUltisnipsFile(filetype, filepath)
     if (!this.pythonSupport) {
       // filter snippet with python
