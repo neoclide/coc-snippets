@@ -161,12 +161,8 @@ export class UltiSnippetsProvider extends BaseProvider {
     if (!this.pythonSupport) return false
     let pyCodes: string[] = [
       'import re, os, vim, string, random',
-      'if "snip" in globals():',
-      '  __snip = snip',
       'snip = ContextSnippet()',
       `context = ${context}`,
-      'if "__snip" in globals():',
-      '  snip = __snip',
     ]
     await this.executePyCodes(pyCodes)
     return await workspace.nvim.call(`pyxeval`, 'True if context else False')
