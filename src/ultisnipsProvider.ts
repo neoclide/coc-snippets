@@ -387,7 +387,7 @@ export class UltiSnippetsProvider extends BaseProvider {
               let files = await readdirAsync(file)
               for (let filename of files) {
                 if (filename.endsWith('.snippets')) {
-                  res.push({ filepath: path.join(file, filename), directory, filetype: filename })
+                  res.push({ filepath: path.join(file, filename), directory, filetype: path.basename(file) })
                 }
               }
             }
