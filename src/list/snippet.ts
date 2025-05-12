@@ -28,17 +28,15 @@ export default class SnippetsList extends BasicList {
     for (let snip of snippets) {
       let pos: Position = Position.create(snip.lnum, 0)
       let location: Location = Location.create(Uri.file(snip.filepath).toString(), Range.create(pos, Position.create(snip.lnum, 1)))
-      let prefix = snip.prefix
-      if (prefix.length < 20) {
-        prefix = `${prefix}${' '.repeat(20 - prefix.length)}`
-      }
+      let prefix = snip.prefix.length ? snip.prefix : snip.originRegex ?? ''
       res.push({
-        label: `${prefix}\t${snip.description}\t${snip.filepath.replace(os.homedir(), '~')}`,
+        label: `${prefix}${' '.repeat(20 - prefix.length)}\t${snip.description}\t${snip.filepath.replace(os.homedir(), '~')}`,
         filterText: `${snip.prefix} ${snip.description}`,
         location,
-        data: { prefix: snip.prefix }
+        data: { prefix }
       })
     }
+    res.sort((a, b) => a.data.prefix.localeCompare(b.data.prefix))
     return res
   }
 
