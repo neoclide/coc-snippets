@@ -5,7 +5,7 @@ Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 import { BasicList, ListContext, ListItem, Location, Position, Range, Uri, workspace } from 'coc.nvim'
 import os from 'os'
 import { ProviderManager } from '../provider'
-import { getSnippetFiletype } from '../util'
+import { getLastSnippet, getSnippetFiletype } from '../util'
 
 function formatPrefix(prefix: string): string {
   if (prefix.length >= 20) return prefix.slice(0, 17) + '...'
@@ -30,13 +30,16 @@ export default class SnippetsList extends BasicList {
     let filetype = getSnippetFiletype(doc)
     let snippets = this.manager.getSnippets(filetype)
     let res: ListItem[] = []
+    let last = getLastSnippet()
     for (let snip of snippets) {
       let pos: Position = Position.create(snip.lnum, 0)
       let location: Location = Location.create(Uri.file(snip.filepath).toString(), Range.create(pos, Position.create(snip.lnum, 1)))
       let prefix = snip.prefix.length ? snip.prefix : snip.originRegex ?? ''
+      let preselect = last && last.filepath == snip.filepath && last.lnum == snip.lnum
       res.push({
-        label: `${formatPrefix(prefix)}\t${snip.description}\t${snip.filepath.replace(os.homedir(), '~')}`,
+        label: `${formatPrefix(prefix)}\t${snip.description}\t${snip.filepath.replace(os.homedir(), '~')}:${snip.lnum}`,
         filterText: `${snip.prefix} ${snip.description}`,
+        preselect,
         location,
         data: { prefix }
       })

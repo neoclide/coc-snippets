@@ -200,6 +200,7 @@ export class SnipmateProvider extends BaseProvider {
         prefix: s.prefix,
         description: s.description,
         location: s.filepath,
+        lnum: s.lnum,
         range,
         newText: s.body,
         priority: -1

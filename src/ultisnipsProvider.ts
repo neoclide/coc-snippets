@@ -228,6 +228,7 @@ export class UltiSnippetsProvider extends BaseProvider {
         prefix: s.prefix,
         description: s.description,
         location: s.filepath,
+        lnum: s.lnum,
         priority: s.priority,
         regex: s.originRegex,
         context: s.context,

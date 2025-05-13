@@ -2,12 +2,12 @@
 MIT License http://www.opensource.org/licenses/mit-license.php
 Author Qiming Zhao <chemzqm@gmail> (https://github.com/chemzqm)
 *******************************************************************/
-import { commands, workspace, Document, TextEdit, Uri } from 'coc.nvim'
-import { promisify } from 'util'
+import { commands, Document, TextEdit, Uri, workspace } from 'coc.nvim'
 import crypto from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { promisify } from 'util'
 import { ReplaceItem, SnippetEditWithSource, UltiSnippetOption } from './types'
 
 export interface CodeInfo {
@@ -15,11 +15,25 @@ export interface CodeInfo {
   readonly code: string
 }
 
+export interface LastSnippet {
+  filepath: string
+  lnum: number
+}
+
 export const pythonCodes: Map<string, CodeInfo> = new Map()
 
 const caseInsensitive = os.platform() == 'win32' || os.platform() == 'darwin'
 const BASE64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'
 const additionalFiletypes: Map<number, string[]> = new Map()
+var lastSnippet: LastSnippet = undefined
+
+export function setLastSnippet(filepath: string, lnum: number): void {
+  lastSnippet = { filepath, lnum }
+}
+
+export function getLastSnippet(): LastSnippet | undefined {
+  return lastSnippet
+}
 
 export async function insertSnippetEdit(edit: SnippetEditWithSource) {
   let ultisnips = edit.source == 'ultisnips' || edit.source == 'snipmate'
@@ -35,6 +49,7 @@ export async function insertSnippetEdit(edit: SnippetEditWithSource) {
       removeWhiteSpace: formatOptions.removeWhiteSpace
     }
   }
+  setLastSnippet(edit.location, edit.lnum)
   await commands.executeCommand('editor.action.insertSnippet', TextEdit.replace(edit.range, edit.newText), option)
 }
 

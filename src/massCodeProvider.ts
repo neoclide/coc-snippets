@@ -1,7 +1,7 @@
 import { Document, OutputChannel, Position, Range, window, workspace } from 'coc.nvim'
 import http from 'http'
 
-import type { Snippet, SnippetEdit, MassCodeConfig } from './types'
+import type { MassCodeConfig, Snippet, SnippetEdit } from './types'
 import { TriggerKind } from './types'
 
 import BaseProvider from './baseProvider'
@@ -122,6 +122,7 @@ export class MassCodeProvider extends BaseProvider {
         prefix: s.prefix,
         description: s.description,
         location: s.filepath,
+        lnum: s.lnum,
         priority: s.priority,
         regex: s.originRegex,
         context: s.context,

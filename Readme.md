@@ -175,7 +175,8 @@ some regex patterns can't be supported by javascript, including
 
 ## Commands
 
-- Use `:CocList snippets` to open snippets list used by current buffer.
+- Use `:CocList snippets` to open snippets list used by current buffer, the last
+  used snippet item would be preselected.
 - Use `:CocCommand snippets.openSnippetFiles` to choose and open a snippet file
   that used by current document.
 - Use `:CocCommand snippets.editSnippets` to edit user's ultisnips snippets of

@@ -126,6 +126,7 @@ export interface SnippetEdit {
   prefix: string
   newText: string
   location: string
+  lnum: number
   description: string
   priority: number
   regex?: string

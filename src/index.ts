@@ -9,7 +9,7 @@ import { SnipmateProvider } from './snipmateProvider'
 import { TextmateProvider } from './textmateProvider'
 import { UltiSnipsConfig } from './types'
 import { getSnippetsDirectory, UltiSnippetsProvider } from './ultisnipsProvider'
-import { addFiletypes, getAdditionalFiletype, getSnippetFiletype, insertSnippetEdit, sameFile, waitDocument } from './util'
+import { addFiletypes, getAdditionalFiletype, getSnippetFiletype, insertSnippetEdit, sameFile, setLastSnippet, waitDocument } from './util'
 
 interface API {
   expandable: () => Promise<boolean>
@@ -113,6 +113,13 @@ export async function activate(context: ExtensionContext): Promise<API> {
     buf.setVar('coc_snippets_filetypes', curr, true)
     manager.loadSnippetsByFiletype(filetypes.join('.'))
   }))
+
+  events.on('CompleteDone', item => {
+    if (item && item['data'] && item['data']['snip']) {
+      let snip = item['data']['snip']
+      setLastSnippet(snip.filepath, snip.lnum)
+    }
+  }, null, context.subscriptions)
 
   let excludes = configuration.get<string[]>('excludePatterns', [])
   if (!Array.isArray(excludes)) excludes = []
