@@ -225,7 +225,18 @@ Use `b:coc_snippets_filetypes` to add additional filetypes on buffer create.
 
 **Q:** How to trigger snippets completion when type special characters?
 
-**A:** Use configuration like: `"snippets.triggerCharacters": ["'"]`.
+**A:** Use configuration like: `"snippets.triggerCharacters": ["'"]`. Completion
+input only contains word characters, so a snippet with a non-word prefix such as
+`///` shows up only after the trigger characters match its prefix, for example:
+
+```json
+{
+  "snippets.triggerCharacters": ["/"]
+}
+```
+
+Alternatively, expand such snippets directly with the `snippets-expand` keymap,
+which does not require the completion menu.
 
 **Q:** How to check if a snippet successfully loaded?
 
