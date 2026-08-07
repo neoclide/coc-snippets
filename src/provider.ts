@@ -78,7 +78,7 @@ export class ProviderManager implements CompletionItemProvider {
         let snippets = provider.getSnippets(filetype)
         snippets.map(s => s.provider = name)
         list.push(...snippets)
-      } catch (e) {
+      } catch (e: any) {
         this.appendError(`getSnippets of ${name}`, e)
       }
     }
@@ -103,7 +103,7 @@ export class ProviderManager implements CompletionItemProvider {
       try {
         let res = await provider.getSnippetFiles(filetype)
         files = files.concat(res)
-      } catch (e) {
+      } catch (e: any) {
         this.appendError(`getSnippetFiles of ${name}`, e)
       }
     }
@@ -123,7 +123,7 @@ export class ProviderManager implements CompletionItemProvider {
         for (let item of items) {
           list.push(Object.assign({ source: name }, item))
         }
-      } catch (e) {
+      } catch (e: any) {
         this.appendError(`get trigger snippets of ${name}`, e)
       }
     }
@@ -182,7 +182,7 @@ export class ProviderManager implements CompletionItemProvider {
         let valid: boolean
         try {
           valid = await provider.checkContext(snip.context)
-        } catch (e) {
+        } catch (e: any) {
           this.appendError(`checkContext of ${snip.provider}`, e)
           valid = false
         }

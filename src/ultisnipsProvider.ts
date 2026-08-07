@@ -175,7 +175,7 @@ export class UltiSnippetsProvider extends BaseProvider {
   private async executePyCodes(lines: string[]): Promise<void> {
     try {
       await workspace.nvim.command(`pyx ${addPythonTryCatch(lines.join('\n'))}`)
-    } catch (e) {
+    } catch (e: any) {
       let err = new Error(e.message)
       err.stack = `Error on execute python code:\n${lines}\n` + e.stack
       throw err
@@ -415,7 +415,7 @@ export class UltiSnippetsProvider extends BaseProvider {
       }
       this.info(`Execute python file ${tmpfile} from: ${filepath}`)
       await workspace.nvim.call('coc#util#open_file', ['pyxfile', tmpfile])
-    } catch (e) {
+    } catch (e: any) {
       this.errorFiles.add(tmpfile)
       this.error(`Error on execute python script ${e.stack}:`, code)
       void window.showErrorMessage(`Error python code from file ${filepath}: ${e.message}`)

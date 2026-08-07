@@ -1,7 +1,7 @@
 src
 *.map
 tsconfig.json
-tests
+test
 .ignore
 yarn.lock
 esbuild.js

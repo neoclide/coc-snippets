@@ -148,7 +148,7 @@ export default class UltiSnipsParser {
             this.debug(`Loaded snippet`, snippet)
             snippets.push(snippet)
           }
-        } catch (e) {
+        } catch (e: any) {
           this.error(`Create snippet error on: ${filepath}:${lnum - preLines.length - 1} ${e.message}`)
         } finally {
           parsedContext = null

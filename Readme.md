@@ -2,6 +2,8 @@
 
 Snippets solution for [coc.nvim](https://github.com/neoclide/coc.nvim)
 
+[![CI](https://github.com/neoclide/coc-snippets/actions/workflows/ci.yml/badge.svg)](https://github.com/neoclide/coc-snippets/actions/workflows/ci.yml)
+
 ![2019-03-23 00_09_39](https://user-images.githubusercontent.com/251450/54837017-62891300-4d00-11e9-9e53-49742a1a33f2.gif)
 
 _Snippet preview requires [neovim 0.4 or latest vim8](https://github.com/neoclide/coc.nvim/wiki/F.A.Q#how-to-make-preview-window-shown-aside-with-pum)_

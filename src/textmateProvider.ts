@@ -274,13 +274,13 @@ export class TextmateProvider extends BaseProvider {
     let contents: string
     try {
       contents = await fs.promises.readFile(snippetFilePath, 'utf8')
-    } catch (e) {
+    } catch (e: any) {
       this.error(`Error on readFile "${snippetFilePath}": ${e.message}`)
       return
     }
     try {
       this.loadSnippetsFromText(snippetFilePath, extensionId, languageIds, contents)
-    } catch (e) {
+    } catch (e: any) {
       this.error(`Error on load snippets from "${snippetFilePath}": ${e.message}`, e.stack)
     }
   }
@@ -313,7 +313,7 @@ export class TextmateProvider extends BaseProvider {
           snippets.push(Object.assign({ lnum }, snippetObject[key]))
         }
       }
-    } catch (ex) {
+    } catch (ex: any) {
       this.error(`Error on parse "${filepath}": ${ex.message}`, ex.stack)
       return
     }

@@ -74,7 +74,7 @@ export class LanguageProvider implements CompletionItemProvider {
         if (isExpression) {
           try {
             convertRegex(prefix)
-          } catch (e) {
+          } catch (e: any) {
             let start = line.indexOf(prefix)
             let range = Range.create(curr, start, curr, start + prefix.length)
             let message = codesMap.get(3).replace('$1', e.message)

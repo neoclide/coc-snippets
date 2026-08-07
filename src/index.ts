@@ -15,7 +15,7 @@ interface API {
   expandable: () => Promise<boolean>
 }
 
-function checkBufferVariable(doc: Document): void {
+export function checkBufferVariable(doc: Document): void {
   let filetypes = doc.getVar('snippets_filetypes', undefined) as string[]
   if (!Array.isArray(filetypes)) filetypes = undefined
   if (!filetypes) {
@@ -26,7 +26,7 @@ function checkBufferVariable(doc: Document): void {
   }
 }
 
-function enableSnippetsFiletype(subscriptions: Disposable[]) {
+export function enableSnippetsFiletype(subscriptions: Disposable[]) {
   let { nvim } = workspace
   const rtp = workspace.env.runtimepath
   let paths = rtp.split(',')
@@ -56,7 +56,7 @@ async function snippetSelect(): Promise<void> {
   let doc = await workspace.document
   if (!doc) return
   let { nvim } = workspace
-  let mode = await nvim.call('visualmode')
+  let mode = await nvim.call('visualmode') as string
   if (['v', 'V'].indexOf(mode) == -1) {
     window.showWarningMessage(`visual mode ${mode} not supported`)
     return
@@ -238,7 +238,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }
 
   subscriptions.push(workspace.registerKeymap(['x'], 'convert-snippet', async () => {
-    let mode = await workspace.nvim.call('visualmode')
+    let mode = await workspace.nvim.call('visualmode') as string
     if (!mode) return
     let doc = await workspace.document
     if (!doc) return
@@ -248,7 +248,7 @@ export async function activate(context: ExtensionContext): Promise<API> {
   }, { sync: false }))
 
   subscriptions.push(commands.registerCommand('snippets.openOutput', () => {
-    void window.showOutputChannel('snippets', false)
+    void window.showOutputChannel('snippets')
   }))
 
   subscriptions.push(commands.registerCommand('snippets.openSnippetFiles', async () => {
