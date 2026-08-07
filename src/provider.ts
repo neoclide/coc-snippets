@@ -43,7 +43,7 @@ export class ProviderManager implements CompletionItemProvider {
     let doc = window.activeTextEditor?.document
     if (doc) filetype = doc.filetype
     window.onDidChangeActiveTextEditor(async (e: TextEditor) => {
-      let newFiletype = e.document?.filetype
+      let newFiletype = e?.document?.filetype
       if (newFiletype && newFiletype != filetype) {
         filetype = newFiletype
         let bufnr = e.document.bufnr

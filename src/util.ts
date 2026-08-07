@@ -339,6 +339,48 @@ export function normalizeFilePath(filepath: string) {
   return Uri.file(path.resolve(path.normalize(filepath))).fsPath
 }
 
+/**
+ * Remove state of an unloaded extension so a reloaded extension can be loaded
+ * again.
+ */
+export function clearExtensionState<T extends { extensionId?: string }>(
+  definitions: Map<string, Array<{ filepath: string }>>,
+  loadedFiles: Set<string>,
+  loadedSnippets: T[],
+  extensionId: string
+): T[] {
+  let items = definitions.get(extensionId) ?? []
+  for (let item of items) {
+    loadedFiles.delete(item.filepath)
+  }
+  definitions.delete(extensionId)
+  return loadedSnippets.filter(item => item.extensionId !== extensionId)
+}
+
+/**
+ * Remove state under a removed workspace folder so a re-added folder can be
+ * loaded again.
+ */
+export function clearFolderState<T extends { filepath: string }>(
+  loadedFiles: Set<string>,
+  loadedRoots: Set<string>,
+  loadedSnippets: T[],
+  fsPath: string
+): T[] {
+  let prefix = fsPath + path.sep
+  for (let file of loadedFiles) {
+    if (file.startsWith(prefix)) {
+      loadedFiles.delete(file)
+    }
+  }
+  for (let root of loadedRoots) {
+    if (root.startsWith(prefix)) {
+      loadedRoots.delete(root)
+    }
+  }
+  return loadedSnippets.filter(o => !o.filepath.startsWith(prefix))
+}
+
 export function filetypeFromBasename(basename: string): string {
   if (basename == 'typescript_react') return 'typescriptreact'
   if (basename == 'javascript_react') return 'javascriptreact'

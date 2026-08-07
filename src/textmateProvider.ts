@@ -4,7 +4,7 @@ import { parse, ParseError } from 'jsonc-parser'
 import path from 'path'
 import BaseProvider from './baseProvider'
 import { Snippet, SnippetEdit, TextmateConfig, TriggerKind } from './types'
-import { languageIdFromComments, normalizeFilePath, omit, sameFile, statAsync } from './util'
+import { clearExtensionState, clearFolderState, languageIdFromComments, normalizeFilePath, omit, sameFile, statAsync } from './util'
 
 export interface ISnippetPluginContribution {
   lnum: number
@@ -83,9 +83,7 @@ export class TextmateProvider extends BaseProvider {
         })
       }, null, this.subscriptions)
       extensions.onDidUnloadExtension(id => {
-        this.loadedSnippets = this.loadedSnippets.filter(item => {
-          return item.extensionId !== id
-        })
+        this.loadedSnippets = clearExtensionState(this.definitions, this.loadedFiles, this.loadedSnippets, id)
       }, null, this.subscriptions)
     }
     let paths = this.config.snippetsRoots
@@ -101,9 +99,7 @@ export class TextmateProvider extends BaseProvider {
       workspace.onDidChangeWorkspaceFolders(e => {
         e.removed.forEach(folder => {
           let fsPath = Uri.parse(folder.uri).fsPath
-          this.loadedSnippets = this.loadedSnippets.filter(o => {
-            return !o.filepath.startsWith(fsPath + path.sep)
-          })
+          this.loadedSnippets = clearFolderState(this.loadedFiles, this.loadedRoots, this.loadedSnippets, fsPath)
         })
         e.added.forEach(folder => {
           let fsPath = Uri.parse(folder.uri).fsPath
