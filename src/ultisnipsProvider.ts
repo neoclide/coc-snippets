@@ -257,9 +257,10 @@ export class UltiSnippetsProvider extends BaseProvider {
     let min: number = null
     let result: Snippet[] = []
     snippetFiles.sort((a, b) => {
-      if (a.filetype == b.filetype) return 1
+      if (a.filetype == b.filetype) return 0
       if (a.filetype == filetype) return -1
-      return 1
+      if (b.filetype == filetype) return 1
+      return 0
     })
     for (let file of snippetFiles) {
       let { snippets, clearsnippets } = file
@@ -276,7 +277,7 @@ export class UltiSnippetsProvider extends BaseProvider {
           } else {
             let item = result[idx]
             if (snip.priority > item.priority) {
-              result[idx] = item
+              result[idx] = snip
             }
           }
         }

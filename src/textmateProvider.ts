@@ -196,6 +196,7 @@ export class TextmateProvider extends BaseProvider {
         }
         return 0
       }
+      return 0
     })
     let filtered: Snippet[] = []
     for (let item of res) {

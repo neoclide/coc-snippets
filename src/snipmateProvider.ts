@@ -74,7 +74,7 @@ export class SnipmateProvider extends BaseProvider {
     filetypes = filetypes.filter(filetype => !this.loadedLanguageIds.has(filetype))
     if (filetypes.length == 0) return
     filetypes.forEach(filetype => this.loadedLanguageIds.add(filetype))
-    for (let item of this.fileItems) {
+    for (let item of this.fileItems.slice()) {
       if (!filetypes.includes(item.filetype)) continue
       await this.loadSnippetsFromFile(item.filetype, item.filepath)
     }
@@ -227,9 +227,10 @@ export class SnipmateProvider extends BaseProvider {
     let snippetFiles = this.snippetFiles.filter(o => filetypes.includes(o.filetype))
     let result: Snippet[] = []
     snippetFiles.sort((a, b) => {
-      if (a.filetype == b.filetype) return 1
+      if (a.filetype == b.filetype) return 0
       if (a.filetype == filetype) return -1
-      return 1
+      if (b.filetype == filetype) return 1
+      return 0
     })
     for (let file of snippetFiles) {
       let { snippets } = file

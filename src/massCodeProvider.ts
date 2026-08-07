@@ -209,11 +209,12 @@ export class MassCodeProvider extends BaseProvider {
     }
 
     const requests = filetypes.map(filetype => {
-      const newIndex = Math.max(...this.mapItems().map(item => item.lnum)) + 1
+      const lnums = this.mapItems().map(item => item.lnum)
+      const newIndex = lnums.length ? Math.max(...lnums) + 1 : 0
       const newSnippet = {
         content: [{
           label: 'Fragment 1',
-          value: text.replace(/\n$/, ''),
+          value: (text ?? '').replace(/\n$/, ''),
           language: filetype,
         }],
         createdAt: Date.now(),
