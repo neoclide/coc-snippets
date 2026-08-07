@@ -242,6 +242,20 @@ which does not require the completion menu.
 
 **A:** Use command `:CocCommand workspace.showOutput snippets`
 
+**Q:** How to get debug output from snippets?
+
+**A:** Enable tracing with `snippets.ultisnips.trace: true`,
+`snippets.snipmate.trace: true`, `snippets.massCode.trace: true` or
+`snippets.trace: "verbose"` (textmate snippets), then open the snippets output
+channel with `:CocCommand snippets.openOutput`. Exceptions thrown in UltiSnips
+python interpolation are always caught and appended to the channel with the
+stack trace. To log custom info from interpolation code without throwing, write
+to a file from the python code, e.g.:
+
+```python
+open('/tmp/ultisnips.log', 'a').write('debug info\n')
+```
+
 **Q:** Some ultisnips snippet not works as expected.
 
 **A:** Reformat after change of placeholder feature can't be supported for now,
