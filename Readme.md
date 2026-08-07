@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo.svg" width="96" height="96" alt="coc-snippets">
+</p>
+
 # coc-snippets
 
 Snippets solution for [coc.nvim](https://github.com/neoclide/coc.nvim)
