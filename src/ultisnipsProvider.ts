@@ -322,23 +322,36 @@ export class UltiSnippetsProvider extends BaseProvider {
     return directories
   }
 
-  private async getFiletype(): Promise<string> {
+  /**
+   * Filetypes related to current buffer, base filetype first followed by
+   * filetypes from b:coc_snippets_filetypes, falls back to `all`.
+   */
+  private async getEditFiletypes(): Promise<string[]> {
     let buf = await workspace.nvim.buffer
-    if (buf) {
-      let doc = workspace.getDocument(buf.id)
-      if (doc) return doc.filetype
+    let doc = buf ? workspace.getDocument(buf.id) : null
+    let res: string[] = []
+    if (doc && doc.filetype) {
+      res.push(doc.filetype)
+      for (let ft of getAdditionalFiletype(doc.bufnr)) {
+        if (!res.includes(ft)) res.push(ft)
+      }
     }
-    return null
+    return res.length > 0 ? res : ['all']
   }
 
   public async editSnippets(text?: string): Promise<void> {
     const configuration = workspace.getConfiguration('snippets')
-    let filetype = await this.getFiletype()
-    filetype = filetype ?? 'all'
-    filetype = filetype.indexOf('.') == -1 ? filetype : filetype.split('.')[0]
     const snippetsDir = await getSnippetsDirectory(configuration)
     let { nvim } = workspace
-    let file = path.join(snippetsDir, `${filetype}.snippets`)
+    let filetypes = await this.getEditFiletypes()
+    let file: string
+    if (filetypes.length == 1) {
+      file = path.join(snippetsDir, `${filetypes[0]}.snippets`)
+    } else {
+      let files = filetypes.map(ft => path.join(snippetsDir, `${ft}.snippets`))
+      file = await window.showQuickPick(files, { title: 'choose snippet file:' })
+      if (!file) return
+    }
     if (!fs.existsSync(file)) {
       await util.promisify(fs.writeFile)(file, documentation, 'utf8')
     }
