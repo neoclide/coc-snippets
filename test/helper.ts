@@ -1,6 +1,9 @@
 import { Document, window, workspace } from 'coc.nvim'
 import path from 'node:path'
 
+let providerInitDone = false
+let bufferCounter = 0
+
 export async function waitFor(fn: () => boolean | Promise<boolean>, timeout = 10000): Promise<void> {
   const start = Date.now()
   while (Date.now() - start < timeout) {
@@ -14,9 +17,17 @@ export async function waitFor(fn: () => boolean | Promise<boolean>, timeout = 10
  * Open a new buffer and wait until coc attached a document to it.
  * The document delivered by `onDidOpenTextDocument` can be a transient object
  * without an attached buffer, so poll the workspace document by bufnr instead.
+ *
+ * Buffers get unique names so their bufnrs are never reused: extension state
+ * like the additional filetypes map is keyed by bufnr, so reusing a wiped
+ * buffer number would leak state from an earlier test in the same process.
  */
 export async function openBuffer(name?: string): Promise<Document> {
-  await workspace.nvim.command(name ? `edit ${name}` : 'enew!')
+  if (!name) {
+    bufferCounter += 1
+    name = `coc-snippets-test-${bufferCounter}`
+  }
+  await workspace.nvim.command(`edit ${name}`)
   let bufnr = await currentBufnr()
   await waitFor(() => {
     let doc = workspace.getDocument(bufnr)
@@ -37,9 +48,13 @@ export async function currentBufnr(): Promise<number> {
  * Provider inits run in the background during `activate`. The manager
  * registers its editor listeners only after all of them complete, so a
  * window change proves the listeners (including the ultisnips runtimepath
- * listener) are registered and the slow python check has settled.
+ * listener) are registered and the slow python check has settled. The
+ * window-change signal only fires once per editor session, so this helper
+ * is a no-op on later calls.
  */
 export async function waitProviderInit(): Promise<void> {
+  if (providerInitDone) return
+  providerInitDone = true
   let nvim = workspace.nvim
   await nvim.call('pyxeval', ['1']).catch(() => {})
   await new Promise<void>((resolve, reject) => {

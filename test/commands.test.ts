@@ -1,10 +1,138 @@
 import assert from 'node:assert/strict'
-import { before, describe, it } from 'node:test'
-import { commands, window, workspace } from 'coc.nvim'
+import { after, before, describe, it } from 'node:test'
+import { commands, Disposable, window, workspace } from 'coc.nvim'
 import path from 'node:path'
+import extension from '../lib/index.js'
 import { openBuffer, waitFor, waitProviderInit } from './helper'
 
 const fixturesDir = path.resolve(process.cwd(), 'test', 'fixtures')
+
+describe('extension activation', () => {
+  before(async () => {
+    await waitProviderInit()
+  })
+
+  it('exports the activation API', () => {
+    assert.equal(typeof extension.activate, 'function')
+    assert.equal(typeof extension.checkBufferVariable, 'function')
+    assert.equal(typeof extension.enableSnippetsFiletype, 'function')
+  })
+
+  it('communicates with the editor through RPC', async () => {
+    assert.equal(await workspace.nvim.eval('1 + 1'), 2)
+  })
+
+  it('registers commands', async () => {
+    assert.equal(commands.has('snippets.addFiletypes'), true)
+    assert.equal(commands.has('snippets.openOutput'), true)
+    assert.equal(commands.has('snippets.openSnippetFiles'), true)
+    assert.equal(commands.has('snippets.editSnippets'), true)
+  })
+
+  it('snippets.addFiletypes sets the buffer variable', async () => {
+    let doc = await openBuffer()
+    await commands.executeCommand('snippets.addFiletypes', 'typescript')
+    await waitFor(async () => {
+      let arr = await doc.buffer.getVar('coc_snippets_filetypes') as string[]
+      return Array.isArray(arr) && arr.includes('typescript')
+    })
+  })
+})
+
+describe('buffer filetype handling', () => {
+  let subscriptions: Disposable[] = []
+
+  before(async () => {
+    await waitProviderInit()
+    // The coc-test harness loads the extension after coc.nvim already fired
+    // the `ready` event, so the ready hook inside activate never runs.
+    // Invoke the startup behavior explicitly, same as activate would.
+    extension.enableSnippetsFiletype(subscriptions)
+  })
+
+  after(() => {
+    for (let disposable of subscriptions) {
+      disposable.dispose()
+    }
+  })
+
+  it('sets coc_snippets_filetypes when no snippets_filetypes variable exists', async () => {
+    let doc = await openBuffer()
+    extension.checkBufferVariable(doc)
+    assert.deepEqual(await doc.buffer.getVar('coc_snippets_filetypes'), [])
+  })
+
+  it('addFiletypes command does not duplicate filetypes', async () => {
+    let doc = await openBuffer()
+    await commands.executeCommand('snippets.addFiletypes', 'python')
+    await commands.executeCommand('snippets.addFiletypes', 'python')
+    await waitFor(async () => {
+      let arr = await doc.buffer.getVar('coc_snippets_filetypes') as string[]
+      return Array.isArray(arr) && arr.filter(x => x == 'python').length == 1
+    })
+  })
+
+  it('sets the filetype of .snippets buffers', async () => {
+    let doc = await openBuffer('snippet.snippets')
+    await waitFor(() => doc.filetype == 'snippets')
+  })
+})
+
+describe('snippets.editSnippets', () => {
+  let originalPick: any
+
+  before(() => {
+    originalPick = window.showQuickPick
+  })
+
+  after(() => {
+    window.showQuickPick = originalPick
+  })
+
+  async function markdownBuffer(): Promise<void> {
+    let doc = await openBuffer()
+    await workspace.nvim.command('setf markdown')
+    await waitFor(() => doc.filetype == 'markdown')
+  }
+
+  it('opens the snippet file of the current filetype directly', async () => {
+    await markdownBuffer()
+    await commands.executeCommand('snippets.editSnippets')
+    await waitFor(async () => {
+      return await workspace.nvim.eval('expand("%:t")') == 'markdown.snippets'
+    })
+  })
+
+  it('lists all related snippet files when additional filetypes exist', async () => {
+    await markdownBuffer()
+    await commands.executeCommand('snippets.addFiletypes', 'tex', 'mermaid')
+    let items: string[] = []
+    window.showQuickPick = (async (list: string[]) => {
+      items = list
+      return list[1]
+    }) as any
+    await commands.executeCommand('snippets.editSnippets')
+    assert.equal(items.length, 3)
+    assert.ok(items[0].endsWith('markdown.snippets'))
+    assert.ok(items[1].endsWith('tex.snippets'))
+    assert.ok(items[2].endsWith('mermaid.snippets'))
+    await waitFor(async () => {
+      return await workspace.nvim.eval('expand("%:t")') == 'tex.snippets'
+    })
+  })
+
+  it('does not jump when the picker is cancelled', async () => {
+    await markdownBuffer()
+    await commands.executeCommand('snippets.addFiletypes', 'tex')
+    let before: string
+    window.showQuickPick = (async (list: string[]) => {
+      before = await workspace.nvim.eval('expand("%:t")') as string
+      return null
+    }) as any
+    await commands.executeCommand('snippets.editSnippets')
+    assert.equal(await workspace.nvim.eval('expand("%:t")'), before)
+  })
+})
 
 describe('registered commands', () => {
   before(async () => {
