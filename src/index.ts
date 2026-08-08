@@ -202,9 +202,13 @@ export async function activate(context: ExtensionContext): Promise<API> {
     }, null, subscriptions)
   }
 
-  manager.init().catch(e => {
-    channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on init: ${e.stack}`)
-  })
+  if (process.env.COC_TESTER === '1') {
+    await manager.init()
+  } else {
+    manager.init().catch(e => {
+      channel.appendLine(`[Error ${(new Date()).toLocaleTimeString()}] Error on init: ${e.stack}`)
+    })
+  }
 
   if (manager.hasProvider) {
     let disposable = languages.registerCompletionItemProvider(
