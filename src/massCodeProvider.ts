@@ -69,6 +69,7 @@ export class MassCodeProvider extends BaseProvider {
     filetypes.push('all')
     let res: string[] = []
     for (let s of this.massCodeItems) {
+      if (s.isDeleted) continue
       for (let c of s.content) {
         if (filetypes.includes(c.language)) {
           res.push(s.folderId)
